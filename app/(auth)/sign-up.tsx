@@ -1,4 +1,5 @@
 import { Link, router } from 'expo-router';
+import { SymbolView } from 'expo-symbols';
 import { useState } from 'react';
 import {
   ActivityIndicator,
@@ -15,6 +16,14 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { getAuthErrorMessage, useAuth } from '@/contexts/AuthContext';
 import { useTheme } from '@/contexts/ThemeContext';
+
+function navigateAfterAuth() {
+  if (router.canGoBack()) {
+    router.back();
+    return;
+  }
+  router.replace('/(tabs)');
+}
 
 export default function SignUpScreen() {
   const { colors, radii, spacing } = useTheme();
@@ -40,7 +49,7 @@ export default function SignUpScreen() {
     setSubmitting(true);
     try {
       await signUp(email, password, displayName);
-      router.replace('/(tabs)');
+      navigateAfterAuth();
     } catch (err) {
       setError(getAuthErrorMessage(err));
     } finally {
@@ -58,12 +67,29 @@ export default function SignUpScreen() {
           contentContainerStyle={[styles.scrollContent, { padding: spacing.lg }]}
           keyboardShouldPersistTaps="handled"
         >
+          <Pressable
+            accessibilityLabel="Close"
+            accessibilityRole="button"
+            hitSlop={8}
+            onPress={() => (router.canGoBack() ? router.back() : router.replace('/(tabs)'))}
+            style={({ pressed }) => [
+              styles.closeButton,
+              { opacity: pressed ? 0.7 : 1 },
+            ]}
+          >
+            <SymbolView
+              name={{ ios: 'xmark', android: 'close', web: 'close' }}
+              size={20}
+              tintColor={colors.textSecondary}
+            />
+          </Pressable>
+
           <View style={styles.header}>
             <Text style={[styles.title, { color: colors.text }]}>
-              Join Sage
+              Join List App
             </Text>
             <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
-              Create an account to start your lists
+              Your local lists will be synced to your account
             </Text>
           </View>
 
@@ -201,6 +227,12 @@ const styles = StyleSheet.create({
   scrollContent: {
     flexGrow: 1,
     justifyContent: 'center',
+  },
+  closeButton: {
+    alignSelf: 'flex-end',
+    height: 36,
+    justifyContent: 'center',
+    width: 36,
   },
   header: {
     marginBottom: 32,

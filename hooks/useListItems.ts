@@ -14,6 +14,14 @@ import { useCallback, useEffect, useState } from 'react';
 
 import { useAuth } from '@/contexts/AuthContext';
 import { db } from '@/lib/firebase';
+import {
+  addLocalItem,
+  deleteLocalItem,
+  getLocalItems,
+  subscribeLocalData,
+  toggleLocalItem,
+  updateLocalItem,
+} from '@/lib/localStore';
 import type { ListItem } from '@/lib/types';
 
 function toDate(value: unknown): Date {
@@ -39,6 +47,7 @@ function docToListItem(id: string, data: Record<string, unknown>): ListItem {
 }
 
 export function useListItemCounts(listId: string) {
+  const { user } = useAuth();
   const [doneCount, setDoneCount] = useState(0);
   const [totalCount, setTotalCount] = useState(0);
 
@@ -47,6 +56,28 @@ export function useListItemCounts(listId: string) {
       setDoneCount(0);
       setTotalCount(0);
       return;
+    }
+
+    if (!user) {
+      let active = true;
+
+      const refresh = async () => {
+        const nextItems = await getLocalItems(listId);
+        if (active) {
+          setTotalCount(nextItems.length);
+          setDoneCount(nextItems.filter((item) => item.checked).length);
+        }
+      };
+
+      void refresh();
+      const unsubscribe = subscribeLocalData(() => {
+        void refresh();
+      });
+
+      return () => {
+        active = false;
+        unsubscribe();
+      };
     }
 
     const itemsQuery = query(
@@ -63,7 +94,7 @@ export function useListItemCounts(listId: string) {
     });
 
     return unsubscribe;
-  }, [listId]);
+  }, [listId, user]);
 
   return { doneCount, totalCount };
 }
@@ -74,10 +105,33 @@ export function useListItems(listId: string | undefined) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!listId || !user) {
+    if (!listId) {
       setItems([]);
       setLoading(false);
       return;
+    }
+
+    if (!user) {
+      let active = true;
+      setLoading(true);
+
+      const refresh = async () => {
+        const nextItems = await getLocalItems(listId);
+        if (active) {
+          setItems(nextItems);
+          setLoading(false);
+        }
+      };
+
+      void refresh();
+      const unsubscribe = subscribeLocalData(() => {
+        void refresh();
+      });
+
+      return () => {
+        active = false;
+        unsubscribe();
+      };
     }
 
     setLoading(true);
@@ -106,12 +160,17 @@ export function useListItems(listId: string | undefined) {
 
   const addItem = useCallback(
     async (name: string) => {
-      if (!user || !listId) {
-        throw new Error('Must be signed in with a valid list');
+      if (!listId) {
+        throw new Error('A valid list is required');
       }
 
       const trimmedName = name.trim();
       if (!trimmedName) {
+        return;
+      }
+
+      if (!user) {
+        await addLocalItem(listId, trimmedName);
         return;
       }
 
@@ -142,6 +201,11 @@ export function useListItems(listId: string | undefined) {
         return;
       }
 
+      if (!user) {
+        await toggleLocalItem(listId, id);
+        return;
+      }
+
       const item = items.find((entry) => entry.id === id);
       if (!item) {
         return;
@@ -152,7 +216,7 @@ export function useListItems(listId: string | undefined) {
         updatedAt: serverTimestamp(),
       });
     },
-    [items, listId],
+    [items, listId, user],
   );
 
   const updateItem = useCallback(
@@ -163,6 +227,11 @@ export function useListItems(listId: string | undefined) {
       >,
     ) => {
       if (!listId) {
+        return;
+      }
+
+      if (!user) {
+        await updateLocalItem(listId, id, updates);
         return;
       }
 
@@ -191,7 +260,7 @@ export function useListItems(listId: string | undefined) {
 
       await updateDoc(doc(db, 'lists', listId, 'items', id), payload);
     },
-    [listId],
+    [listId, user],
   );
 
   const deleteItem = useCallback(
@@ -200,9 +269,14 @@ export function useListItems(listId: string | undefined) {
         return;
       }
 
+      if (!user) {
+        await deleteLocalItem(listId, id);
+        return;
+      }
+
       await deleteDoc(doc(db, 'lists', listId, 'items', id));
     },
-    [listId],
+    [listId, user],
   );
 
   return { items, loading, addItem, toggleItem, updateItem, deleteItem };

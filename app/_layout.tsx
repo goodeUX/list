@@ -9,18 +9,18 @@ import {
   NunitoSans_700Bold,
 } from '@expo-google-fonts/nunito-sans';
 import { useFonts } from 'expo-font';
+import { Stack } from 'expo-router';
+import * as SplashScreen from 'expo-splash-screen';
+import { StatusBar } from 'expo-status-bar';
 import {
   DarkTheme,
   DefaultTheme,
-  Stack,
   ThemeProvider as NavigationThemeProvider,
-} from 'expo-router';
-import * as SplashScreen from 'expo-splash-screen';
-import { StatusBar } from 'expo-status-bar';
+} from '@react-navigation/native';
 import { useEffect } from 'react';
 import 'react-native-reanimated';
 
-import { AuthProvider, useAuth } from '@/contexts/AuthContext';
+import { AuthProvider } from '@/contexts/AuthContext';
 import { ThemeProvider, useTheme } from '@/contexts/ThemeContext';
 
 export {
@@ -72,11 +72,6 @@ export default function RootLayout() {
 
 function RootLayoutNav() {
   const { colorScheme } = useTheme();
-  const { user, loading } = useAuth();
-
-  if (loading) {
-    return null;
-  }
 
   return (
     <>
@@ -85,17 +80,16 @@ function RootLayoutNav() {
         value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}
       >
         <Stack screenOptions={{ headerShown: false }}>
-          <Stack.Protected guard={!!user}>
-            <Stack.Screen name="(tabs)" />
-            <Stack.Screen name="list/[id]" options={{ headerShown: false }} />
-            <Stack.Screen
-              name="modal"
-              options={{ headerShown: true, presentation: 'modal' }}
-            />
-          </Stack.Protected>
-          <Stack.Protected guard={!user}>
-            <Stack.Screen name="(auth)" />
-          </Stack.Protected>
+          <Stack.Screen name="(tabs)" />
+          <Stack.Screen name="list/[id]" />
+          <Stack.Screen
+            name="(auth)"
+            options={{ presentation: 'modal', headerShown: false }}
+          />
+          <Stack.Screen
+            name="modal"
+            options={{ headerShown: true, presentation: 'modal' }}
+          />
         </Stack>
       </NavigationThemeProvider>
     </>

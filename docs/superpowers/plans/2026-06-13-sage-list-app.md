@@ -4,7 +4,7 @@
 
 **Goal:** Build Sage — a cross-platform (Android, iOS, Web) collaborative list app with warm organic design, Firebase backend, and real-time sync, testable on Pixel 8 Pro via Expo Go.
 
-**Architecture:** Expo Router file-based navigation with tab layout for Lists/History/Settings. Firestore `onSnapshot` listeners drive real-time UI. Theme tokens in a single `lib/theme.ts` consumed by all components. Firebase Auth gates the app; unauthenticated users see auth stack.
+**Architecture:** Expo Router file-based navigation with tab layout for Lists/History/Settings. **Local-first:** lists and items persist in AsyncStorage by default; Firestore `onSnapshot` listeners drive real-time UI when signed in. Account is optional — required only for sharing and cross-device sync. On sign-up/sign-in, local data migrates to Firestore via `lib/migrateLocalToCloud.ts`. Theme tokens in a single `lib/theme.ts` consumed by all components.
 
 **Tech Stack:** Expo SDK 52+, Expo Router, React Native, Firebase (Auth, Firestore), Reanimated 3, expo-font, @expo-google-fonts/fraunces, @expo-google-fonts/nunito-sans
 
@@ -16,7 +16,7 @@
 
 | Path | Responsibility |
 |---|---|
-| `app/_layout.tsx` | Root layout, font loading, auth gate, theme provider |
+| `app/_layout.tsx` | Root layout, font loading, theme provider (no auth gate) |
 | `app/(auth)/sign-in.tsx` | Sign-in screen |
 | `app/(auth)/sign-up.tsx` | Sign-up screen |
 | `app/(tabs)/_layout.tsx` | Bottom tab navigator |
@@ -26,7 +26,8 @@
 | `app/list/[id].tsx` | List detail with items |
 | `lib/firebase.ts` | Firebase app init (auth, firestore) |
 | `lib/theme.ts` | Color tokens, spacing, radii for light/dark |
-| `lib/types.ts` | TypeScript interfaces for List, Item, User |
+| `lib/localStore.ts` | AsyncStorage CRUD for anonymous/local lists and items |
+| `lib/migrateLocalToCloud.ts` | Upload local data to Firestore on account creation |
 | `contexts/AuthContext.tsx` | Auth state provider |
 | `contexts/ThemeContext.tsx` | Theme preference provider |
 | `hooks/useLists.ts` | Firestore listener for user's lists |
@@ -245,11 +246,13 @@ Warm organic styling: cream background, terracotta CTA button, Fraunces heading 
 
 Display name, email, password fields. On success, create user doc and redirect to tabs.
 
-- [ ] **Step 4: Auth gate in root layout**
+- [ ] **Step 4: Optional auth (modal stack)**
 
-If `user === null` → render auth stack. If `user` → render tabs. Show loading spinner while checking auth state.
+Tabs are always accessible. Auth screens (`(auth)`) present as a modal when user chooses to sign in/up from Settings or Share. No auth gate on app launch.
 
-- [ ] **Step 5: Test auth on Pixel**
+- [ ] **Step 5: Local data migration**
+
+On sign-up or sign-in, `migrateLocalDataToCloud(uid)` uploads local lists/items to Firestore and clears local store.
 
 Sign up with test account on device. Verify user doc created in Firestore console.
 

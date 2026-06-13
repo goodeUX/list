@@ -1,4 +1,4 @@
-export interface SageList {
+export interface AppList {
   id: string;
   name: string;
   emoji: string;
@@ -30,7 +30,7 @@ export interface ItemHistoryEntry {
   lastListId: string;
 }
 
-export interface SageUser {
+export interface AppUser {
   uid: string;
   displayName: string;
   email: string;

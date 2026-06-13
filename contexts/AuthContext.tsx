@@ -18,6 +18,7 @@ import {
 } from 'react';
 
 import { auth, db } from '@/lib/firebase';
+import { migrateLocalDataToCloud } from '@/lib/migrateLocalToCloud';
 
 type AuthContextValue = {
   user: User | null;
@@ -66,7 +67,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const signIn = useCallback(async (email: string, password: string) => {
-    await signInWithEmailAndPassword(auth, email.trim(), password);
+    const credential = await signInWithEmailAndPassword(auth, email.trim(), password);
+    await migrateLocalDataToCloud(credential.user.uid);
   }, []);
 
   const signUp = useCallback(
@@ -86,6 +88,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         email: trimmedEmail,
         themePreference: 'system',
       });
+      await migrateLocalDataToCloud(credential.user.uid);
     },
     [],
   );

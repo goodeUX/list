@@ -3,6 +3,7 @@ import { SymbolView } from 'expo-symbols';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
+  Alert,
   FlatList,
   KeyboardAvoidingView,
   Platform,
@@ -16,13 +17,16 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { doc, onSnapshot } from 'firebase/firestore';
 
 import ListItemRow from '@/components/ListItemRow';
+import { useAuth } from '@/contexts/AuthContext';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useListItems } from '@/hooks/useListItems';
 import { db } from '@/lib/firebase';
+import { getLocalList, subscribeLocalData } from '@/lib/localStore';
 
 export default function ListDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const listId = typeof id === 'string' ? id : undefined;
+  const { user } = useAuth();
   const { colors, radii, spacing } = useTheme();
   const { items, loading, addItem, toggleItem } = useListItems(listId);
   const [listName, setListName] = useState('');
@@ -34,6 +38,34 @@ export default function ListDetailScreen() {
   useEffect(() => {
     if (!listId) {
       return;
+    }
+
+    if (!user) {
+      let active = true;
+
+      const refresh = async () => {
+        const list = await getLocalList(listId);
+        if (!active) {
+          return;
+        }
+
+        if (list) {
+          setListName(list.name);
+          setListEmoji(list.emoji);
+        } else {
+          setListName('');
+        }
+      };
+
+      void refresh();
+      const unsubscribe = subscribeLocalData(() => {
+        void refresh();
+      });
+
+      return () => {
+        active = false;
+        unsubscribe();
+      };
     }
 
     const unsubscribe = onSnapshot(doc(db, 'lists', listId), (snapshot) => {
@@ -48,13 +80,25 @@ export default function ListDetailScreen() {
     });
 
     return unsubscribe;
-  }, [listId]);
+  }, [listId, user]);
 
   const doneCount = useMemo(
     () => items.filter((item) => item.checked).length,
     [items],
   );
   const totalCount = items.length;
+
+  const handleShare = () => {
+    if (!user) {
+      router.push('/(auth)/sign-in');
+      return;
+    }
+
+    Alert.alert(
+      'Sharing coming soon',
+      'List sharing will be available in a future update.',
+    );
+  };
 
   const handleAddItem = async () => {
     const trimmedName = newItemName.trim();
@@ -106,7 +150,7 @@ export default function ListDetailScreen() {
             hitSlop={8}
             onPress={() => router.back()}
             style={({ pressed }) => [
-              styles.backButton,
+              styles.iconButton,
               { opacity: pressed ? 0.7 : 1 },
             ]}
           >
@@ -126,6 +170,27 @@ export default function ListDetailScreen() {
               {listName || 'List'}
             </Text>
           </View>
+
+          <Pressable
+            accessibilityLabel="Share list"
+            accessibilityRole="button"
+            hitSlop={8}
+            onPress={handleShare}
+            style={({ pressed }) => [
+              styles.iconButton,
+              { opacity: pressed ? 0.7 : 1 },
+            ]}
+          >
+            <SymbolView
+              name={{
+                ios: 'square.and.arrow.up',
+                android: 'share',
+                web: 'share',
+              }}
+              size={22}
+              tintColor={colors.accent}
+            />
+          </Pressable>
         </View>
 
         <View style={[styles.addSection, { paddingHorizontal: spacing.lg, paddingTop: spacing.md }]}>
@@ -218,7 +283,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: 12,
   },
-  backButton: {
+  iconButton: {
     alignItems: 'center',
     height: 36,
     justifyContent: 'center',
@@ -229,7 +294,6 @@ const styles = StyleSheet.create({
     flex: 1,
     flexDirection: 'row',
     gap: 10,
-    paddingRight: 36,
   },
   emoji: {
     fontSize: 28,

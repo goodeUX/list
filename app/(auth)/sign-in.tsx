@@ -1,4 +1,5 @@
 import { Link, router } from 'expo-router';
+import { SymbolView } from 'expo-symbols';
 import { useState } from 'react';
 import {
   ActivityIndicator,
@@ -14,6 +15,14 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { getAuthErrorMessage, useAuth } from '@/contexts/AuthContext';
 import { useTheme } from '@/contexts/ThemeContext';
+
+function navigateAfterAuth() {
+  if (router.canGoBack()) {
+    router.back();
+    return;
+  }
+  router.replace('/(tabs)');
+}
 
 export default function SignInScreen() {
   const { colors, radii, spacing } = useTheme();
@@ -34,7 +43,7 @@ export default function SignInScreen() {
     setSubmitting(true);
     try {
       await signIn(email, password);
-      router.replace('/(tabs)');
+      navigateAfterAuth();
     } catch (err) {
       setError(getAuthErrorMessage(err));
     } finally {
@@ -49,12 +58,29 @@ export default function SignInScreen() {
         style={styles.flex}
       >
         <View style={[styles.container, { padding: spacing.lg }]}>
+          <Pressable
+            accessibilityLabel="Close"
+            accessibilityRole="button"
+            hitSlop={8}
+            onPress={() => (router.canGoBack() ? router.back() : router.replace('/(tabs)'))}
+            style={({ pressed }) => [
+              styles.closeButton,
+              { opacity: pressed ? 0.7 : 1 },
+            ]}
+          >
+            <SymbolView
+              name={{ ios: 'xmark', android: 'close', web: 'close' }}
+              size={20}
+              tintColor={colors.textSecondary}
+            />
+          </Pressable>
+
           <View style={styles.header}>
             <Text style={[styles.title, { color: colors.text }]}>
-              Welcome to Sage
+              Welcome to List App
             </Text>
             <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
-              Sign in to your lists
+              Sign in to sync your lists and share with others
             </Text>
           </View>
 
@@ -142,7 +168,7 @@ export default function SignInScreen() {
 
           <View style={[styles.footer, { marginTop: spacing.xl }]}>
             <Text style={[styles.footerText, { color: colors.textSecondary }]}>
-              New to Sage?{' '}
+              New to List App?{' '}
             </Text>
             <Link href="/(auth)/sign-up" asChild>
               <Pressable disabled={submitting}>
@@ -168,6 +194,12 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     justifyContent: 'center',
+  },
+  closeButton: {
+    alignSelf: 'flex-end',
+    height: 36,
+    justifyContent: 'center',
+    width: 36,
   },
   header: {
     marginBottom: 32,

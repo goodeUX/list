@@ -11,7 +11,12 @@ import { useCallback, useEffect, useState } from 'react';
 
 import { useAuth } from '@/contexts/AuthContext';
 import { db } from '@/lib/firebase';
-import type { SageList } from '@/lib/types';
+import {
+  createLocalList,
+  getLocalLists,
+  subscribeLocalData,
+} from '@/lib/localStore';
+import type { AppList } from '@/lib/types';
 
 function toDate(value: unknown): Date {
   if (value instanceof Timestamp) {
@@ -20,7 +25,7 @@ function toDate(value: unknown): Date {
   return new Date();
 }
 
-function docToSageList(id: string, data: Record<string, unknown>): SageList {
+function docToAppList(id: string, data: Record<string, unknown>): AppList {
   return {
     id,
     name: (data.name as string) ?? '',
@@ -32,16 +37,37 @@ function docToSageList(id: string, data: Record<string, unknown>): SageList {
   };
 }
 
+async function loadLocalLists(): Promise<AppList[]> {
+  return getLocalLists();
+}
+
 export function useLists() {
   const { user } = useAuth();
-  const [lists, setLists] = useState<SageList[]>([]);
+  const [lists, setLists] = useState<AppList[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (!user) {
-      setLists([]);
-      setLoading(false);
-      return;
+      let active = true;
+      setLoading(true);
+
+      const refresh = async () => {
+        const nextLists = await loadLocalLists();
+        if (active) {
+          setLists(nextLists);
+          setLoading(false);
+        }
+      };
+
+      void refresh();
+      const unsubscribe = subscribeLocalData(() => {
+        void refresh();
+      });
+
+      return () => {
+        active = false;
+        unsubscribe();
+      };
     }
 
     setLoading(true);
@@ -55,7 +81,7 @@ export function useLists() {
       listsQuery,
       (snapshot) => {
         const nextLists = snapshot.docs.map((docSnap) =>
-          docToSageList(docSnap.id, docSnap.data()),
+          docToAppList(docSnap.id, docSnap.data()),
         );
         nextLists.sort(
           (a, b) => b.updatedAt.getTime() - a.updatedAt.getTime(),
@@ -73,13 +99,14 @@ export function useLists() {
 
   const createList = useCallback(
     async (name: string, emoji: string) => {
-      if (!user) {
-        throw new Error('Must be signed in to create a list');
-      }
-
       const trimmedName = name.trim();
       if (!trimmedName) {
         throw new Error('List name is required');
+      }
+
+      if (!user) {
+        await createLocalList(trimmedName, emoji);
+        return;
       }
 
       await addDoc(collection(db, 'lists'), {

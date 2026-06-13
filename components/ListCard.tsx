@@ -3,10 +3,10 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { useTheme } from '@/contexts/ThemeContext';
 import { useListItemCounts } from '@/hooks/useListItems';
-import type { SageList } from '@/lib/types';
+import type { AppList } from '@/lib/types';
 
 type ListCardProps = {
-  list: SageList;
+  list: AppList;
 };
 
 export default function ListCard({ list }: ListCardProps) {

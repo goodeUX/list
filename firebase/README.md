@@ -1,4 +1,4 @@
-# Firebase setup (Sage list)
+# Firebase setup (List App)
 
 ## 1. Create a Firebase project
 
@@ -8,7 +8,7 @@ In [Firebase Console](https://console.firebase.google.com/):
 2. Enable **Authentication** → Email/Password sign-in.
 3. Create a **Firestore** database (production mode is fine; deploy rules below before app use).
 
-**You do not need Firebase Storage.** Sage does not upload images — only Auth and Firestore are required (both have generous free tiers).
+**You do not need Firebase Storage.** List App does not upload images — only Auth and Firestore are required (both have generous free tiers).
 
 ## 2. Register the app and env vars
 

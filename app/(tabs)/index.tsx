@@ -85,7 +85,7 @@ export default function ListsHomeScreen() {
   return (
     <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.bg }]}>
       <View style={[styles.header, { paddingHorizontal: spacing.lg, paddingTop: spacing.md }]}>
-        <Text style={[styles.title, { color: colors.text }]}>Sage</Text>
+        <Text style={[styles.title, { color: colors.text }]}>Lists</Text>
         {!loading ? (
           <Text style={[styles.summary, { color: colors.textSecondary }]}>
             {summary}

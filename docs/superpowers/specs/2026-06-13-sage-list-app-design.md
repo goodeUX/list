@@ -118,16 +118,16 @@ Bottom tab bar with three tabs:
 ### Screen Map
 
 ```
-Auth (sign in / sign up)
-  └── Lists (tab)
-        ├── List Detail
-        │     ├── Item Detail (edit)
-        │     ├── Add Item sheet (with history suggestions)
-        │     └── Share sheet
-        ├── Create List sheet
-        └── Empty state
+Lists (tab) — default entry, no login required
+      ├── List Detail
+      │     ├── Item Detail (edit)
+      │     ├── Add Item sheet (with history suggestions)
+      │     └── Share sheet (requires account)
+      ├── Create List sheet
+      └── Empty state
   └── History (tab)
-  └── Settings (tab)
+  └── Settings (tab) — optional sign in / sign up
+Auth (modal) — sign in / sign up when sharing or from Settings
 ```
 
 ### Core Screens
@@ -188,14 +188,17 @@ Auth (sign in / sign up)
 #### Settings Tab
 
 - Theme: System / Light / Dark (segmented control)
-- Account info (email, display name)
-- Sign out
+- Account section: optional sign in / create account
+- Explain that sharing and sync require an account; lists work offline on device without one
+- Sign out (when signed in)
 
-#### Auth
+#### Auth (optional)
 
 - Email/password sign up and sign in (Firebase Auth)
 - Google Sign-In (optional v1 stretch; email/password required for v1)
-- Minimal onboarding: sign in → empty lists state with "Create your first list"
+- **Not required to use the app** — only needed for sharing lists and cross-device sync
+- On sign-up or sign-in, local lists/items migrate to Firestore automatically
+- Presented as modal from Settings or Share flow
 
 ---
 
