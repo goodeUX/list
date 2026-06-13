@@ -18,8 +18,11 @@ import {
   ThemeProvider as NavigationThemeProvider,
 } from '@react-navigation/native';
 import { useEffect } from 'react';
+import { StyleSheet } from 'react-native';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import 'react-native-reanimated';
 
+import WebShell from '@/components/WebShell';
 import { AuthProvider } from '@/contexts/AuthContext';
 import { ThemeProvider, useTheme } from '@/contexts/ThemeContext';
 
@@ -29,8 +32,7 @@ export {
 } from 'expo-router';
 
 export const unstable_settings = {
-  // Ensure that reloading on `/modal` keeps a back button present.
-  initialRouteName: '(tabs)',
+  initialRouteName: 'index',
 };
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
@@ -62,11 +64,11 @@ export default function RootLayout() {
   }
 
   return (
-    <ThemeProvider>
-      <AuthProvider>
+    <AuthProvider>
+      <ThemeProvider>
         <RootLayoutNav />
-      </AuthProvider>
-    </ThemeProvider>
+      </ThemeProvider>
+    </AuthProvider>
   );
 }
 
@@ -74,24 +76,37 @@ function RootLayoutNav() {
   const { colorScheme } = useTheme();
 
   return (
-    <>
-      <StatusBar style={colorScheme === 'dark' ? 'light' : 'dark'} />
-      <NavigationThemeProvider
-        value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}
-      >
-        <Stack screenOptions={{ headerShown: false }}>
-          <Stack.Screen name="(tabs)" />
-          <Stack.Screen name="list/[id]" />
-          <Stack.Screen
-            name="(auth)"
-            options={{ presentation: 'modal', headerShown: false }}
-          />
-          <Stack.Screen
-            name="modal"
-            options={{ headerShown: true, presentation: 'modal' }}
-          />
-        </Stack>
-      </NavigationThemeProvider>
-    </>
+    <GestureHandlerRootView style={styles.root}>
+      <WebShell>
+        <StatusBar style={colorScheme === 'dark' ? 'light' : 'dark'} />
+        <NavigationThemeProvider
+          value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}
+        >
+          <Stack screenOptions={{ headerShown: false }}>
+            <Stack.Screen name="index" />
+            <Stack.Screen
+              name="settings"
+              options={{ presentation: 'modal', headerShown: false }}
+            />
+            <Stack.Screen name="list/[id]" />
+            <Stack.Screen name="join/[listId]" />
+            <Stack.Screen
+              name="(auth)"
+              options={{ presentation: 'modal', headerShown: false }}
+            />
+            <Stack.Screen
+              name="modal"
+              options={{ headerShown: true, presentation: 'modal' }}
+            />
+          </Stack>
+        </NavigationThemeProvider>
+      </WebShell>
+    </GestureHandlerRootView>
   );
 }
+
+const styles = StyleSheet.create({
+  root: {
+    flex: 1,
+  },
+});

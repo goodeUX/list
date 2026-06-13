@@ -1,4 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { doc, getDoc, updateDoc } from 'firebase/firestore';
 import {
   createContext,
   useCallback,
@@ -10,6 +11,8 @@ import {
 } from 'react';
 
 import { useColorScheme } from '@/components/useColorScheme';
+import { useAuth } from '@/contexts/AuthContext';
+import { db } from '@/lib/firebase';
 import {
   colors,
   radii,
@@ -33,6 +36,7 @@ type ThemeContextValue = {
 const ThemeContext = createContext<ThemeContextValue | null>(null);
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
+  const { user } = useAuth();
   const systemColorScheme = useColorScheme();
   const [preference, setPreferenceState] = useState<ThemePreference>('system');
 
@@ -44,13 +48,33 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     });
   }, []);
 
-  const setPreference = useCallback((next: ThemePreference) => {
-    setPreferenceState(next);
-    void AsyncStorage.setItem(THEME_PREFERENCE_KEY, next);
-  }, []);
+  useEffect(() => {
+    if (!user) {
+      return;
+    }
+
+    void getDoc(doc(db, 'users', user.uid)).then((snapshot) => {
+      const stored = snapshot.data()?.themePreference;
+      if (stored === 'light' || stored === 'dark' || stored === 'system') {
+        setPreferenceState(stored);
+        void AsyncStorage.setItem(THEME_PREFERENCE_KEY, stored);
+      }
+    });
+  }, [user]);
+
+  const setPreference = useCallback(
+    (next: ThemePreference) => {
+      setPreferenceState(next);
+      void AsyncStorage.setItem(THEME_PREFERENCE_KEY, next);
+      if (user) {
+        void updateDoc(doc(db, 'users', user.uid), { themePreference: next });
+      }
+    },
+    [user],
+  );
 
   const colorScheme: ColorScheme =
-    preference === 'system' ? systemColorScheme : preference;
+    preference === 'system' ? (systemColorScheme ?? 'light') : preference;
 
   const value = useMemo(
     () => ({

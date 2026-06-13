@@ -1,4 +1,5 @@
 import { router } from 'expo-router';
+import { MaterialIcons } from '@expo/vector-icons';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -20,13 +21,36 @@ export default function SettingsScreen() {
     await signOut();
   };
 
+  const handleClose = () => {
+    if (router.canGoBack()) {
+      router.back();
+      return;
+    }
+    router.replace('/');
+  };
+
   return (
     <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.bg }]}>
+      <View style={[styles.header, { paddingHorizontal: spacing.lg, paddingTop: spacing.sm }]}>
+        <Pressable
+          accessibilityLabel="Close settings"
+          accessibilityRole="button"
+          hitSlop={8}
+          onPress={handleClose}
+          style={({ pressed }) => [
+            styles.closeButton,
+            { opacity: pressed ? 0.7 : 1 },
+          ]}
+        >
+          <MaterialIcons color={colors.textSecondary} name="close" size={22} />
+        </Pressable>
+        <Text style={[styles.title, { color: colors.text }]}>Settings</Text>
+        <View style={styles.closeButton} />
+      </View>
+
       <ScrollView
         contentContainerStyle={[styles.container, { padding: spacing.lg, gap: spacing.lg }]}
       >
-        <Text style={[styles.title, { color: colors.text }]}>Settings</Text>
-
         <View
           style={[
             styles.section,
@@ -168,13 +192,24 @@ const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
   },
-  container: {
-    flexGrow: 1,
+  header: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  closeButton: {
+    alignItems: 'center',
+    height: 40,
+    justifyContent: 'center',
+    width: 40,
   },
   title: {
     fontFamily: 'Fraunces_600SemiBold',
-    fontSize: 32,
-    lineHeight: 40,
+    fontSize: 20,
+    lineHeight: 26,
+  },
+  container: {
+    flexGrow: 1,
   },
   section: {
     borderWidth: 1,

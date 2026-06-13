@@ -1,18 +1,36 @@
 import {
   addDoc,
   collection,
-  serverTimestamp,
-  writeBatch,
   doc,
+  serverTimestamp,
+  setDoc,
+  writeBatch,
 } from 'firebase/firestore';
 
 import { db } from '@/lib/firebase';
+import { clearLocalHistory, getLocalHistorySnapshot } from '@/lib/localHistory';
 import { clearLocalDatabase, getLocalDatabaseSnapshot } from '@/lib/localStore';
+
+function historyDocId(name: string): string {
+  return name.trim().toLowerCase().replace(/\s+/g, '_').slice(0, 120);
+}
 
 export async function migrateLocalDataToCloud(userId: string): Promise<number> {
   const snapshot = await getLocalDatabaseSnapshot();
-  if (snapshot.lists.length === 0) {
+  const history = await getLocalHistorySnapshot();
+
+  if (snapshot.lists.length === 0 && history.length === 0) {
     return 0;
+  }
+
+  for (const entry of history) {
+    await setDoc(doc(db, 'users', userId, 'itemHistory', historyDocId(entry.name)), {
+      name: entry.name,
+      quantity: entry.quantity,
+      lastUsedAt: serverTimestamp(),
+      useCount: entry.useCount,
+      lastListId: entry.lastListId,
+    });
   }
 
   for (const list of snapshot.lists) {
@@ -49,5 +67,6 @@ export async function migrateLocalDataToCloud(userId: string): Promise<number> {
   }
 
   await clearLocalDatabase();
+  await clearLocalHistory();
   return snapshot.lists.length;
 }

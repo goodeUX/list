@@ -1,6 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-import type { ListItem, AppList } from '@/lib/types';
+import type { AppList, ListItem, NewItemFields } from '@/lib/types';
 
 const STORAGE_KEY = 'list_app_local_data_v1';
 const LEGACY_STORAGE_KEY = 'sage_local_data_v1';
@@ -21,6 +21,59 @@ function createId(): string {
 
 function emptyDatabase(): LocalDatabase {
   return { lists: [], itemsByListId: {} };
+}
+
+function coerceDate(value: unknown): Date {
+  if (value instanceof Date) {
+    return value;
+  }
+
+  if (
+    value &&
+    typeof value === 'object' &&
+    '__type' in value &&
+    (value as { __type: string }).__type === 'Date' &&
+    'value' in value
+  ) {
+    return new Date((value as { value: string }).value);
+  }
+
+  if (typeof value === 'string' || typeof value === 'number') {
+    const parsed = new Date(value);
+    if (!Number.isNaN(parsed.getTime())) {
+      return parsed;
+    }
+  }
+
+  return new Date();
+}
+
+function normalizeList(list: AppList): AppList {
+  return {
+    ...list,
+    createdAt: coerceDate(list.createdAt),
+    updatedAt: coerceDate(list.updatedAt),
+  };
+}
+
+function normalizeItem(item: ListItem): ListItem {
+  return {
+    ...item,
+    createdAt: coerceDate(item.createdAt),
+    updatedAt: coerceDate(item.updatedAt),
+  };
+}
+
+function normalizeDatabase(data: LocalDatabase): LocalDatabase {
+  return {
+    lists: data.lists.map(normalizeList),
+    itemsByListId: Object.fromEntries(
+      Object.entries(data.itemsByListId).map(([listId, items]) => [
+        listId,
+        items.map(normalizeItem),
+      ]),
+    ),
+  };
 }
 
 function serializeDatabase(data: LocalDatabase): string {
@@ -56,13 +109,14 @@ async function readDatabase(): Promise<LocalDatabase> {
     }
   }
 
-  cache = raw ? deserializeDatabase(raw) : emptyDatabase();
+  cache = raw ? normalizeDatabase(deserializeDatabase(raw)) : emptyDatabase();
   return cache;
 }
 
 async function writeDatabase(data: LocalDatabase): Promise<void> {
-  cache = data;
-  await AsyncStorage.setItem(STORAGE_KEY, serializeDatabase(data));
+  const normalized = normalizeDatabase(data);
+  cache = normalized;
+  await AsyncStorage.setItem(STORAGE_KEY, serializeDatabase(normalized));
   listeners.forEach((listener) => listener());
 }
 
@@ -74,7 +128,7 @@ export function subscribeLocalData(listener: Listener): () => void {
 export async function getLocalLists(): Promise<AppList[]> {
   const data = await readDatabase();
   return [...data.lists].sort(
-    (a, b) => b.updatedAt.getTime() - a.updatedAt.getTime(),
+    (a, b) => coerceDate(b.updatedAt).getTime() - coerceDate(a.updatedAt).getTime(),
   );
 }
 
@@ -119,6 +173,7 @@ export async function getLocalItems(listId: string): Promise<ListItem[]> {
 export async function addLocalItem(
   listId: string,
   name: string,
+  fields: NewItemFields = {},
 ): Promise<void> {
   const trimmedName = name.trim();
   if (!trimmedName) {
@@ -138,9 +193,9 @@ export async function addLocalItem(
   const item: ListItem = {
     id: createId(),
     name: trimmedName,
-    quantity: null,
-    description: null,
-    link: null,
+    quantity: fields.quantity ?? null,
+    description: fields.description ?? null,
+    link: fields.link ?? null,
     checked: false,
     order: maxOrder + 1,
     createdBy: 'local',

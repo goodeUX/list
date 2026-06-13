@@ -1,9 +1,16 @@
 import { router } from 'expo-router';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
+import Animated, {
+  useAnimatedStyle,
+  useSharedValue,
+  withSpring,
+} from 'react-native-reanimated';
 
 import { useTheme } from '@/contexts/ThemeContext';
 import { useListItemCounts } from '@/hooks/useListItems';
 import type { AppList } from '@/lib/types';
+
+const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
 type ListCardProps = {
   list: AppList;
@@ -11,11 +18,16 @@ type ListCardProps = {
 
 export default function ListCard({ list }: ListCardProps) {
   const { colors, radii, spacing } = useTheme();
+  const scale = useSharedValue(1);
 
   const { doneCount, totalCount } = useListItemCounts(list.id);
   const progress = totalCount > 0 ? doneCount / totalCount : 0;
   const collaboratorCount = list.memberIds.length;
   const isShared = collaboratorCount > 1;
+
+  const animatedStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: scale.value }],
+  }));
 
   const handlePress = () => {
     router.push({
@@ -24,16 +36,26 @@ export default function ListCard({ list }: ListCardProps) {
     });
   };
 
+  const handlePressIn = () => {
+    scale.value = withSpring(0.98, { damping: 15 });
+  };
+
+  const handlePressOut = () => {
+    scale.value = withSpring(1, { damping: 15 });
+  };
+
   return (
-    <Pressable
+    <AnimatedPressable
       onPress={handlePress}
-      style={({ pressed }) => [
+      onPressIn={handlePressIn}
+      onPressOut={handlePressOut}
+      style={[
         styles.card,
+        animatedStyle,
         {
           backgroundColor: colors.surface,
           borderColor: colors.border,
           borderRadius: radii.card,
-          opacity: pressed ? 0.92 : 1,
           padding: spacing.md,
         },
       ]}
@@ -85,7 +107,7 @@ export default function ListCard({ list }: ListCardProps) {
           {collaboratorCount} collaborators
         </Text>
       ) : null}
-    </Pressable>
+    </AnimatedPressable>
   );
 }
 

@@ -1,3 +1,9 @@
+export type NewItemFields = {
+  quantity?: string | null;
+  description?: string | null;
+  link?: string | null;
+};
+
 export interface AppList {
   id: string;
   name: string;

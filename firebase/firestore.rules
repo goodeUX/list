@@ -24,7 +24,8 @@ service cloud.firestore {
     }
 
     match /lists/{listId} {
-      allow read: if isSignedIn()
+      allow get: if isSignedIn();
+      allow list: if isSignedIn()
         && request.auth.uid in resource.data.memberIds;
 
       allow create: if isSignedIn()
@@ -32,14 +33,27 @@ service cloud.firestore {
         && request.resource.data.ownerId == request.auth.uid;
 
       allow update: if isSignedIn()
-        && request.auth.uid in resource.data.memberIds
-        && request.auth.uid in request.resource.data.memberIds;
+        && (
+          (
+            request.auth.uid in resource.data.memberIds
+            && request.auth.uid in request.resource.data.memberIds
+          )
+          || (
+            request.auth.uid in request.resource.data.memberIds
+            && request.resource.data.memberIds.size() == resource.data.memberIds.size() + 1
+          )
+        );
 
       allow delete: if isSignedIn()
         && request.auth.uid == resource.data.ownerId;
 
       match /items/{itemId} {
         allow read, write: if isListMember(listId);
+      }
+
+      match /presence/{uid} {
+        allow read: if isListMember(listId);
+        allow write: if isListMember(listId) && request.auth.uid == uid;
       }
     }
   }

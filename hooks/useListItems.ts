@@ -3,6 +3,7 @@ import {
   collection,
   deleteDoc,
   doc,
+  getDocs,
   onSnapshot,
   orderBy,
   query,
@@ -11,6 +12,7 @@ import {
   updateDoc,
 } from 'firebase/firestore';
 import { useCallback, useEffect, useState } from 'react';
+import type { User } from 'firebase/auth';
 
 import { useAuth } from '@/contexts/AuthContext';
 import { db } from '@/lib/firebase';
@@ -22,7 +24,7 @@ import {
   toggleLocalItem,
   updateLocalItem,
 } from '@/lib/localStore';
-import type { ListItem } from '@/lib/types';
+import type { ListItem, NewItemFields } from '@/lib/types';
 
 function toDate(value: unknown): Date {
   if (value instanceof Timestamp) {
@@ -44,6 +46,51 @@ function docToListItem(id: string, data: Record<string, unknown>): ListItem {
     createdAt: toDate(data.createdAt),
     updatedAt: toDate(data.updatedAt),
   };
+}
+
+export async function addItemToList(
+  listId: string,
+  user: User | null,
+  name: string,
+  fields: NewItemFields = {},
+  existingItems: ListItem[] = [],
+): Promise<void> {
+  const trimmedName = name.trim();
+  if (!trimmedName) {
+    return;
+  }
+
+  if (!user) {
+    await addLocalItem(listId, trimmedName, fields);
+    return;
+  }
+
+  let maxOrder = existingItems.reduce((max, item) => Math.max(max, item.order), -1);
+  if (existingItems.length === 0) {
+    const snapshot = await getDocs(
+      query(collection(db, 'lists', listId, 'items'), orderBy('order')),
+    );
+    maxOrder = snapshot.docs.reduce(
+      (max, docSnap) => Math.max(max, (docSnap.data().order as number) ?? 0),
+      -1,
+    );
+  }
+
+  await addDoc(collection(db, 'lists', listId, 'items'), {
+    name: trimmedName,
+    quantity: fields.quantity ?? null,
+    description: fields.description ?? null,
+    link: fields.link ?? null,
+    checked: false,
+    order: maxOrder + 1,
+    createdBy: user.uid,
+    createdAt: serverTimestamp(),
+    updatedAt: serverTimestamp(),
+  });
+
+  await updateDoc(doc(db, 'lists', listId), {
+    updatedAt: serverTimestamp(),
+  });
 }
 
 export function useListItemCounts(listId: string) {
@@ -159,7 +206,7 @@ export function useListItems(listId: string | undefined) {
   }, [listId, user]);
 
   const addItem = useCallback(
-    async (name: string) => {
+    async (name: string, fields: NewItemFields = {}) => {
       if (!listId) {
         throw new Error('A valid list is required');
       }
@@ -170,27 +217,11 @@ export function useListItems(listId: string | undefined) {
       }
 
       if (!user) {
-        await addLocalItem(listId, trimmedName);
+        await addLocalItem(listId, trimmedName, fields);
         return;
       }
 
-      const maxOrder = items.reduce((max, item) => Math.max(max, item.order), -1);
-
-      await addDoc(collection(db, 'lists', listId, 'items'), {
-        name: trimmedName,
-        quantity: null,
-        description: null,
-        link: null,
-        checked: false,
-        order: maxOrder + 1,
-        createdBy: user.uid,
-        createdAt: serverTimestamp(),
-        updatedAt: serverTimestamp(),
-      });
-
-      await updateDoc(doc(db, 'lists', listId), {
-        updatedAt: serverTimestamp(),
-      });
+      await addItemToList(listId, user, trimmedName, fields, items);
     },
     [items, listId, user],
   );

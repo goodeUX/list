@@ -22,7 +22,7 @@ function navigateAfterAuth() {
     router.back();
     return;
   }
-  router.replace('/(tabs)');
+  router.replace('/');
 }
 
 export default function SignUpScreen() {
@@ -71,7 +71,7 @@ export default function SignUpScreen() {
             accessibilityLabel="Close"
             accessibilityRole="button"
             hitSlop={8}
-            onPress={() => (router.canGoBack() ? router.back() : router.replace('/(tabs)'))}
+            onPress={() => (router.canGoBack() ? router.back() : router.replace('/'))}
             style={({ pressed }) => [
               styles.closeButton,
               { opacity: pressed ? 0.7 : 1 },
