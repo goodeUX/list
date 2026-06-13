@@ -1,16 +1,23 @@
 import { router } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState, useEffect } from 'react';
 import {
   ActivityIndicator,
   FlatList,
+  Platform,
   Pressable,
   StyleSheet,
   Text,
   TextInput,
   View,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import Animated, {
+  Easing,
+  useAnimatedStyle,
+  useSharedValue,
+  withTiming,
+} from 'react-native-reanimated';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import BottomSheet from '@/components/BottomSheet';
 import EmptyState from '@/components/EmptyState';
@@ -20,6 +27,13 @@ import { useTheme } from '@/contexts/ThemeContext';
 import { useLists } from '@/hooks/useLists';
 
 const DEFAULT_EMOJI = '📋';
+const CREATE_BUTTON_HEIGHT = 48;
+const LISTS_FADE_MS = 300;
+
+const frostedBackgrounds = {
+  light: 'rgba(250, 247, 242, 0.82)',
+  dark: 'rgba(26, 22, 18, 0.82)',
+} as const;
 
 function formatSummary(listCount: number, sharedCount: number): string {
   const listLabel = listCount === 1 ? '1 list' : `${listCount} lists`;
@@ -31,13 +45,16 @@ function formatSummary(listCount: number, sharedCount: number): string {
 }
 
 export default function ListsHomeScreen() {
-  const { colors, radii, spacing } = useTheme();
+  const { colors, colorScheme, radii, spacing } = useTheme();
+  const insets = useSafeAreaInsets();
   const { lists, loading, createList } = useLists();
+  const listsOpacity = useSharedValue(0);
   const [modalVisible, setModalVisible] = useState(false);
   const [listName, setListName] = useState('');
   const [listEmoji, setListEmoji] = useState(DEFAULT_EMOJI);
   const [creating, setCreating] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const listNameInputRef = useRef<TextInput>(null);
 
   const sharedCount = useMemo(
     () => lists.filter((list) => list.memberIds.length > 1).length,
@@ -45,6 +62,26 @@ export default function ListsHomeScreen() {
   );
 
   const summary = formatSummary(lists.length, sharedCount);
+  const showCreateBar = !loading && lists.length > 0;
+  const bottomBarInset = Math.max(insets.bottom, spacing.md);
+  const listBottomPadding =
+    CREATE_BUTTON_HEIGHT + spacing.md * 2 + bottomBarInset + spacing.lg;
+
+  useEffect(() => {
+    if (loading) {
+      listsOpacity.value = 0;
+      return;
+    }
+
+    listsOpacity.value = withTiming(1, {
+      duration: LISTS_FADE_MS,
+      easing: Easing.out(Easing.cubic),
+    });
+  }, [listsOpacity, loading]);
+
+  const listsFadeStyle = useAnimatedStyle(() => ({
+    opacity: listsOpacity.value,
+  }));
 
   const openCreateModal = () => {
     setListName('');
@@ -59,6 +96,21 @@ export default function ListsHomeScreen() {
     }
     setModalVisible(false);
     setError(null);
+  };
+
+  const focusListNameInput = () => {
+    const focus = () => listNameInputRef.current?.focus();
+
+    if (Platform.OS === 'web') {
+      requestAnimationFrame(() => {
+        requestAnimationFrame(focus);
+      });
+      return;
+    }
+
+    requestAnimationFrame(() => {
+      requestAnimationFrame(focus);
+    });
   };
 
   const handleCreateList = async () => {
@@ -83,11 +135,12 @@ export default function ListsHomeScreen() {
   };
 
   return (
-    <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.bg }]}>
+    <View style={[styles.flex, { backgroundColor: colors.bg }]}>
+      <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.bg }]}>
       <View style={[styles.header, { paddingHorizontal: spacing.lg, paddingTop: spacing.md }]}>
         <View style={styles.headerTop}>
           <View style={styles.titleBlock}>
-            <Text style={[styles.title, { color: colors.text }]}>Lists</Text>
+            <Text style={[styles.title, { color: colors.text }]}>My Lists</Text>
             {!loading ? (
               <Text style={[styles.summary, { color: colors.textSecondary }]}>
                 {summary}
@@ -104,8 +157,6 @@ export default function ListsHomeScreen() {
               styles.settingsButton,
               {
                 backgroundColor: colors.surface,
-                borderColor: colors.border,
-                borderRadius: radii.item,
                 opacity: pressed ? 0.7 : 1,
               },
             ]}
@@ -119,46 +170,80 @@ export default function ListsHomeScreen() {
         <View style={styles.loading}>
           <ActivityIndicator color={colors.accent} size="large" />
         </View>
-      ) : lists.length === 0 ? (
-        <EmptyState onCreateList={openCreateModal} />
       ) : (
-        <FlatList
-          contentContainerStyle={[
-            styles.listContent,
-            { gap: spacing.md, padding: spacing.lg, paddingBottom: spacing.xl },
-          ]}
-          data={lists}
-          keyExtractor={(item) => item.id}
-          ListFooterComponent={
+        <Animated.View style={[styles.content, listsFadeStyle]}>
+          {lists.length === 0 ? (
+            <EmptyState onCreateList={openCreateModal} />
+          ) : (
+            <FlatList
+              contentContainerStyle={[
+                styles.listContent,
+                {
+                  gap: spacing.md,
+                  padding: spacing.lg,
+                  paddingBottom: showCreateBar ? listBottomPadding : spacing.xl,
+                },
+              ]}
+              data={lists}
+              keyExtractor={(item) => item.id}
+              renderItem={({ item }) => <ListCard list={item} />}
+              showsVerticalScrollIndicator={false}
+            />
+          )}
+        </Animated.View>
+      )}
+
+      {showCreateBar ? (
+        <View
+          pointerEvents="box-none"
+          style={[styles.bottomBar, { paddingBottom: bottomBarInset }]}
+        >
+          <View
+            style={[
+              styles.bottomBarSurface,
+              {
+                backgroundColor: frostedBackgrounds[colorScheme],
+                borderTopColor: colors.border,
+                paddingHorizontal: spacing.lg,
+                paddingTop: spacing.lg,
+                paddingBottom: spacing.md,
+              },
+              Platform.OS === 'web'
+                ? ({
+                    backdropFilter: 'blur(20px)',
+                    WebkitBackdropFilter: 'blur(20px)',
+                  } as object)
+                : null,
+            ]}
+          >
             <Pressable
-              accessibilityLabel="Create new list"
+              accessibilityLabel="Create a new list"
               accessibilityRole="button"
               onPress={openCreateModal}
               style={({ pressed }) => [
                 styles.createListButton,
                 {
-                  borderColor: colors.border,
+                  backgroundColor: colors.surface,
                   borderRadius: radii.item,
-                  opacity: pressed ? 0.85 : 1,
+                  opacity: pressed ? 0.7 : 1,
                 },
               ]}
             >
               <View style={styles.createListButtonContent}>
-                <MaterialIcons color={colors.text} name="add" size={20} />
+                <MaterialIcons color={colors.accent} name="add" size={24} />
                 <Text style={[styles.createListButtonText, { color: colors.text }]}>
-                  Create new list
+                  Create a new list
                 </Text>
               </View>
             </Pressable>
-          }
-          renderItem={({ item }) => <ListCard list={item} />}
-          showsVerticalScrollIndicator={false}
-        />
-      )}
+          </View>
+        </View>
+      ) : null}
 
       <BottomSheet
         blocking={creating}
         onClose={closeCreateModal}
+        onOpened={focusListNameInput}
         visible={modalVisible}
       >
         <View
@@ -188,12 +273,12 @@ export default function ListsHomeScreen() {
                 value={listEmoji}
               />
               <TextInput
-                autoFocus
                 editable={!creating}
                 onChangeText={setListName}
                 onSubmitEditing={handleCreateList}
                 placeholder="Groceries, packing, gifts..."
                 placeholderTextColor={colors.textSecondary}
+                ref={listNameInputRef}
                 returnKeyType="done"
                 style={[
                   styles.input,
@@ -256,10 +341,14 @@ export default function ListsHomeScreen() {
         </View>
       </BottomSheet>
     </SafeAreaView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
+  flex: {
+    flex: 1,
+  },
   safeArea: {
     flex: 1,
   },
@@ -279,7 +368,7 @@ const styles = StyleSheet.create({
   },
   settingsButton: {
     alignItems: 'center',
-    borderWidth: 1,
+    borderRadius: 22,
     flexShrink: 0,
     height: 44,
     justifyContent: 'center',
@@ -300,21 +389,33 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
   },
+  content: {
+    flex: 1,
+  },
   listContent: {
     flexGrow: 1,
   },
+  bottomBar: {
+    bottom: 0,
+    left: 0,
+    position: 'absolute',
+    right: 0,
+  },
+  bottomBarSurface: {
+    borderTopWidth: StyleSheet.hairlineWidth,
+    width: '100%',
+  },
   createListButton: {
     alignItems: 'center',
-    borderWidth: 1,
     justifyContent: 'center',
-    minHeight: 48,
+    minHeight: 54,
     paddingHorizontal: 16,
     width: '100%',
   },
   createListButtonContent: {
     alignItems: 'center',
     flexDirection: 'row',
-    gap: 6,
+    gap: 8,
   },
   createListButtonText: {
     fontFamily: 'NunitoSans_600SemiBold',

@@ -1,6 +1,7 @@
 import { SymbolView } from 'expo-symbols';
 import { useEffect } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { MaterialIcons } from '@expo/vector-icons';
+import { Platform, Pressable, StyleSheet, View, type TextStyle } from 'react-native';
 import Animated, {
   useAnimatedStyle,
   useSharedValue,
@@ -9,34 +10,107 @@ import Animated, {
 } from 'react-native-reanimated';
 
 import { useTheme } from '@/contexts/ThemeContext';
+import { playToggleHaptic } from '@/lib/haptics';
 import type { ListItem } from '@/lib/types';
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
+
+const COMPLETED_OPACITY = 0.6;
+const STRIKETHROUGH_HEIGHT = 2;
+
+function getCompletedDecoration(checked: boolean) {
+  if (!checked) {
+    return null;
+  }
+
+  if (Platform.OS === 'web') {
+    return {
+      textDecorationLine: 'line-through' as const,
+      textDecorationThickness: STRIKETHROUGH_HEIGHT,
+    };
+  }
+
+  return null;
+}
+
+type CompletedTextProps = {
+  animatedStyle: object;
+  checked: boolean;
+  children: string;
+  color: string;
+  numberOfLines?: number;
+  style: TextStyle;
+};
+
+function CompletedText({
+  animatedStyle,
+  checked,
+  children,
+  color,
+  numberOfLines,
+  style,
+}: CompletedTextProps) {
+  const completedDecoration = getCompletedDecoration(checked);
+
+  return (
+    <View style={styles.completedTextWrap}>
+      <Animated.Text
+        numberOfLines={numberOfLines}
+        style={[style, { color }, completedDecoration, animatedStyle]}
+      >
+        {children}
+      </Animated.Text>
+      {checked && Platform.OS !== 'web' ? (
+        <Animated.View
+          pointerEvents="none"
+          style={[
+            styles.strikethroughLine,
+            { backgroundColor: color },
+            animatedStyle,
+          ]}
+        />
+      ) : null}
+    </View>
+  );
+}
 
 type ListItemRowProps = {
   item: ListItem;
   onToggle: () => void;
   onPress: () => void;
+  onLongPress?: () => void;
+  isDragging?: boolean;
 };
 
-export default function ListItemRow({ item, onToggle, onPress }: ListItemRowProps) {
+export default function ListItemRow({
+  item,
+  onToggle,
+  onPress,
+  onLongPress,
+  isDragging = false,
+}: ListItemRowProps) {
   const { colors, radii, spacing } = useTheme();
   const checkScale = useSharedValue(1);
-  const nameOpacity = useSharedValue(item.checked ? 0.65 : 1);
+  const textOpacity = useSharedValue(item.checked ? COMPLETED_OPACITY : 1);
 
   const checkboxStyle = useAnimatedStyle(() => ({
     transform: [{ scale: checkScale.value }],
   }));
 
-  const nameStyle = useAnimatedStyle(() => ({
-    opacity: nameOpacity.value,
+  const completedTextStyle = useAnimatedStyle(() => ({
+    opacity: textOpacity.value,
   }));
 
   useEffect(() => {
-    nameOpacity.value = withTiming(item.checked ? 0.65 : 1, { duration: 200 });
-  }, [item.checked, nameOpacity]);
+    textOpacity.value = withTiming(item.checked ? COMPLETED_OPACITY : 1, {
+      duration: 200,
+    });
+  }, [item.checked, textOpacity]);
 
   const handleToggle = () => {
+    if (!item.checked) {
+      playToggleHaptic();
+    }
     checkScale.value = withSpring(0.9, { damping: 12 }, () => {
       checkScale.value = withSpring(1);
     });
@@ -45,12 +119,14 @@ export default function ListItemRow({ item, onToggle, onPress }: ListItemRowProp
 
   return (
     <Pressable
+      delayLongPress={300}
+      onLongPress={onLongPress}
       onPress={onPress}
       style={({ pressed }) => [
         styles.row,
         {
-          opacity: pressed ? 0.72 : 1,
-          paddingHorizontal: spacing.md,
+          backgroundColor: isDragging ? colors.surfaceMuted : 'transparent',
+          opacity: isDragging ? 1 : pressed ? 0.72 : 1,
           paddingVertical: spacing.sm,
         },
       ]}
@@ -73,29 +149,25 @@ export default function ListItemRow({ item, onToggle, onPress }: ListItemRowProp
           ]}
         >
           {item.checked ? (
-            <SymbolView
-              name={{ ios: 'checkmark', android: 'check', web: 'check' }}
-              size={14}
-              tintColor={colors.surface}
-            />
+            Platform.OS === 'ios' ? (
+              <SymbolView name="checkmark" size={14} tintColor={colors.surface} />
+            ) : (
+              <MaterialIcons color={colors.surface} name="check" size={14} />
+            )
           ) : null}
         </View>
       </AnimatedPressable>
 
       <View style={styles.content}>
-        <Animated.Text
+        <CompletedText
+          animatedStyle={completedTextStyle}
+          checked={item.checked}
+          color={colors.text}
           numberOfLines={2}
-          style={[
-            styles.name,
-            nameStyle,
-            {
-              color: colors.text,
-              textDecorationLine: item.checked ? 'line-through' : 'none',
-            },
-          ]}
+          style={styles.name}
         >
           {item.name}
-        </Animated.Text>
+        </CompletedText>
 
         {item.quantity || item.link ? (
           <View style={[styles.meta, { gap: spacing.xs }]}>
@@ -109,9 +181,14 @@ export default function ListItemRow({ item, onToggle, onPress }: ListItemRowProp
                   },
                 ]}
               >
-                <Text style={[styles.pillText, { color: colors.textSecondary }]}>
+                <CompletedText
+                  animatedStyle={completedTextStyle}
+                  checked={item.checked}
+                  color={colors.textSecondary}
+                  style={styles.pillText}
+                >
                   {item.quantity}
-                </Text>
+                </CompletedText>
               </View>
             ) : null}
 
@@ -126,12 +203,19 @@ export default function ListItemRow({ item, onToggle, onPress }: ListItemRowProp
                   },
                 ]}
               >
-                <SymbolView
-                  name={{ ios: 'link', android: 'link', web: 'link' }}
-                  size={12}
-                  tintColor={colors.accent}
-                />
-                <Text style={[styles.pillText, { color: colors.accent }]}>Link</Text>
+                {Platform.OS === 'ios' ? (
+                  <SymbolView name="link" size={12} tintColor={colors.accent} />
+                ) : (
+                  <MaterialIcons color={colors.accent} name="link" size={12} />
+                )}
+                <CompletedText
+                  animatedStyle={completedTextStyle}
+                  checked={item.checked}
+                  color={colors.accent}
+                  style={styles.pillText}
+                >
+                  Link
+                </CompletedText>
               </View>
             ) : null}
           </View>
@@ -163,6 +247,18 @@ const styles = StyleSheet.create({
   content: {
     flex: 1,
     gap: 4,
+  },
+  completedTextWrap: {
+    alignSelf: 'flex-start',
+    maxWidth: '100%',
+  },
+  strikethroughLine: {
+    height: STRIKETHROUGH_HEIGHT,
+    left: 0,
+    marginTop: -STRIKETHROUGH_HEIGHT / 2,
+    position: 'absolute',
+    right: 0,
+    top: '50%',
   },
   name: {
     fontFamily: 'NunitoSans_400Regular',

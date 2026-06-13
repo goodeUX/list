@@ -57,6 +57,14 @@ export default function SignUpScreen() {
     }
   };
 
+  const handleClose = () => {
+    if (router.canGoBack()) {
+      router.back();
+      return;
+    }
+    router.replace('/');
+  };
+
   return (
     <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.bg }]}>
       <KeyboardAvoidingView
@@ -71,7 +79,7 @@ export default function SignUpScreen() {
             accessibilityLabel="Close"
             accessibilityRole="button"
             hitSlop={8}
-            onPress={() => (router.canGoBack() ? router.back() : router.replace('/'))}
+            onPress={handleClose}
             style={({ pressed }) => [
               styles.closeButton,
               { opacity: pressed ? 0.7 : 1 },

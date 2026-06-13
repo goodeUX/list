@@ -21,7 +21,7 @@ export default function ListCard({ list }: ListCardProps) {
   const scale = useSharedValue(1);
 
   const { doneCount, totalCount } = useListItemCounts(list.id);
-  const progress = totalCount > 0 ? doneCount / totalCount : 0;
+  const incompleteCount = totalCount - doneCount;
   const collaboratorCount = list.memberIds.length;
   const isShared = collaboratorCount > 1;
 
@@ -32,7 +32,7 @@ export default function ListCard({ list }: ListCardProps) {
   const handlePress = () => {
     router.push({
       pathname: '/list/[id]',
-      params: { id: list.id },
+      params: { id: list.id, name: list.name, emoji: list.emoji },
     });
   };
 
@@ -69,32 +69,20 @@ export default function ListCard({ list }: ListCardProps) {
           >
             {list.name}
           </Text>
-          <Text style={[styles.progressText, { color: colors.textSecondary }]}>
-            {doneCount}/{totalCount} complete
-          </Text>
         </View>
-      </View>
-
-      <View
-        style={[
-          styles.progressTrack,
-          {
-            backgroundColor: colors.surfaceMuted,
-            borderRadius: radii.checkbox,
-            marginTop: spacing.sm,
-          },
-        ]}
-      >
         <View
           style={[
-            styles.progressFill,
+            styles.itemCountBadge,
             {
-              backgroundColor: colors.success,
+              backgroundColor: colors.surfaceMuted,
               borderRadius: radii.checkbox,
-              width: `${Math.round(progress * 100)}%`,
             },
           ]}
-        />
+        >
+          <Text style={[styles.itemCount, { color: colors.textSecondary }]}>
+            {incompleteCount}
+          </Text>
+        </View>
       </View>
 
       {isShared ? (
@@ -133,18 +121,17 @@ const styles = StyleSheet.create({
     fontSize: 17,
     lineHeight: 22,
   },
-  progressText: {
+  itemCountBadge: {
+    alignItems: 'center',
+    height: 26,
+    justifyContent: 'center',
+    width: 26,
+  },
+  itemCount: {
     fontFamily: 'NunitoSans_400Regular',
     fontSize: 13,
-    lineHeight: 18,
-  },
-  progressTrack: {
-    height: 6,
-    overflow: 'hidden',
-    width: '100%',
-  },
-  progressFill: {
-    height: '100%',
+    lineHeight: 16,
+    textAlign: 'center',
   },
   collaborators: {
     fontFamily: 'NunitoSans_400Regular',

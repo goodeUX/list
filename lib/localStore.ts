@@ -137,6 +137,14 @@ export async function getLocalList(listId: string): Promise<AppList | null> {
   return data.lists.find((list) => list.id === listId) ?? null;
 }
 
+export function getCachedLocalList(listId: string): AppList | null {
+  if (!cache) {
+    return null;
+  }
+
+  return cache.lists.find((list) => list.id === listId) ?? null;
+}
+
 export async function createLocalList(
   name: string,
   emoji: string,
@@ -167,6 +175,15 @@ export async function createLocalList(
 export async function getLocalItems(listId: string): Promise<ListItem[]> {
   const data = await readDatabase();
   const items = data.itemsByListId[listId] ?? [];
+  return [...items].sort((a, b) => a.order - b.order);
+}
+
+export function getCachedLocalItems(listId: string): ListItem[] {
+  if (!cache) {
+    return [];
+  }
+
+  const items = cache.itemsByListId[listId] ?? [];
   return [...items].sort((a, b) => a.order - b.order);
 }
 
@@ -205,6 +222,35 @@ export async function addLocalItem(
 
   data.itemsByListId[listId] = [...items, item];
   list.updatedAt = now;
+  await writeDatabase(data);
+}
+
+export async function reorderLocalItems(
+  listId: string,
+  orderedIds: string[],
+): Promise<void> {
+  const data = await readDatabase();
+  const items = data.itemsByListId[listId];
+  if (!items) {
+    return;
+  }
+
+  const orderById = new Map(orderedIds.map((id, index) => [id, index]));
+  const now = new Date();
+
+  for (const item of items) {
+    const nextOrder = orderById.get(item.id);
+    if (nextOrder !== undefined) {
+      item.order = nextOrder;
+      item.updatedAt = now;
+    }
+  }
+
+  const list = data.lists.find((entry) => entry.id === listId);
+  if (list) {
+    list.updatedAt = now;
+  }
+
   await writeDatabase(data);
 }
 
@@ -267,6 +313,25 @@ export async function deleteLocalItem(
   }
 
   data.itemsByListId[listId] = items.filter((entry) => entry.id !== itemId);
+  await writeDatabase(data);
+}
+
+export async function clearLocalListItems(listId: string): Promise<void> {
+  const data = await readDatabase();
+  const list = data.lists.find((entry) => entry.id === listId);
+  if (!list) {
+    return;
+  }
+
+  data.itemsByListId[listId] = [];
+  list.updatedAt = new Date();
+  await writeDatabase(data);
+}
+
+export async function deleteLocalList(listId: string): Promise<void> {
+  const data = await readDatabase();
+  data.lists = data.lists.filter((entry) => entry.id !== listId);
+  delete data.itemsByListId[listId];
   await writeDatabase(data);
 }
 

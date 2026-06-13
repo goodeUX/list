@@ -12,6 +12,7 @@ import { useCallback, useEffect, useState } from 'react';
 
 import { useAuth } from '@/contexts/AuthContext';
 import { db } from '@/lib/firebase';
+import { historyDocId } from '@/lib/historyDocId';
 import {
   getLocalItemHistory,
   recordLocalItemUsage,
@@ -35,10 +36,6 @@ function docToHistoryEntry(id: string, data: Record<string, unknown>): ItemHisto
     useCount: (data.useCount as number) ?? 1,
     lastListId: (data.lastListId as string) ?? '',
   };
-}
-
-function historyDocId(name: string): string {
-  return name.trim().toLowerCase().replace(/\s+/g, '_').slice(0, 120);
 }
 
 export function useItemHistory() {

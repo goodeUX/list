@@ -1,4 +1,5 @@
-import { router, useLocalSearchParams } from 'expo-router';
+import { useLocalSearchParams } from 'expo-router';
+import { MaterialIcons } from '@expo/vector-icons';
 import * as WebBrowser from 'expo-web-browser';
 import { useEffect, useState } from 'react';
 import {
@@ -13,10 +14,11 @@ import {
   TextInput,
   View,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { SymbolView } from 'expo-symbols';
+import Animated from 'react-native-reanimated';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useTheme } from '@/contexts/ThemeContext';
+import { useChildSlideTransition } from '@/hooks/useSlideTransition';
 import { useListItems } from '@/hooks/useListItems';
 import { isValidUrl, normalizeUrl } from '@/lib/urls';
 
@@ -25,9 +27,12 @@ export default function ItemDetailScreen() {
   const listId = typeof id === 'string' ? id : undefined;
   const resolvedItemId = typeof itemId === 'string' ? itemId : undefined;
   const { colors, radii, spacing } = useTheme();
+  const insets = useSafeAreaInsets();
   const { items, loading, updateItem, deleteItem } = useListItems(listId);
 
   const item = items.find((entry) => entry.id === resolvedItemId);
+  const { animatedStyle, goBack, isEnabled: slideTransitionEnabled } =
+    useChildSlideTransition({ ready: !loading && Boolean(item) });
 
   const [name, setName] = useState('');
   const [quantity, setQuantity] = useState('');
@@ -73,7 +78,7 @@ export default function ItemDetailScreen() {
         description: description.trim() || null,
         link: trimmedLink ? normalizeUrl(trimmedLink) : null,
       });
-      router.back();
+      goBack();
     } catch {
       Alert.alert('Could not save', 'Please try again.');
     } finally {
@@ -95,7 +100,7 @@ export default function ItemDetailScreen() {
     }
 
     const runDelete = () => {
-      void deleteItem(item.id).then(() => router.back());
+      void deleteItem(item.id).then(() => goBack());
     };
 
     if (Platform.OS === 'web') {
@@ -117,16 +122,51 @@ export default function ItemDetailScreen() {
 
   if (loading || !item) {
     return (
-      <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.bg }]}>
-        <View style={styles.loading}>
-          <ActivityIndicator color={colors.accent} size="large" />
+      <Animated.View
+        style={[
+          styles.screen,
+          { backgroundColor: colors.bg },
+          slideTransitionEnabled ? animatedStyle : null,
+        ]}
+      >
+        <View
+          style={[
+            styles.flex,
+            {
+              paddingBottom: insets.bottom,
+              paddingLeft: insets.left,
+              paddingRight: insets.right,
+              paddingTop: insets.top,
+            },
+          ]}
+        >
+          <View style={styles.loading}>
+            <ActivityIndicator color={colors.accent} size="large" />
+          </View>
         </View>
-      </SafeAreaView>
+      </Animated.View>
     );
   }
 
   return (
-    <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.bg }]}>
+    <Animated.View
+      style={[
+        styles.screen,
+        { backgroundColor: colors.bg },
+        slideTransitionEnabled ? animatedStyle : null,
+      ]}
+    >
+      <View
+        style={[
+          styles.flex,
+          {
+            paddingBottom: insets.bottom,
+            paddingLeft: insets.left,
+            paddingRight: insets.right,
+            paddingTop: insets.top,
+          },
+        ]}
+      >
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={styles.flex}
@@ -137,26 +177,28 @@ export default function ItemDetailScreen() {
             {
               borderBottomColor: colors.border,
               paddingHorizontal: spacing.lg,
+              paddingTop: spacing.md,
               paddingBottom: spacing.md,
             },
           ]}
         >
           <Pressable
             accessibilityLabel="Go back"
-            onPress={() => router.back()}
+            accessibilityRole="button"
+            hitSlop={8}
+            onPress={() => goBack()}
             style={({ pressed }) => [
-              styles.iconButton,
-              { opacity: pressed ? 0.7 : 1 },
+              styles.shareButton,
+              {
+                backgroundColor: colors.surface,
+                opacity: pressed ? 0.7 : 1,
+              },
             ]}
           >
-            <SymbolView
-              name={{ ios: 'chevron.left', android: 'arrow_back', web: 'arrow_back' }}
-              size={22}
-              tintColor={colors.accent}
-            />
+            <MaterialIcons color={colors.accent} name="chevron-left" size={24} />
           </Pressable>
           <Text style={[styles.headerTitle, { color: colors.text }]}>Edit item</Text>
-          <View style={styles.iconButton} />
+          <View style={styles.shareButton} />
         </View>
 
         <ScrollView
@@ -296,13 +338,14 @@ export default function ItemDetailScreen() {
           </Pressable>
         </ScrollView>
       </KeyboardAvoidingView>
-    </SafeAreaView>
+      </View>
+    </Animated.View>
   );
 }
 
 const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
+  screen: {
+    ...StyleSheet.absoluteFillObject,
   },
   flex: {
     flex: 1,
@@ -318,11 +361,13 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: 12,
   },
-  iconButton: {
+  shareButton: {
     alignItems: 'center',
-    height: 36,
+    borderRadius: 22,
+    flexShrink: 0,
+    height: 44,
     justifyContent: 'center',
-    width: 36,
+    width: 44,
   },
   headerTitle: {
     flex: 1,

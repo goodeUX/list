@@ -17,9 +17,10 @@ import {
   DefaultTheme,
   ThemeProvider as NavigationThemeProvider,
 } from '@react-navigation/native';
-import { useEffect } from 'react';
-import { StyleSheet } from 'react-native';
+import { useEffect, useMemo } from 'react';
+import { Platform, StyleSheet } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 import 'react-native-reanimated';
 
 import WebShell from '@/components/WebShell';
@@ -64,31 +65,61 @@ export default function RootLayout() {
   }
 
   return (
-    <AuthProvider>
-      <ThemeProvider>
-        <RootLayoutNav />
-      </ThemeProvider>
-    </AuthProvider>
+    <SafeAreaProvider>
+      <AuthProvider>
+        <ThemeProvider>
+          <RootLayoutNav />
+        </ThemeProvider>
+      </AuthProvider>
+    </SafeAreaProvider>
   );
 }
 
 function RootLayoutNav() {
-  const { colorScheme } = useTheme();
+  const { colorScheme, colors } = useTheme();
+
+  const navigationTheme = useMemo(() => {
+    const base = colorScheme === 'dark' ? DarkTheme : DefaultTheme;
+
+    return {
+      ...base,
+      colors: {
+        ...base.colors,
+        background: colors.bg,
+        card: colors.bg,
+      },
+    };
+  }, [colorScheme, colors.bg]);
+
+  const listScreenOptions = useMemo(
+    () => ({
+      animation: 'none' as const,
+      contentStyle: { backgroundColor: 'transparent' as const },
+      gestureEnabled: true,
+      headerShown: false,
+      presentation: 'transparentModal' as const,
+      ...(Platform.OS === 'android' ? { statusBarTranslucent: false } : null),
+    }),
+    [],
+  );
 
   return (
-    <GestureHandlerRootView style={styles.root}>
+    <GestureHandlerRootView style={[styles.root, { backgroundColor: colors.bg }]}>
       <WebShell>
         <StatusBar style={colorScheme === 'dark' ? 'light' : 'dark'} />
-        <NavigationThemeProvider
-          value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}
-        >
-          <Stack screenOptions={{ headerShown: false }}>
+        <NavigationThemeProvider value={navigationTheme}>
+          <Stack
+            screenOptions={{
+              contentStyle: { backgroundColor: colors.bg },
+              headerShown: false,
+            }}
+          >
             <Stack.Screen name="index" />
             <Stack.Screen
               name="settings"
               options={{ presentation: 'modal', headerShown: false }}
             />
-            <Stack.Screen name="list/[id]" />
+            <Stack.Screen name="list/[id]" options={listScreenOptions} />
             <Stack.Screen name="join/[listId]" />
             <Stack.Screen
               name="(auth)"

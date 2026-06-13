@@ -1,6 +1,7 @@
 import { type ReactNode } from 'react';
 import { Platform, StyleSheet, View } from 'react-native';
 
+import { CONTENT_MAX_WIDTH } from '@/lib/slideTransition';
 import { useTheme } from '@/contexts/ThemeContext';
 
 type WebShellProps = {
@@ -28,7 +29,8 @@ const styles = StyleSheet.create({
   },
   inner: {
     flex: 1,
-    maxWidth: 430,
+    maxWidth: CONTENT_MAX_WIDTH,
+    overflow: 'hidden',
     width: '100%',
   },
 });

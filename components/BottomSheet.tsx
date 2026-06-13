@@ -22,6 +22,7 @@ const CLOSE_DURATION = 260;
 type BottomSheetProps = {
   visible: boolean;
   onClose: () => void;
+  onOpened?: () => void;
   children: ReactNode;
   blocking?: boolean;
 };
@@ -29,6 +30,7 @@ type BottomSheetProps = {
 export default function BottomSheet({
   visible,
   onClose,
+  onOpened,
   children,
   blocking = false,
 }: BottomSheetProps) {
@@ -46,6 +48,10 @@ export default function BottomSheet({
       sheetTranslateY.value = withTiming(0, {
         duration: OPEN_DURATION,
         easing: SHEET_EASING,
+      }, (finished) => {
+        if (finished && onOpened) {
+          runOnJS(onOpened)();
+        }
       });
       return;
     }
@@ -67,7 +73,7 @@ export default function BottomSheet({
         }
       },
     );
-  }, [backdropOpacity, rendered, sheetTranslateY, visible]);
+  }, [backdropOpacity, onOpened, rendered, sheetTranslateY, visible]);
 
   const backdropStyle = useAnimatedStyle(() => ({
     opacity: backdropOpacity.value,

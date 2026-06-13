@@ -11,6 +11,7 @@ import {
 
 import { useAuth } from '@/contexts/AuthContext';
 import { db } from '@/lib/firebase';
+import { handleFirestoreListenerError } from '@/lib/firestoreListenerErrors';
 
 const PRESENCE_INTERVAL_MS = 15_000;
 const ACTIVE_THRESHOLD_MS = 30_000;
@@ -67,26 +68,30 @@ export function usePresence(listId: string | undefined) {
     const subscription = AppState.addEventListener('change', handleAppState);
 
     const presenceQuery = collection(db, 'lists', listId, 'presence');
-    const unsubscribe = onSnapshot(presenceQuery, (snapshot) => {
-      const now = Date.now();
-      const users = snapshot.docs
-        .map((docSnap) => {
-          const data = docSnap.data();
-          return {
-            uid: docSnap.id,
-            displayName: (data.displayName as string) || 'Someone',
-            lastActive: toDate(data.lastActive),
-          };
-        })
-        .filter(
-          (entry) =>
-            entry.uid !== user.uid &&
-            now - entry.lastActive.getTime() < ACTIVE_THRESHOLD_MS,
-        )
-        .map(({ uid, displayName }) => ({ uid, displayName }));
+    const unsubscribe = onSnapshot(
+      presenceQuery,
+      (snapshot) => {
+        const now = Date.now();
+        const users = snapshot.docs
+          .map((docSnap) => {
+            const data = docSnap.data();
+            return {
+              uid: docSnap.id,
+              displayName: (data.displayName as string) || 'Someone',
+              lastActive: toDate(data.lastActive),
+            };
+          })
+          .filter(
+            (entry) =>
+              entry.uid !== user.uid &&
+              now - entry.lastActive.getTime() < ACTIVE_THRESHOLD_MS,
+          )
+          .map(({ uid, displayName }) => ({ uid, displayName }));
 
-      setActiveUsers(users);
-    });
+        setActiveUsers(users);
+      },
+      handleFirestoreListenerError,
+    );
 
     return () => {
       clearInterval(interval);

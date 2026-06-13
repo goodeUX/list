@@ -4,6 +4,7 @@ import {
   deleteDoc,
   doc,
   getDocs,
+  getDocsFromCache,
   onSnapshot,
   orderBy,
   query,
@@ -16,10 +17,15 @@ import type { User } from 'firebase/auth';
 
 import { useAuth } from '@/contexts/AuthContext';
 import { db } from '@/lib/firebase';
+import { handleFirestoreListenerError } from '@/lib/firestoreListenerErrors';
+import { playDeleteItemHaptic } from '@/lib/haptics';
+import { clearListItemsById } from '@/lib/listMutations';
 import {
   addLocalItem,
   deleteLocalItem,
+  getCachedLocalItems,
   getLocalItems,
+  reorderLocalItems,
   subscribeLocalData,
   toggleLocalItem,
   updateLocalItem,
@@ -132,13 +138,17 @@ export function useListItemCounts(listId: string) {
       orderBy('order'),
     );
 
-    const unsubscribe = onSnapshot(itemsQuery, (snapshot) => {
-      const nextItems = snapshot.docs.map((docSnap) =>
-        docToListItem(docSnap.id, docSnap.data()),
-      );
-      setTotalCount(nextItems.length);
-      setDoneCount(nextItems.filter((item) => item.checked).length);
-    });
+    const unsubscribe = onSnapshot(
+      itemsQuery,
+      (snapshot) => {
+        const nextItems = snapshot.docs.map((docSnap) =>
+          docToListItem(docSnap.id, docSnap.data()),
+        );
+        setTotalCount(nextItems.length);
+        setDoneCount(nextItems.filter((item) => item.checked).length);
+      },
+      handleFirestoreListenerError,
+    );
 
     return unsubscribe;
   }, [listId, user]);
@@ -148,8 +158,9 @@ export function useListItemCounts(listId: string) {
 
 export function useListItems(listId: string | undefined) {
   const { user } = useAuth();
-  const [items, setItems] = useState<ListItem[]>([]);
-  const [loading, setLoading] = useState(true);
+  const cachedItems = listId && !user ? getCachedLocalItems(listId) : [];
+  const [items, setItems] = useState<ListItem[]>(cachedItems);
+  const [loading, setLoading] = useState(cachedItems.length === 0);
 
   useEffect(() => {
     if (!listId) {
@@ -188,6 +199,18 @@ export function useListItems(listId: string | undefined) {
       orderBy('order'),
     );
 
+    void getDocsFromCache(itemsQuery)
+      .then((snapshot) => {
+        const nextItems = snapshot.docs.map((docSnap) =>
+          docToListItem(docSnap.id, docSnap.data()),
+        );
+        setItems(nextItems);
+        setLoading(false);
+      })
+      .catch(() => {
+        // Cache miss — onSnapshot will populate items.
+      });
+
     const unsubscribe = onSnapshot(
       itemsQuery,
       (snapshot) => {
@@ -197,8 +220,9 @@ export function useListItems(listId: string | undefined) {
         setItems(nextItems);
         setLoading(false);
       },
-      () => {
+      (error) => {
         setLoading(false);
+        handleFirestoreListenerError(error);
       },
     );
 
@@ -302,13 +326,75 @@ export function useListItems(listId: string | undefined) {
 
       if (!user) {
         await deleteLocalItem(listId, id);
+        playDeleteItemHaptic();
         return;
       }
 
       await deleteDoc(doc(db, 'lists', listId, 'items', id));
+      playDeleteItemHaptic();
     },
     [listId, user],
   );
 
-  return { items, loading, addItem, toggleItem, updateItem, deleteItem };
+  const clearAllItems = useCallback(
+    async () => {
+      if (!listId) {
+        return;
+      }
+
+      await clearListItemsById(listId, user);
+      playDeleteItemHaptic();
+    },
+    [listId, user],
+  );
+
+  const reorderItems = useCallback(
+    async (orderedItems: ListItem[]) => {
+      if (!listId) {
+        return;
+      }
+
+      const nextOrder = orderedItems.map((item, index) => ({
+        id: item.id,
+        order: index,
+      }));
+
+      const hasChanges = nextOrder.some(
+        (entry) => items.find((item) => item.id === entry.id)?.order !== entry.order,
+      );
+
+      if (!hasChanges) {
+        return;
+      }
+
+      if (!user) {
+        await reorderLocalItems(
+          listId,
+          nextOrder.map((entry) => entry.id),
+        );
+        return;
+      }
+
+      await Promise.all(
+        nextOrder
+          .filter(
+            (entry) =>
+              items.find((item) => item.id === entry.id)?.order !== entry.order,
+          )
+          .map((entry) =>
+            updateDoc(doc(db, 'lists', listId, 'items', entry.id), {
+              order: entry.order,
+              updatedAt: serverTimestamp(),
+            }),
+          ),
+      );
+
+      await updateDoc(doc(db, 'lists', listId), {
+        updatedAt: serverTimestamp(),
+      });
+    },
+    [items, listId, user],
+  );
+
+  return { items, loading, addItem, toggleItem, updateItem, deleteItem, clearAllItems, reorderItems };
 }

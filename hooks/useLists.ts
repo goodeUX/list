@@ -11,6 +11,7 @@ import { useCallback, useEffect, useState } from 'react';
 
 import { useAuth } from '@/contexts/AuthContext';
 import { db } from '@/lib/firebase';
+import { deleteListById } from '@/lib/listMutations';
 import {
   createLocalList,
   getLocalLists,
@@ -42,11 +43,15 @@ async function loadLocalLists(): Promise<AppList[]> {
 }
 
 export function useLists() {
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const [lists, setLists] = useState<AppList[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    if (authLoading) {
+      return;
+    }
+
     if (!user) {
       let active = true;
       setLoading(true);
@@ -87,7 +92,14 @@ export function useLists() {
           (a, b) => b.updatedAt.getTime() - a.updatedAt.getTime(),
         );
         setLists(nextLists);
-        setLoading(false);
+
+        const hasCachedData =
+          snapshot.metadata.fromCache && snapshot.docs.length > 0;
+        const hasServerData = !snapshot.metadata.fromCache;
+
+        if (hasServerData || hasCachedData) {
+          setLoading(false);
+        }
       },
       () => {
         setLoading(false);
@@ -95,7 +107,7 @@ export function useLists() {
     );
 
     return unsubscribe;
-  }, [user]);
+  }, [authLoading, user]);
 
   const createList = useCallback(
     async (name: string, emoji: string) => {
@@ -121,5 +133,12 @@ export function useLists() {
     [user],
   );
 
-  return { lists, loading, createList };
+  const deleteList = useCallback(
+    async (targetListId: string) => {
+      await deleteListById(targetListId, user);
+    },
+    [user],
+  );
+
+  return { lists, loading: authLoading || loading, createList, deleteList };
 }

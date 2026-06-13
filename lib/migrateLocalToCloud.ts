@@ -8,12 +8,9 @@ import {
 } from 'firebase/firestore';
 
 import { db } from '@/lib/firebase';
+import { historyDocId } from '@/lib/historyDocId';
 import { clearLocalHistory, getLocalHistorySnapshot } from '@/lib/localHistory';
 import { clearLocalDatabase, getLocalDatabaseSnapshot } from '@/lib/localStore';
-
-function historyDocId(name: string): string {
-  return name.trim().toLowerCase().replace(/\s+/g, '_').slice(0, 120);
-}
 
 export async function migrateLocalDataToCloud(userId: string): Promise<number> {
   const snapshot = await getLocalDatabaseSnapshot();

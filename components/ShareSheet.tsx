@@ -18,6 +18,7 @@ import { doc, getDoc, onSnapshot } from 'firebase/firestore';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTheme } from '@/contexts/ThemeContext';
 import { db } from '@/lib/firebase';
+import { handleFirestoreListenerError } from '@/lib/firestoreListenerErrors';
 
 type Collaborator = {
   uid: string;
@@ -54,13 +55,17 @@ export default function ShareSheet({
       return;
     }
 
-    const unsubscribe = onSnapshot(doc(db, 'lists', listId), (snapshot) => {
-      if (!snapshot.exists()) {
-        setMemberIds([]);
-        return;
-      }
-      setMemberIds((snapshot.data().memberIds as string[]) ?? []);
-    });
+    const unsubscribe = onSnapshot(
+      doc(db, 'lists', listId),
+      (snapshot) => {
+        if (!snapshot.exists()) {
+          setMemberIds([]);
+          return;
+        }
+        setMemberIds((snapshot.data().memberIds as string[]) ?? []);
+      },
+      handleFirestoreListenerError,
+    );
 
     return unsubscribe;
   }, [listId, visible]);

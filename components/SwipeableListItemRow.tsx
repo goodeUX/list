@@ -15,16 +15,20 @@ type SwipeableListItemRowProps = {
   item: ListItem;
   onDelete: () => void;
   onPress: () => void;
+  onLongPress?: () => void;
   onSwipeOpen?: (close: () => void) => void;
   onToggle: () => void;
+  isDragging?: boolean;
 };
 
 export default function SwipeableListItemRow({
   item,
   onDelete,
   onPress,
+  onLongPress,
   onSwipeOpen,
   onToggle,
+  isDragging = false,
 }: SwipeableListItemRowProps) {
   const { colors } = useTheme();
   const swipeableRef = useRef<SwipeableMethods>(null);
@@ -68,13 +72,20 @@ export default function SwipeableListItemRow({
     <ReanimatedSwipeable
       ref={swipeableRef}
       containerStyle={styles.container}
+      enabled={!isDragging}
       friction={2}
       onSwipeableOpen={handleSwipeableOpen}
       overshootRight={false}
       renderRightActions={renderRightActions}
       rightThreshold={DELETE_ACTION_WIDTH / 2}
     >
-      <ListItemRow item={item} onPress={onPress} onToggle={onToggle} />
+      <ListItemRow
+        isDragging={isDragging}
+        item={item}
+        onLongPress={onLongPress}
+        onPress={onPress}
+        onToggle={onToggle}
+      />
     </ReanimatedSwipeable>
   );
 }
