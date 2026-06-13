@@ -1,0 +1,8 @@
+{
+  "projects": {
+    "staging": "list-app-47c56",
+    "default": "list-app-47c56"
+  },
+  "targets": {},
+  "etags": {}
+}
