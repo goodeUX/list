@@ -91,12 +91,19 @@ export default function RootLayout() {
   }, [error]);
 
   useEffect(() => {
+    if (!splashImageReady) {
+      return;
+    }
+
+    void SplashScreen.hideAsync();
+  }, [splashImageReady]);
+
+  useEffect(() => {
     if (!splashReady || hasStartedTransition.current) {
       return;
     }
 
     hasStartedTransition.current = true;
-    void SplashScreen.hideAsync();
 
     const pushTiming = {
       duration: SLIDE_IN_MS,

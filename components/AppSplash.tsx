@@ -1,15 +1,18 @@
 import {
   ActivityIndicator,
-  Image,
+  Dimensions,
+  ImageBackground,
   StyleSheet,
   View,
   type ImageSourcePropType,
 } from 'react-native';
 
-import { SPLASH_SPINNER_COLOR } from '@/lib/splash';
+import { SPLASH_BACKGROUND_COLOR, SPLASH_SPINNER_COLOR } from '@/lib/splash';
 
 const splashBackgroundImage =
   require('../assets/images/splash-background.png') as ImageSourcePropType;
+
+const { height: windowHeight, width: windowWidth } = Dimensions.get('window');
 
 type AppSplashProps = {
   onImageReady?: () => void;
@@ -17,39 +20,36 @@ type AppSplashProps = {
 
 export default function AppSplash({ onImageReady }: AppSplashProps) {
   return (
-    <View style={styles.screen}>
-      <Image
-        accessibilityIgnoresInvertColors
-        onError={onImageReady}
-        onLoad={onImageReady}
-        resizeMode="cover"
-        source={splashBackgroundImage}
-        style={styles.backgroundImage}
-      />
+    <ImageBackground
+      accessibilityIgnoresInvertColors
+      imageStyle={styles.backgroundImage}
+      onError={onImageReady}
+      onLoad={onImageReady}
+      resizeMode="cover"
+      source={splashBackgroundImage}
+      style={styles.screen}
+    >
       <View style={styles.spinnerContainer}>
         <ActivityIndicator color={SPLASH_SPINNER_COLOR} size="large" />
       </View>
-    </View>
+    </ImageBackground>
   );
 }
 
 const styles = StyleSheet.create({
   screen: {
-    ...StyleSheet.absoluteFillObject,
-    flex: 1,
+    backgroundColor: SPLASH_BACKGROUND_COLOR,
+    height: windowHeight,
+    width: windowWidth,
   },
   backgroundImage: {
-    ...StyleSheet.absoluteFillObject,
-    height: '100%',
-    width: '100%',
+    height: windowHeight,
+    width: windowWidth,
   },
   spinnerContainer: {
     alignItems: 'center',
-    height: '40%',
+    height: windowHeight * 0.4,
     justifyContent: 'center',
-    left: 0,
-    position: 'absolute',
-    right: 0,
-    top: 0,
+    width: windowWidth,
   },
 });

@@ -43,9 +43,11 @@
           "resizeMode": "cover",
           "enableFullScreenImage_legacy": true,
           "android": {
-            "resizeMode": "cover"
+            "backgroundColor": "#DBB793"
           },
           "ios": {
+            "backgroundColor": "#DBB793",
+            "image": "./assets/images/splash-background.png",
             "resizeMode": "cover",
             "enableFullScreenImage_legacy": true
           }
