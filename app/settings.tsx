@@ -1,21 +1,33 @@
 import { router } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
+import type { ComponentProps } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import Animated from 'react-native-reanimated';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useAuth } from '@/contexts/AuthContext';
 import { useTheme } from '@/contexts/ThemeContext';
+import { useChildSlideTransition } from '@/hooks/useSlideTransition';
 import type { ThemePreference } from '@/lib/theme';
 
-const THEME_OPTIONS: { value: ThemePreference; label: string }[] = [
-  { value: 'system', label: 'System' },
-  { value: 'light', label: 'Light' },
-  { value: 'dark', label: 'Dark' },
+const THEME_OPTION_ICON_SIZE = 18;
+
+const THEME_OPTIONS: {
+  value: ThemePreference;
+  label: string;
+  icon: ComponentProps<typeof MaterialIcons>['name'];
+}[] = [
+  { value: 'system', label: 'System', icon: 'smartphone' },
+  { value: 'light', label: 'Light', icon: 'sunny' },
+  { value: 'dark', label: 'Dark', icon: 'nights-stay' },
 ];
 
 export default function SettingsScreen() {
   const { colors, radii, spacing, preference, setPreference } = useTheme();
   const { user, signOut } = useAuth();
+  const insets = useSafeAreaInsets();
+  const { animatedStyle, goBack, isEnabled: slideTransitionEnabled } =
+    useChildSlideTransition();
 
   const handleSignOut = async () => {
     await signOut();
@@ -23,29 +35,63 @@ export default function SettingsScreen() {
 
   const handleClose = () => {
     if (router.canGoBack()) {
-      router.back();
+      goBack();
       return;
     }
     router.replace('/');
   };
 
   return (
-    <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.bg }]}>
-      <View style={[styles.header, { paddingHorizontal: spacing.lg, paddingTop: spacing.sm }]}>
+    <Animated.View
+      style={[
+        styles.screen,
+        { backgroundColor: colors.bg },
+        slideTransitionEnabled ? animatedStyle : null,
+      ]}
+    >
+      <View
+        style={[
+          styles.flex,
+          {
+            paddingBottom: insets.bottom,
+            paddingLeft: insets.left,
+            paddingRight: insets.right,
+            paddingTop: insets.top,
+          },
+        ]}
+      >
+      <View
+        style={[
+          styles.header,
+          {
+            borderBottomColor: colors.border,
+            paddingHorizontal: spacing.lg,
+            paddingTop: spacing.md,
+            paddingBottom: spacing.md,
+          },
+        ]}
+      >
         <Pressable
-          accessibilityLabel="Close settings"
+          accessibilityLabel="Go back"
           accessibilityRole="button"
           hitSlop={8}
           onPress={handleClose}
           style={({ pressed }) => [
-            styles.closeButton,
-            { opacity: pressed ? 0.7 : 1 },
+            styles.backButton,
+            {
+              backgroundColor: colors.surface,
+              opacity: pressed ? 0.7 : 1,
+            },
           ]}
         >
-          <MaterialIcons color={colors.textSecondary} name="close" size={22} />
+          <MaterialIcons color={colors.accent} name="chevron-left" size={24} />
         </Pressable>
-        <Text style={[styles.title, { color: colors.text }]}>Settings</Text>
-        <View style={styles.closeButton} />
+
+        <View style={styles.titleBlock}>
+          <Text style={[styles.title, { color: colors.text }]}>Settings</Text>
+        </View>
+
+        <View style={styles.headerSpacer} />
       </View>
 
       <ScrollView
@@ -80,6 +126,11 @@ export default function SettingsScreen() {
                     },
                   ]}
                 >
+                  <MaterialIcons
+                    color={selected ? colors.text : colors.textSecondary}
+                    name={option.icon}
+                    size={THEME_OPTION_ICON_SIZE}
+                  />
                   <Text
                     style={[
                       styles.themeOptionText,
@@ -184,29 +235,45 @@ export default function SettingsScreen() {
           )}
         </View>
       </ScrollView>
-    </SafeAreaView>
+      </View>
+    </Animated.View>
   );
 }
 
 const styles = StyleSheet.create({
-  safeArea: {
+  screen: {
+    ...StyleSheet.absoluteFillObject,
+  },
+  flex: {
     flex: 1,
   },
   header: {
     alignItems: 'center',
+    borderBottomWidth: 1,
     flexDirection: 'row',
-    justifyContent: 'space-between',
+    gap: 12,
   },
-  closeButton: {
+  backButton: {
     alignItems: 'center',
-    height: 40,
+    borderRadius: 22,
+    flexShrink: 0,
+    height: 44,
     justifyContent: 'center',
-    width: 40,
+    width: 44,
+  },
+  titleBlock: {
+    flex: 1,
+    minWidth: 0,
+  },
+  headerSpacer: {
+    flexShrink: 0,
+    height: 44,
+    width: 44,
   },
   title: {
     fontFamily: 'Fraunces_600SemiBold',
-    fontSize: 20,
-    lineHeight: 26,
+    fontSize: 24,
+    lineHeight: 30,
   },
   container: {
     flexGrow: 1,
@@ -229,15 +296,18 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
   },
   themeOption: {
+    alignItems: 'center',
     borderWidth: 1,
     flex: 1,
+    flexDirection: 'row',
+    gap: 6,
+    justifyContent: 'center',
     paddingHorizontal: 12,
     paddingVertical: 10,
   },
   themeOptionText: {
     fontFamily: 'NunitoSans_600SemiBold',
     fontSize: 14,
-    textAlign: 'center',
   },
   accountLabel: {
     fontFamily: 'NunitoSans_400Regular',

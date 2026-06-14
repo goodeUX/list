@@ -12,6 +12,7 @@ import { useCallback, useEffect, useState } from 'react';
 
 import { useAuth } from '@/contexts/AuthContext';
 import { db } from '@/lib/firebase';
+import { handleFirestoreListenerError } from '@/lib/firestoreListenerErrors';
 import { historyDocId } from '@/lib/historyDocId';
 import {
   getLocalItemHistory,
@@ -83,7 +84,8 @@ export function useItemHistory() {
         setEntries(nextEntries);
         setLoading(false);
       },
-      () => {
+      (error) => {
+        handleFirestoreListenerError(error);
         setLoading(false);
       },
     );

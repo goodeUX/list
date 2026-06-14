@@ -18,8 +18,14 @@ import type { User } from 'firebase/auth';
 import { useAuth } from '@/contexts/AuthContext';
 import { db } from '@/lib/firebase';
 import { handleFirestoreListenerError } from '@/lib/firestoreListenerErrors';
+import { normalizeItemName } from '@/lib/itemName';
 import { playDeleteItemHaptic } from '@/lib/haptics';
 import { clearListItemsById } from '@/lib/listMutations';
+import {
+  groupItemsWithDoneAtBottom,
+  orderItemsAfterToggle,
+  withSequentialOrder,
+} from '@/lib/listItemOrdering';
 import {
   addLocalItem,
   deleteLocalItem,
@@ -27,6 +33,7 @@ import {
   getLocalItems,
   reorderLocalItems,
   subscribeLocalData,
+  syncLocalItems,
   toggleLocalItem,
   updateLocalItem,
 } from '@/lib/localStore';
@@ -61,7 +68,7 @@ export async function addItemToList(
   fields: NewItemFields = {},
   existingItems: ListItem[] = [],
 ): Promise<void> {
-  const trimmedName = name.trim();
+  const trimmedName = normalizeItemName(name);
   if (!trimmedName) {
     return;
   }
@@ -156,7 +163,11 @@ export function useListItemCounts(listId: string) {
   return { doneCount, totalCount };
 }
 
-export function useListItems(listId: string | undefined) {
+export function useListItems(
+  listId: string | undefined,
+  options: { moveDoneToBottom?: boolean } = {},
+) {
+  const { moveDoneToBottom = false } = options;
   const { user } = useAuth();
   const cachedItems = listId && !user ? getCachedLocalItems(listId) : [];
   const [items, setItems] = useState<ListItem[]>(cachedItems);
@@ -235,7 +246,7 @@ export function useListItems(listId: string | undefined) {
         throw new Error('A valid list is required');
       }
 
-      const trimmedName = name.trim();
+      const trimmedName = normalizeItemName(name);
       if (!trimmedName) {
         return;
       }
@@ -250,14 +261,39 @@ export function useListItems(listId: string | undefined) {
     [items, listId, user],
   );
 
-  const toggleItem = useCallback(
-    async (id: string) => {
+  const applyItemLayout = useCallback(
+    async (orderedItems: ListItem[]) => {
       if (!listId) {
         return;
       }
 
+      const sequential = withSequentialOrder(orderedItems);
+
       if (!user) {
-        await toggleLocalItem(listId, id);
+        await syncLocalItems(listId, sequential);
+        return;
+      }
+
+      await Promise.all(
+        sequential.map((entry) =>
+          updateDoc(doc(db, 'lists', listId, 'items', entry.id), {
+            checked: entry.checked,
+            order: entry.order,
+            updatedAt: serverTimestamp(),
+          }),
+        ),
+      );
+
+      await updateDoc(doc(db, 'lists', listId), {
+        updatedAt: serverTimestamp(),
+      });
+    },
+    [listId, user],
+  );
+
+  const toggleItem = useCallback(
+    async (id: string) => {
+      if (!listId) {
         return;
       }
 
@@ -266,12 +302,23 @@ export function useListItems(listId: string | undefined) {
         return;
       }
 
+      if (moveDoneToBottom) {
+        const nextOrdered = withSequentialOrder(orderItemsAfterToggle(items, id));
+        await applyItemLayout(nextOrdered);
+        return;
+      }
+
+      if (!user) {
+        await toggleLocalItem(listId, id);
+        return;
+      }
+
       await updateDoc(doc(db, 'lists', listId, 'items', id), {
         checked: !item.checked,
         updatedAt: serverTimestamp(),
       });
     },
-    [items, listId, user],
+    [applyItemLayout, items, listId, moveDoneToBottom, user],
   );
 
   const updateItem = useCallback(
@@ -295,7 +342,7 @@ export function useListItems(listId: string | undefined) {
       };
 
       if (updates.name !== undefined) {
-        payload.name = updates.name;
+        payload.name = normalizeItemName(updates.name);
       }
       if (updates.quantity !== undefined) {
         payload.quantity = updates.quantity;
@@ -396,5 +443,24 @@ export function useListItems(listId: string | undefined) {
     [items, listId, user],
   );
 
-  return { items, loading, addItem, toggleItem, updateItem, deleteItem, clearAllItems, reorderItems };
+  const groupDoneItemsAtBottom = useCallback(async () => {
+    if (!listId || items.length === 0) {
+      return;
+    }
+
+    const nextOrdered = withSequentialOrder(groupItemsWithDoneAtBottom(items));
+    await applyItemLayout(nextOrdered);
+  }, [applyItemLayout, items, listId]);
+
+  return {
+    items,
+    loading,
+    addItem,
+    toggleItem,
+    updateItem,
+    deleteItem,
+    clearAllItems,
+    reorderItems,
+    groupDoneItemsAtBottom,
+  };
 }

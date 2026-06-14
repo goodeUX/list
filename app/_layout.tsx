@@ -18,7 +18,7 @@ import {
   ThemeProvider as NavigationThemeProvider,
 } from '@react-navigation/native';
 import { useEffect, useMemo } from 'react';
-import { Platform, StyleSheet } from 'react-native';
+import { StyleSheet } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import 'react-native-reanimated';
@@ -98,7 +98,6 @@ function RootLayoutNav() {
       gestureEnabled: true,
       headerShown: false,
       presentation: 'transparentModal' as const,
-      ...(Platform.OS === 'android' ? { statusBarTranslucent: false } : null),
     }),
     [],
   );
@@ -115,10 +114,7 @@ function RootLayoutNav() {
             }}
           >
             <Stack.Screen name="index" />
-            <Stack.Screen
-              name="settings"
-              options={{ presentation: 'modal', headerShown: false }}
-            />
+            <Stack.Screen name="settings" options={listScreenOptions} />
             <Stack.Screen name="list/[id]" options={listScreenOptions} />
             <Stack.Screen name="join/[listId]" />
             <Stack.Screen

@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import {
   Modal,
   Pressable,
@@ -10,6 +10,7 @@ import {
 } from 'react-native';
 
 import { useTheme } from '@/contexts/ThemeContext';
+import { getBorderedInputHeight } from '@/components/ThemedTextInput';
 
 const LIST_EMOJIS = [
   '📋', '🛒', '✅', '🎁', '✈️', '🏠', '📚', '🍎', '💼', '🎉',
@@ -19,25 +20,39 @@ const LIST_EMOJIS = [
   '🍰', '🎂', '🍼', '👶', '🎓', '🏋️', '🎮', '📱', '💻', '🌍',
 ];
 
-const BUTTON_SIZE = 48;
-const DROPDOWN_WIDTH = 288;
-const DROPDOWN_MAX_HEIGHT = 220;
+const EMOJI_COLUMNS = 6;
+const VISIBLE_ROWS = 4;
+const EMOJI_OPTION_HEIGHT = 40;
+const BUTTON_SIZE = getBorderedInputHeight();
+
+function chunkEmojis(emojis: string[], columns: number): string[][] {
+  const rows: string[][] = [];
+
+  for (let index = 0; index < emojis.length; index += columns) {
+    rows.push(emojis.slice(index, index + columns));
+  }
+
+  return rows;
+}
 
 type EmojiPickerButtonProps = {
   value: string;
   onChange: (emoji: string) => void;
   disabled?: boolean;
+  dropdownContainerLayout?: LayoutRectangle | null;
 };
 
 export default function EmojiPickerButton({
   value,
   onChange,
   disabled = false,
+  dropdownContainerLayout = null,
 }: EmojiPickerButtonProps) {
   const { colors, radii, spacing } = useTheme();
   const [dropdownVisible, setDropdownVisible] = useState(false);
   const [anchorLayout, setAnchorLayout] = useState<LayoutRectangle | null>(null);
   const anchorRef = useRef<View>(null);
+  const emojiRows = useMemo(() => chunkEmojis(LIST_EMOJIS, EMOJI_COLUMNS), []);
 
   const closeDropdown = () => {
     setDropdownVisible(false);
@@ -59,8 +74,14 @@ export default function EmojiPickerButton({
     closeDropdown();
   };
 
-  const dropdownTop = anchorLayout ? anchorLayout.y + anchorLayout.height + spacing.xs : 0;
-  const dropdownLeft = anchorLayout?.x ?? 0;
+  const dropdownTop = anchorLayout
+    ? anchorLayout.y + anchorLayout.height + spacing.xs
+    : 0;
+  const containerLeft = dropdownContainerLayout?.x ?? anchorLayout?.x ?? 0;
+  const dropdownWidth = dropdownContainerLayout?.width ?? 288;
+  const dropdownLeft = containerLeft;
+  const gridMaxHeight =
+    VISIBLE_ROWS * EMOJI_OPTION_HEIGHT + (VISIBLE_ROWS - 1) * spacing.xs;
 
   return (
     <>
@@ -103,42 +124,46 @@ export default function EmojiPickerButton({
                 borderColor: colors.border,
                 borderRadius: radii.item,
                 left: dropdownLeft,
-                maxHeight: DROPDOWN_MAX_HEIGHT,
+                padding: spacing.sm,
                 top: dropdownTop,
-                width: DROPDOWN_WIDTH,
+                width: dropdownWidth,
               },
             ]}
           >
-            <Text style={[styles.dropdownTitle, { color: colors.textSecondary }]}>
-              Choose an icon
-            </Text>
             <ScrollView
+              contentContainerStyle={{ gap: spacing.xs }}
               keyboardShouldPersistTaps="handled"
               nestedScrollEnabled
               showsVerticalScrollIndicator={false}
+              style={{ maxHeight: gridMaxHeight }}
             >
-              <View style={[styles.emojiGrid, { gap: spacing.xs }]}>
-                {LIST_EMOJIS.map((item) => (
-                  <Pressable
-                    key={item}
-                    accessibilityLabel={`Use ${item} as list icon`}
-                    accessibilityRole="button"
-                    onPress={() => handleSelectEmoji(item)}
-                    style={({ pressed }) => [
-                      styles.emojiOption,
-                      {
-                        backgroundColor:
-                          item === value ? colors.accentSoft : colors.surfaceMuted,
-                        borderColor: item === value ? colors.accent : colors.border,
-                        borderRadius: radii.checkbox,
-                        opacity: pressed ? 0.85 : 1,
-                      },
-                    ]}
-                  >
-                    <Text style={styles.emojiOptionText}>{item}</Text>
-                  </Pressable>
-                ))}
-              </View>
+              {emojiRows.map((row, rowIndex) => (
+                <View
+                  key={`emoji-row-${rowIndex}`}
+                  style={[styles.emojiRow, { gap: spacing.xs }]}
+                >
+                  {row.map((item) => (
+                    <Pressable
+                      key={item}
+                      accessibilityLabel={`Use ${item} as list icon`}
+                      accessibilityRole="button"
+                      onPress={() => handleSelectEmoji(item)}
+                      style={({ pressed }) => [
+                        styles.emojiOption,
+                        {
+                          backgroundColor:
+                            item === value ? colors.surfaceMuted : 'transparent',
+                          borderRadius: radii.checkbox,
+                          height: EMOJI_OPTION_HEIGHT,
+                          opacity: pressed ? 0.85 : 1,
+                        },
+                      ]}
+                    >
+                      <Text style={styles.emojiOptionText}>{item}</Text>
+                    </Pressable>
+                  ))}
+                </View>
+              ))}
             </ScrollView>
           </Pressable>
         </Pressable>
@@ -166,30 +191,21 @@ const styles = StyleSheet.create({
   dropdown: {
     borderWidth: 1,
     elevation: 8,
-    gap: 8,
-    padding: 10,
     position: 'absolute',
     shadowColor: '#2C2417',
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.12,
     shadowRadius: 16,
   },
-  dropdownTitle: {
-    fontFamily: 'NunitoSans_600SemiBold',
-    fontSize: 12,
-    lineHeight: 16,
-    textAlign: 'center',
-  },
-  emojiGrid: {
+  emojiRow: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
+    width: '100%',
   },
   emojiOption: {
     alignItems: 'center',
-    borderWidth: 1,
-    height: 34,
+    flex: 1,
     justifyContent: 'center',
-    width: 30,
+    minWidth: 0,
   },
   emojiOptionText: {
     fontSize: 20,

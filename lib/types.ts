@@ -10,6 +10,7 @@ export interface AppList {
   emoji: string;
   ownerId: string;
   memberIds: string[];
+  moveDoneToBottom: boolean;
   createdAt: Date;
   updatedAt: Date;
 }

@@ -8,11 +8,11 @@ import {
   Pressable,
   StyleSheet,
   Text,
-  TextInput,
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import ThemedTextInput from '@/components/ThemedTextInput';
 import { getAuthErrorMessage, useAuth } from '@/contexts/AuthContext';
 import { useTheme } from '@/contexts/ThemeContext';
 
@@ -97,7 +97,7 @@ export default function SignInScreen() {
               <Text style={[styles.label, { color: colors.textSecondary }]}>
                 Email
               </Text>
-              <TextInput
+              <ThemedTextInput
                 autoCapitalize="none"
                 autoComplete="email"
                 autoCorrect={false}
@@ -105,16 +105,6 @@ export default function SignInScreen() {
                 keyboardType="email-address"
                 onChangeText={setEmail}
                 placeholder="you@example.com"
-                placeholderTextColor={colors.textSecondary}
-                style={[
-                  styles.input,
-                  {
-                    backgroundColor: colors.surface,
-                    borderColor: colors.border,
-                    borderRadius: radii.item,
-                    color: colors.text,
-                  },
-                ]}
                 textContentType="emailAddress"
                 value={email}
               />
@@ -124,22 +114,12 @@ export default function SignInScreen() {
               <Text style={[styles.label, { color: colors.textSecondary }]}>
                 Password
               </Text>
-              <TextInput
+              <ThemedTextInput
                 autoComplete="password"
                 editable={!submitting}
                 onChangeText={setPassword}
                 placeholder="Your password"
-                placeholderTextColor={colors.textSecondary}
                 secureTextEntry
-                style={[
-                  styles.input,
-                  {
-                    backgroundColor: colors.surface,
-                    borderColor: colors.border,
-                    borderRadius: radii.item,
-                    color: colors.text,
-                  },
-                ]}
                 textContentType="password"
                 value={password}
               />
@@ -232,13 +212,6 @@ const styles = StyleSheet.create({
   label: {
     fontFamily: 'NunitoSans_600SemiBold',
     fontSize: 14,
-  },
-  input: {
-    borderWidth: 1,
-    fontFamily: 'NunitoSans_400Regular',
-    fontSize: 16,
-    paddingHorizontal: 16,
-    paddingVertical: 14,
   },
   error: {
     fontFamily: 'NunitoSans_400Regular',

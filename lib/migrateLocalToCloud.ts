@@ -36,6 +36,7 @@ export async function migrateLocalDataToCloud(userId: string): Promise<number> {
       emoji: list.emoji,
       ownerId: userId,
       memberIds: [userId],
+      moveDoneToBottom: list.moveDoneToBottom ?? false,
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
     });

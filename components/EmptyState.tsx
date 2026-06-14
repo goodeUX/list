@@ -21,6 +21,7 @@ export default function EmptyState({
         accessibilityLabel="Create list"
         accessibilityRole="button"
         onPress={onCreateList}
+        onPressIn={onCreateList}
         style={({ pressed }) => [
           styles.button,
           {

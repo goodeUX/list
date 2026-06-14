@@ -8,11 +8,12 @@ import {
   ScrollView,
   StyleSheet,
   Text,
-  TextInput,
   View,
 } from 'react-native';
 
+import ThemedTextInput from '@/components/ThemedTextInput';
 import { useTheme } from '@/contexts/ThemeContext';
+import { ITEM_NAME_LIMIT_MESSAGE, getItemNameInputUpdate } from '@/lib/itemName';
 import type { ItemHistoryEntry } from '@/lib/types';
 
 type AddItemSheetProps = {
@@ -32,6 +33,7 @@ export default function AddItemSheet({
 }: AddItemSheetProps) {
   const { colors, radii, spacing } = useTheme();
   const [text, setText] = useState('');
+  const [nameLimitError, setNameLimitError] = useState(false);
 
   const filteredHistory = useMemo(() => {
     const query = text.trim().toLowerCase();
@@ -56,6 +58,7 @@ export default function AddItemSheet({
 
     await onAddItem(trimmedName, quantity ?? null);
     setText('');
+    setNameLimitError(false);
     onClose();
   };
 
@@ -64,6 +67,7 @@ export default function AddItemSheet({
       return;
     }
     setText('');
+    setNameLimitError(false);
     onClose();
   };
 
@@ -93,27 +97,27 @@ export default function AddItemSheet({
         >
           <Text style={[styles.title, { color: colors.text }]}>Add item</Text>
 
-          <TextInput
+          <ThemedTextInput
             autoFocus
             editable={!adding}
-            onChangeText={setText}
+            onChangeText={(value) => {
+              const { limitReached, value: limitedValue } = getItemNameInputUpdate(value);
+              setNameLimitError(limitReached);
+              setText(limitedValue);
+            }}
             onSubmitEditing={() => {
               void handleAdd(text);
             }}
             placeholder="What do you need?"
-            placeholderTextColor={colors.textSecondary}
             returnKeyType="done"
-            style={[
-              styles.input,
-              {
-                backgroundColor: colors.surfaceMuted,
-                borderColor: colors.border,
-                borderRadius: radii.item,
-                color: colors.text,
-              },
-            ]}
             value={text}
           />
+
+          {nameLimitError ? (
+            <Text style={[styles.limitError, { color: colors.accent }]}>
+              {ITEM_NAME_LIMIT_MESSAGE}
+            </Text>
+          ) : null}
 
           {filteredHistory.length > 0 ? (
             <View style={{ gap: spacing.sm, marginTop: spacing.md }}>
@@ -220,12 +224,10 @@ const styles = StyleSheet.create({
     lineHeight: 28,
     marginBottom: 4,
   },
-  input: {
-    borderWidth: 1,
+  limitError: {
     fontFamily: 'NunitoSans_400Regular',
-    fontSize: 16,
-    paddingHorizontal: 16,
-    paddingVertical: 14,
+    fontSize: 14,
+    lineHeight: 20,
   },
   sectionLabel: {
     fontFamily: 'NunitoSans_600SemiBold',

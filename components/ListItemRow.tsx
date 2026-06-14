@@ -11,6 +11,7 @@ import Animated, {
 
 import { useTheme } from '@/contexts/ThemeContext';
 import { playToggleHaptic } from '@/lib/haptics';
+import { formatItemNameForDisplay } from '@/lib/itemName';
 import type { ListItem } from '@/lib/types';
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
@@ -166,7 +167,7 @@ export default function ListItemRow({
           numberOfLines={2}
           style={styles.name}
         >
-          {item.name}
+          {formatItemNameForDisplay(item.name)}
         </CompletedText>
 
         {item.quantity || item.link ? (

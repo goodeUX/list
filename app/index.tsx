@@ -1,6 +1,7 @@
+// @refresh reset
 import { router } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
-import { useMemo, useRef, useState, useEffect } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   FlatList,
@@ -8,7 +9,6 @@ import {
   Pressable,
   StyleSheet,
   Text,
-  TextInput,
   View,
 } from 'react-native';
 import Animated, {
@@ -19,12 +19,17 @@ import Animated, {
 } from 'react-native-reanimated';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import BottomSheet from '@/components/BottomSheet';
 import EmptyState from '@/components/EmptyState';
-import EmojiPickerButton from '@/components/EmojiPickerButton';
 import ListCard from '@/components/ListCard';
+import ListFormModal from '@/components/ListFormModal';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useLists } from '@/hooks/useLists';
+import {
+  acquireKeyboardSession,
+  releaseKeyboardProxy,
+  renewKeyboardSession,
+} from '@/lib/keyboardProxy';
+import { markPendingAddInputFocus } from '@/lib/pendingAddInputFocus';
 
 const DEFAULT_EMOJI = '📋';
 const CREATE_BUTTON_HEIGHT = 48;
@@ -46,26 +51,17 @@ function formatSummary(listCount: number, sharedCount: number): string {
 
 export default function ListsHomeScreen() {
   const { colors, colorScheme, radii, spacing } = useTheme();
-  const insets = useSafeAreaInsets();
+  const safeAreaInsets = useSafeAreaInsets();
   const { lists, loading, createList } = useLists();
   const listsOpacity = useSharedValue(0);
   const [modalVisible, setModalVisible] = useState(false);
-  const [listName, setListName] = useState('');
-  const [listEmoji, setListEmoji] = useState(DEFAULT_EMOJI);
   const [creating, setCreating] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const listNameInputRef = useRef<TextInput>(null);
 
   const sharedCount = useMemo(
     () => lists.filter((list) => list.memberIds.length > 1).length,
     [lists],
   );
-
-  const summary = formatSummary(lists.length, sharedCount);
-  const showCreateBar = !loading && lists.length > 0;
-  const bottomBarInset = Math.max(insets.bottom, spacing.md);
-  const listBottomPadding =
-    CREATE_BUTTON_HEIGHT + spacing.md * 2 + bottomBarInset + spacing.lg;
 
   useEffect(() => {
     if (loading) {
@@ -83,264 +79,186 @@ export default function ListsHomeScreen() {
     opacity: listsOpacity.value,
   }));
 
-  const openCreateModal = () => {
-    setListName('');
-    setListEmoji(DEFAULT_EMOJI);
+  const openCreateModal = useCallback(() => {
     setError(null);
     setModalVisible(true);
-  };
+  }, []);
 
-  const closeCreateModal = () => {
-    if (creating) {
-      return;
-    }
+  const closeCreateModal = useCallback(() => {
     setModalVisible(false);
     setError(null);
-  };
+  }, []);
 
-  const focusListNameInput = () => {
-    const focus = () => listNameInputRef.current?.focus();
+  const prepareCreateListKeyboard = useCallback(() => {
+    markPendingAddInputFocus();
 
     if (Platform.OS === 'web') {
-      requestAnimationFrame(() => {
-        requestAnimationFrame(focus);
-      });
-      return;
+      acquireKeyboardSession();
     }
+  }, []);
 
-    requestAnimationFrame(() => {
-      requestAnimationFrame(focus);
-    });
-  };
+  const handleCreateList = useCallback(
+    async (name: string, emoji: string) => {
+      markPendingAddInputFocus();
 
-  const handleCreateList = async () => {
-    const trimmedName = listName.trim();
-    if (!trimmedName) {
-      setError('Please enter a list name.');
-      return;
-    }
+      if (Platform.OS === 'web') {
+        acquireKeyboardSession();
+      }
 
-    setCreating(true);
-    setError(null);
-    try {
-      await createList(trimmedName, listEmoji);
-      setModalVisible(false);
-      setListName('');
-      setListEmoji(DEFAULT_EMOJI);
-    } catch {
-      setError('Could not create list. Please try again.');
-    } finally {
-      setCreating(false);
-    }
-  };
+      setCreating(true);
+      setError(null);
+      try {
+        const listId = await createList(name, emoji);
+        setModalVisible(false);
+
+        if (Platform.OS === 'web') {
+          renewKeyboardSession();
+        }
+
+        router.push({
+          pathname: '/list/[id]',
+          params: {
+            id: listId,
+            name,
+            emoji,
+            focusAdd: '1',
+          },
+        });
+      } catch {
+        releaseKeyboardProxy();
+        setError('Could not create list. Please try again.');
+      } finally {
+        setCreating(false);
+      }
+    },
+    [createList],
+  );
+
+  const summary = formatSummary(lists.length, sharedCount);
+  const showCreateBar = !loading && lists.length > 0;
+  const bottomBarInset = Math.max(safeAreaInsets.bottom, spacing.md);
+  const listBottomPadding =
+    CREATE_BUTTON_HEIGHT + spacing.md * 2 + bottomBarInset + spacing.lg;
 
   return (
     <View style={[styles.flex, { backgroundColor: colors.bg }]}>
       <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.bg }]}>
-      <View style={[styles.header, { paddingHorizontal: spacing.lg, paddingTop: spacing.md }]}>
-        <View style={styles.headerTop}>
-          <View style={styles.titleBlock}>
-            <Text style={[styles.title, { color: colors.text }]}>My Lists</Text>
-            {!loading ? (
-              <Text style={[styles.summary, { color: colors.textSecondary }]}>
-                {summary}
-              </Text>
-            ) : null}
-          </View>
+        <View style={[styles.header, { paddingHorizontal: spacing.lg, paddingTop: spacing.md }]}>
+          <View style={styles.headerTop}>
+            <View style={styles.titleBlock}>
+              <Text style={[styles.title, { color: colors.text }]}>My Lists</Text>
+              {!loading ? (
+                <Text style={[styles.summary, { color: colors.textSecondary }]}>
+                  {summary}
+                </Text>
+              ) : null}
+            </View>
 
-          <Pressable
-            accessibilityLabel="Settings"
-            accessibilityRole="button"
-            hitSlop={8}
-            onPress={() => router.push('/settings')}
-            style={({ pressed }) => [
-              styles.settingsButton,
-              {
-                backgroundColor: colors.surface,
-                opacity: pressed ? 0.7 : 1,
-              },
-            ]}
-          >
-            <MaterialIcons color={colors.accent} name="settings" size={24} />
-          </Pressable>
-        </View>
-      </View>
-
-      {loading ? (
-        <View style={styles.loading}>
-          <ActivityIndicator color={colors.accent} size="large" />
-        </View>
-      ) : (
-        <Animated.View style={[styles.content, listsFadeStyle]}>
-          {lists.length === 0 ? (
-            <EmptyState onCreateList={openCreateModal} />
-          ) : (
-            <FlatList
-              contentContainerStyle={[
-                styles.listContent,
-                {
-                  gap: spacing.md,
-                  padding: spacing.lg,
-                  paddingBottom: showCreateBar ? listBottomPadding : spacing.xl,
-                },
-              ]}
-              data={lists}
-              keyExtractor={(item) => item.id}
-              renderItem={({ item }) => <ListCard list={item} />}
-              showsVerticalScrollIndicator={false}
-            />
-          )}
-        </Animated.View>
-      )}
-
-      {showCreateBar ? (
-        <View
-          pointerEvents="box-none"
-          style={[styles.bottomBar, { paddingBottom: bottomBarInset }]}
-        >
-          <View
-            style={[
-              styles.bottomBarSurface,
-              {
-                backgroundColor: frostedBackgrounds[colorScheme],
-                borderTopColor: colors.border,
-                paddingHorizontal: spacing.lg,
-                paddingTop: spacing.lg,
-                paddingBottom: spacing.md,
-              },
-              Platform.OS === 'web'
-                ? ({
-                    backdropFilter: 'blur(20px)',
-                    WebkitBackdropFilter: 'blur(20px)',
-                  } as object)
-                : null,
-            ]}
-          >
             <Pressable
-              accessibilityLabel="Create a new list"
+              accessibilityLabel="Settings"
               accessibilityRole="button"
-              onPress={openCreateModal}
+              hitSlop={8}
+              onPress={() => router.push('/settings')}
               style={({ pressed }) => [
-                styles.createListButton,
+                styles.settingsButton,
                 {
                   backgroundColor: colors.surface,
-                  borderRadius: radii.item,
                   opacity: pressed ? 0.7 : 1,
                 },
               ]}
             >
-              <View style={styles.createListButtonContent}>
-                <MaterialIcons color={colors.accent} name="add" size={24} />
-                <Text style={[styles.createListButtonText, { color: colors.text }]}>
-                  Create a new list
-                </Text>
-              </View>
+              <MaterialIcons color={colors.accent} name="tune" size={24} />
             </Pressable>
           </View>
         </View>
-      ) : null}
 
-      <BottomSheet
-        blocking={creating}
-        onClose={closeCreateModal}
-        onOpened={focusListNameInput}
-        visible={modalVisible}
-      >
-        <View
-          style={[
-            styles.modalSheet,
-            {
-              backgroundColor: colors.surface,
-              borderColor: colors.border,
-              borderTopLeftRadius: radii.card,
-              borderTopRightRadius: radii.card,
-              padding: spacing.lg,
-            },
-          ]}
-        >
-          <Text style={[styles.modalTitle, { color: colors.text }]}>
-            New list
-          </Text>
-
-          <View style={styles.field}>
-            <Text style={[styles.label, { color: colors.textSecondary }]}>
-              Name
-            </Text>
-            <View style={styles.nameRow}>
-              <EmojiPickerButton
-                disabled={creating}
-                onChange={setListEmoji}
-                value={listEmoji}
-              />
-              <TextInput
-                editable={!creating}
-                onChangeText={setListName}
-                onSubmitEditing={handleCreateList}
-                placeholder="Groceries, packing, gifts..."
-                placeholderTextColor={colors.textSecondary}
-                ref={listNameInputRef}
-                returnKeyType="done"
-                style={[
-                  styles.input,
-                  styles.nameInput,
+        {loading ? (
+          <View style={styles.loading}>
+            <ActivityIndicator color={colors.accent} size="large" />
+          </View>
+        ) : (
+          <Animated.View style={[styles.content, listsFadeStyle]}>
+            {lists.length === 0 ? (
+              <EmptyState onCreateList={openCreateModal} />
+            ) : (
+              <FlatList
+                contentContainerStyle={[
+                  styles.listContent,
                   {
-                    backgroundColor: colors.surfaceMuted,
-                    borderColor: colors.border,
-                    borderRadius: radii.item,
-                    color: colors.text,
+                    gap: spacing.md,
+                    padding: spacing.lg,
+                    paddingBottom: showCreateBar ? listBottomPadding : spacing.xl,
                   },
                 ]}
-                value={listName}
+                data={lists}
+                keyExtractor={(item) => item.id}
+                renderItem={({ item }) => <ListCard list={item} />}
+                showsVerticalScrollIndicator={false}
               />
+            )}
+          </Animated.View>
+        )}
+
+        {showCreateBar ? (
+          <View
+            pointerEvents="box-none"
+            style={[styles.bottomBar, { paddingBottom: bottomBarInset }]}
+          >
+            <View
+              style={[
+                styles.bottomBarSurface,
+                {
+                  backgroundColor: frostedBackgrounds[colorScheme],
+                  borderTopColor: colors.border,
+                  paddingHorizontal: spacing.lg,
+                  paddingTop: spacing.lg,
+                  paddingBottom: spacing.md,
+                },
+                Platform.OS === 'web'
+                  ? ({
+                      backdropFilter: 'blur(20px)',
+                      WebkitBackdropFilter: 'blur(20px)',
+                    } as object)
+                  : null,
+              ]}
+            >
+              <Pressable
+                accessibilityLabel="Create a new list"
+                accessibilityRole="button"
+                onPress={openCreateModal}
+                onPressIn={openCreateModal}
+                style={({ pressed }) => [
+                  styles.createListButton,
+                  {
+                    backgroundColor: colors.surface,
+                    borderRadius: radii.item,
+                    opacity: pressed ? 0.7 : 1,
+                  },
+                ]}
+              >
+                <View style={styles.createListButtonContent}>
+                  <MaterialIcons color={colors.accent} name="add" size={24} />
+                  <Text style={[styles.createListButtonText, { color: colors.text }]}>
+                    Create a new list
+                  </Text>
+                </View>
+              </Pressable>
             </View>
           </View>
+        ) : null}
+      </SafeAreaView>
 
-          {error ? (
-            <Text style={[styles.error, { color: colors.accent }]}>{error}</Text>
-          ) : null}
-
-          <View style={[styles.modalActions, { gap: spacing.sm, marginTop: spacing.md }]}>
-            <Pressable
-              disabled={creating}
-              onPress={closeCreateModal}
-              style={({ pressed }) => [
-                styles.secondaryButton,
-                {
-                  borderColor: colors.border,
-                  borderRadius: radii.item,
-                  opacity: pressed || creating ? 0.85 : 1,
-                },
-              ]}
-            >
-              <Text style={[styles.secondaryButtonText, { color: colors.text }]}>
-                Cancel
-              </Text>
-            </Pressable>
-
-            <Pressable
-              disabled={creating}
-              onPress={handleCreateList}
-              style={({ pressed }) => [
-                styles.primaryButton,
-                {
-                  backgroundColor: colors.accent,
-                  borderRadius: radii.item,
-                  opacity: pressed || creating ? 0.85 : 1,
-                },
-              ]}
-            >
-              {creating ? (
-                <ActivityIndicator color={colors.surface} />
-              ) : (
-                <Text style={[styles.primaryButtonText, { color: colors.surface }]}>
-                  Create
-                </Text>
-              )}
-            </Pressable>
-          </View>
-        </View>
-      </BottomSheet>
-    </SafeAreaView>
+      <ListFormModal
+        error={error}
+        initialEmoji={DEFAULT_EMOJI}
+        onClose={closeCreateModal}
+        onSubmit={handleCreateList}
+        onSubmitPressIn={prepareCreateListKeyboard}
+        submitLabel="Create"
+        submitting={creating}
+        title="New list"
+        visible={modalVisible}
+      />
     </View>
   );
 }
@@ -418,68 +336,6 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   createListButtonText: {
-    fontFamily: 'NunitoSans_600SemiBold',
-    fontSize: 16,
-  },
-  modalSheet: {
-    borderTopWidth: 1,
-    gap: 16,
-  },
-  modalTitle: {
-    fontFamily: 'Fraunces_600SemiBold',
-    fontSize: 24,
-    lineHeight: 32,
-  },
-  field: {
-    gap: 6,
-  },
-  nameRow: {
-    alignItems: 'center',
-    flexDirection: 'row',
-    gap: 10,
-  },
-  nameInput: {
-    flex: 1,
-  },
-  label: {
-    fontFamily: 'NunitoSans_600SemiBold',
-    fontSize: 14,
-  },
-  input: {
-    borderWidth: 1,
-    fontFamily: 'NunitoSans_400Regular',
-    fontSize: 16,
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-  },
-  error: {
-    fontFamily: 'NunitoSans_400Regular',
-    fontSize: 14,
-    lineHeight: 20,
-  },
-  modalActions: {
-    flexDirection: 'row',
-  },
-  secondaryButton: {
-    alignItems: 'center',
-    borderWidth: 1,
-    flex: 1,
-    justifyContent: 'center',
-    minHeight: 48,
-    paddingHorizontal: 16,
-  },
-  secondaryButtonText: {
-    fontFamily: 'NunitoSans_600SemiBold',
-    fontSize: 16,
-  },
-  primaryButton: {
-    alignItems: 'center',
-    flex: 1,
-    justifyContent: 'center',
-    minHeight: 48,
-    paddingHorizontal: 16,
-  },
-  primaryButtonText: {
     fontFamily: 'NunitoSans_600SemiBold',
     fontSize: 16,
   },

@@ -11,6 +11,8 @@ import { useCallback, useEffect, useState } from 'react';
 
 import { useAuth } from '@/contexts/AuthContext';
 import { db } from '@/lib/firebase';
+import { handleFirestoreListenerError } from '@/lib/firestoreListenerErrors';
+import { normalizeListName } from '@/lib/listName';
 import { deleteListById } from '@/lib/listMutations';
 import {
   createLocalList,
@@ -33,6 +35,7 @@ function docToAppList(id: string, data: Record<string, unknown>): AppList {
     emoji: (data.emoji as string) ?? '📋',
     ownerId: (data.ownerId as string) ?? '',
     memberIds: (data.memberIds as string[]) ?? [],
+    moveDoneToBottom: (data.moveDoneToBottom as boolean) ?? false,
     createdAt: toDate(data.createdAt),
     updatedAt: toDate(data.updatedAt),
   };
@@ -101,7 +104,8 @@ export function useLists() {
           setLoading(false);
         }
       },
-      () => {
+      (error) => {
+        handleFirestoreListenerError(error);
         setLoading(false);
       },
     );
@@ -110,25 +114,28 @@ export function useLists() {
   }, [authLoading, user]);
 
   const createList = useCallback(
-    async (name: string, emoji: string) => {
-      const trimmedName = name.trim();
+    async (name: string, emoji: string): Promise<string> => {
+      const trimmedName = normalizeListName(name);
       if (!trimmedName) {
         throw new Error('List name is required');
       }
 
       if (!user) {
-        await createLocalList(trimmedName, emoji);
-        return;
+        const list = await createLocalList(trimmedName, emoji);
+        return list.id;
       }
 
-      await addDoc(collection(db, 'lists'), {
+      const docRef = await addDoc(collection(db, 'lists'), {
         name: trimmedName,
         emoji: emoji || '📋',
         ownerId: user.uid,
         memberIds: [user.uid],
+        moveDoneToBottom: false,
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
       });
+
+      return docRef.id;
     },
     [user],
   );

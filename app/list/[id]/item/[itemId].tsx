@@ -11,16 +11,21 @@ import {
   ScrollView,
   StyleSheet,
   Text,
-  TextInput,
   View,
 } from 'react-native';
 import Animated from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import ThemedTextInput from '@/components/ThemedTextInput';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useChildSlideTransition } from '@/hooks/useSlideTransition';
 import { useListItems } from '@/hooks/useListItems';
 import { isValidUrl, normalizeUrl } from '@/lib/urls';
+import {
+  ITEM_NAME_LIMIT_MESSAGE,
+  getItemNameInputUpdate,
+  normalizeItemName,
+} from '@/lib/itemName';
 
 export default function ItemDetailScreen() {
   const { id, itemId } = useLocalSearchParams<{ id: string; itemId: string }>();
@@ -39,6 +44,7 @@ export default function ItemDetailScreen() {
   const [description, setDescription] = useState('');
   const [link, setLink] = useState('');
   const [saving, setSaving] = useState(false);
+  const [nameLimitError, setNameLimitError] = useState(false);
   const [linkError, setLinkError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -58,7 +64,7 @@ export default function ItemDetailScreen() {
       return;
     }
 
-    const trimmedName = name.trim();
+    const trimmedName = normalizeItemName(name);
     if (!trimmedName) {
       Alert.alert('Name required', 'Please enter an item name.');
       return;
@@ -210,85 +216,58 @@ export default function ItemDetailScreen() {
         >
           <View style={styles.field}>
             <Text style={[styles.label, { color: colors.textSecondary }]}>Name</Text>
-            <TextInput
+            <ThemedTextInput
               editable={!saving}
-              onChangeText={setName}
-              style={[
-                styles.nameInput,
-                {
-                  backgroundColor: colors.surface,
-                  borderColor: colors.border,
-                  borderRadius: radii.item,
-                  color: colors.text,
-                },
-              ]}
+              onChangeText={(text) => {
+                const { limitReached, value } = getItemNameInputUpdate(text);
+                setNameLimitError(limitReached);
+                setName(value);
+              }}
+              style={styles.nameInput}
               value={name}
             />
+            {nameLimitError ? (
+              <Text style={[styles.limitError, { color: colors.accent }]}>
+                {ITEM_NAME_LIMIT_MESSAGE}
+              </Text>
+            ) : null}
           </View>
 
           <View style={styles.field}>
             <Text style={[styles.label, { color: colors.textSecondary }]}>Quantity</Text>
-            <TextInput
+            <ThemedTextInput
               editable={!saving}
               onChangeText={setQuantity}
               placeholder="e.g. 2 lbs, 1 pack"
-              placeholderTextColor={colors.textSecondary}
-              style={[
-                styles.input,
-                {
-                  backgroundColor: colors.surface,
-                  borderColor: colors.border,
-                  borderRadius: radii.item,
-                  color: colors.text,
-                },
-              ]}
               value={quantity}
             />
           </View>
 
           <View style={styles.field}>
             <Text style={[styles.label, { color: colors.textSecondary }]}>Description</Text>
-            <TextInput
+            <ThemedTextInput
               editable={!saving}
               multiline
               onChangeText={setDescription}
               placeholder="Notes or details"
-              placeholderTextColor={colors.textSecondary}
-              style={[
-                styles.textArea,
-                {
-                  backgroundColor: colors.surface,
-                  borderColor: colors.border,
-                  borderRadius: radii.item,
-                  color: colors.text,
-                },
-              ]}
+              style={styles.textArea}
               value={description}
             />
           </View>
 
           <View style={styles.field}>
             <Text style={[styles.label, { color: colors.textSecondary }]}>Link</Text>
-            <TextInput
+            <ThemedTextInput
               autoCapitalize="none"
               autoCorrect={false}
               editable={!saving}
+              invalid={Boolean(linkError)}
               keyboardType="url"
               onChangeText={(value) => {
                 setLink(value);
                 setLinkError(null);
               }}
               placeholder="https://..."
-              placeholderTextColor={colors.textSecondary}
-              style={[
-                styles.input,
-                {
-                  backgroundColor: colors.surface,
-                  borderColor: linkError ? colors.accent : colors.border,
-                  borderRadius: radii.item,
-                  color: colors.text,
-                },
-              ]}
               value={link}
             />
             {linkError ? (
@@ -387,33 +366,24 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
   nameInput: {
-    borderWidth: 1,
     fontFamily: 'Fraunces_600SemiBold',
     fontSize: 24,
     lineHeight: 30,
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-  },
-  input: {
-    borderWidth: 1,
-    fontFamily: 'NunitoSans_400Regular',
-    fontSize: 16,
-    paddingHorizontal: 16,
-    paddingVertical: 14,
   },
   textArea: {
-    borderWidth: 1,
-    fontFamily: 'NunitoSans_400Regular',
-    fontSize: 16,
     minHeight: 100,
-    paddingHorizontal: 16,
-    paddingVertical: 14,
     textAlignVertical: 'top',
   },
   error: {
     fontFamily: 'NunitoSans_400Regular',
     fontSize: 13,
     lineHeight: 18,
+  },
+  limitError: {
+    fontFamily: 'NunitoSans_400Regular',
+    fontSize: 14,
+    lineHeight: 20,
+    marginTop: 6,
   },
   openLink: {
     fontFamily: 'NunitoSans_600SemiBold',

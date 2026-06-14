@@ -9,11 +9,11 @@ import {
   ScrollView,
   StyleSheet,
   Text,
-  TextInput,
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import ThemedTextInput from '@/components/ThemedTextInput';
 import { getAuthErrorMessage, useAuth } from '@/contexts/AuthContext';
 import { useTheme } from '@/contexts/ThemeContext';
 
@@ -106,21 +106,11 @@ export default function SignUpScreen() {
               <Text style={[styles.label, { color: colors.textSecondary }]}>
                 Display name
               </Text>
-              <TextInput
+              <ThemedTextInput
                 autoComplete="name"
                 editable={!submitting}
                 onChangeText={setDisplayName}
                 placeholder="Your name"
-                placeholderTextColor={colors.textSecondary}
-                style={[
-                  styles.input,
-                  {
-                    backgroundColor: colors.surface,
-                    borderColor: colors.border,
-                    borderRadius: radii.item,
-                    color: colors.text,
-                  },
-                ]}
                 textContentType="name"
                 value={displayName}
               />
@@ -130,7 +120,7 @@ export default function SignUpScreen() {
               <Text style={[styles.label, { color: colors.textSecondary }]}>
                 Email
               </Text>
-              <TextInput
+              <ThemedTextInput
                 autoCapitalize="none"
                 autoComplete="email"
                 autoCorrect={false}
@@ -138,16 +128,6 @@ export default function SignUpScreen() {
                 keyboardType="email-address"
                 onChangeText={setEmail}
                 placeholder="you@example.com"
-                placeholderTextColor={colors.textSecondary}
-                style={[
-                  styles.input,
-                  {
-                    backgroundColor: colors.surface,
-                    borderColor: colors.border,
-                    borderRadius: radii.item,
-                    color: colors.text,
-                  },
-                ]}
                 textContentType="emailAddress"
                 value={email}
               />
@@ -157,22 +137,12 @@ export default function SignUpScreen() {
               <Text style={[styles.label, { color: colors.textSecondary }]}>
                 Password
               </Text>
-              <TextInput
+              <ThemedTextInput
                 autoComplete="new-password"
                 editable={!submitting}
                 onChangeText={setPassword}
                 placeholder="At least 6 characters"
-                placeholderTextColor={colors.textSecondary}
                 secureTextEntry
-                style={[
-                  styles.input,
-                  {
-                    backgroundColor: colors.surface,
-                    borderColor: colors.border,
-                    borderRadius: radii.item,
-                    color: colors.text,
-                  },
-                ]}
                 textContentType="newPassword"
                 value={password}
               />
@@ -265,13 +235,6 @@ const styles = StyleSheet.create({
   label: {
     fontFamily: 'NunitoSans_600SemiBold',
     fontSize: 14,
-  },
-  input: {
-    borderWidth: 1,
-    fontFamily: 'NunitoSans_400Regular',
-    fontSize: 16,
-    paddingHorizontal: 16,
-    paddingVertical: 14,
   },
   error: {
     fontFamily: 'NunitoSans_400Regular',

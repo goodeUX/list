@@ -1,6 +1,6 @@
 import { usePreventRemove, useNavigation } from '@react-navigation/native';
 import { useRouter } from 'expo-router';
-import { useCallback, useLayoutEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import {
   Easing,
   runOnJS,
@@ -28,6 +28,16 @@ type SlideTransition = {
   isEnabled: boolean;
 };
 
+type SlideExitState = {
+  isAnimating: boolean;
+  action: NavigationAction | null;
+};
+
+const IDLE_SLIDE_EXIT: SlideExitState = {
+  isAnimating: false,
+  action: null,
+};
+
 export function useChildSlideTransition(
   options: SlideTransitionOptions = {},
 ): SlideTransition {
@@ -38,24 +48,40 @@ export function useChildSlideTransition(
   const slideDistance = getSlideDistance();
   const translateX = useSharedValue(isEnabled ? slideDistance : 0);
   const [shouldPreventRemove, setShouldPreventRemove] = useState(isEnabled);
-  const pendingAction = useRef<NavigationAction | null>(null);
-  const isAnimatingOut = useRef(false);
+  const [slideExit, setSlideExit] = useState<SlideExitState>(IDLE_SLIDE_EXIT);
+  const isStartingExitRef = useRef(false);
 
-  const completeExit = useCallback(() => {
-    const action = pendingAction.current;
-    pendingAction.current = null;
-    isAnimatingOut.current = false;
-
-    if (!action) {
-      return;
+  useEffect(() => {
+    if (!slideExit.isAnimating) {
+      isStartingExitRef.current = false;
     }
+  }, [slideExit.isAnimating]);
 
-    setShouldPreventRemove(false);
-    requestAnimationFrame(() => {
-      navigation.dispatch(action);
-      setShouldPreventRemove(true);
-    });
-  }, [navigation]);
+  const handleExitAnimationEnd = useCallback(
+    (finished: boolean) => {
+      setSlideExit((current) => {
+        if (!current.isAnimating) {
+          return current;
+        }
+
+        if (!finished) {
+          return IDLE_SLIDE_EXIT;
+        }
+
+        const action = current.action;
+        if (action) {
+          setShouldPreventRemove(false);
+          requestAnimationFrame(() => {
+            navigation.dispatch(action);
+            setShouldPreventRemove(true);
+          });
+        }
+
+        return IDLE_SLIDE_EXIT;
+      });
+    },
+    [navigation],
+  );
 
   useLayoutEffect(() => {
     if (!isEnabled || !ready) {
@@ -71,12 +97,12 @@ export function useChildSlideTransition(
   usePreventRemove(
     isEnabled && shouldPreventRemove,
     ({ data }) => {
-      if (isAnimatingOut.current) {
+      if (isStartingExitRef.current) {
         return;
       }
 
-      isAnimatingOut.current = true;
-      pendingAction.current = data.action;
+      isStartingExitRef.current = true;
+      setSlideExit({ isAnimating: true, action: data.action });
 
       translateX.value = withTiming(
         slideDistance,
@@ -85,13 +111,8 @@ export function useChildSlideTransition(
           easing: Easing.in(Easing.cubic),
         },
         (finished) => {
-          if (!finished) {
-            isAnimatingOut.current = false;
-            pendingAction.current = null;
-            return;
-          }
-
-          runOnJS(completeExit)();
+          'worklet';
+          runOnJS(handleExitAnimationEnd)(finished);
         },
       );
     },
@@ -110,4 +131,4 @@ export function useChildSlideTransition(
     goBack,
     isEnabled,
   };
-}
+};

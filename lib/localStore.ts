@@ -1,6 +1,8 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import type { AppList, ListItem, NewItemFields } from '@/lib/types';
+import { normalizeItemName } from '@/lib/itemName';
+import { normalizeListName } from '@/lib/listName';
 
 const STORAGE_KEY = 'list_app_local_data_v1';
 const LEGACY_STORAGE_KEY = 'sage_local_data_v1';
@@ -51,6 +53,7 @@ function coerceDate(value: unknown): Date {
 function normalizeList(list: AppList): AppList {
   return {
     ...list,
+    moveDoneToBottom: list.moveDoneToBottom ?? false,
     createdAt: coerceDate(list.createdAt),
     updatedAt: coerceDate(list.updatedAt),
   };
@@ -149,7 +152,7 @@ export async function createLocalList(
   name: string,
   emoji: string,
 ): Promise<AppList> {
-  const trimmedName = name.trim();
+  const trimmedName = normalizeListName(name);
   if (!trimmedName) {
     throw new Error('List name is required');
   }
@@ -161,6 +164,7 @@ export async function createLocalList(
     emoji: emoji || '📋',
     ownerId: 'local',
     memberIds: ['local'],
+    moveDoneToBottom: false,
     createdAt: now,
     updatedAt: now,
   };
@@ -192,7 +196,7 @@ export async function addLocalItem(
   name: string,
   fields: NewItemFields = {},
 ): Promise<void> {
-  const trimmedName = name.trim();
+  const trimmedName = normalizeItemName(name);
   if (!trimmedName) {
     return;
   }
@@ -298,7 +302,12 @@ export async function updateLocalItem(
     return;
   }
 
-  Object.assign(item, updates, { updatedAt: new Date() });
+  const normalizedUpdates = { ...updates };
+  if (updates.name !== undefined) {
+    normalizedUpdates.name = normalizeItemName(updates.name);
+  }
+
+  Object.assign(item, normalizedUpdates, { updatedAt: new Date() });
   await writeDatabase(data);
 }
 
@@ -332,6 +341,40 @@ export async function deleteLocalList(listId: string): Promise<void> {
   const data = await readDatabase();
   data.lists = data.lists.filter((entry) => entry.id !== listId);
   delete data.itemsByListId[listId];
+  await writeDatabase(data);
+}
+
+export async function updateLocalList(
+  listId: string,
+  updates: Partial<Pick<AppList, 'name' | 'emoji' | 'moveDoneToBottom'>>,
+): Promise<void> {
+  const data = await readDatabase();
+  const list = data.lists.find((entry) => entry.id === listId);
+  if (!list) {
+    return;
+  }
+
+  Object.assign(list, updates, { updatedAt: new Date() });
+  await writeDatabase(data);
+}
+
+export async function syncLocalItems(
+  listId: string,
+  orderedItems: ListItem[],
+): Promise<void> {
+  const data = await readDatabase();
+  const list = data.lists.find((entry) => entry.id === listId);
+  if (!list) {
+    return;
+  }
+
+  const now = new Date();
+  data.itemsByListId[listId] = orderedItems.map((item, index) => ({
+    ...item,
+    order: index,
+    updatedAt: now,
+  }));
+  list.updatedAt = now;
   await writeDatabase(data);
 }
 
