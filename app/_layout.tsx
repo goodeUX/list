@@ -28,7 +28,6 @@ import Reanimated, {
   useSharedValue,
   withTiming,
 } from 'react-native-reanimated';
-import 'react-native-reanimated';
 
 import WebShell from '@/components/WebShell';
 import AppSplash from '@/components/AppSplash';
