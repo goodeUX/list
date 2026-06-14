@@ -13,6 +13,7 @@
     },
     "android": {
       "icon": "./assets/images/icon.png",
+      "versionCode": 1,
       "adaptiveIcon": {
         "backgroundColor": "#EDE4D4",
         "foregroundImage": "./assets/images/android-icon-foreground.png",
@@ -37,13 +38,22 @@
       [
         "expo-splash-screen",
         {
-          "backgroundColor": "#DBB793"
+          "backgroundColor": "#DBB793",
+          "image": "./assets/images/splash-dog.png",
+          "imageWidth": 280,
+          "resizeMode": "contain"
         }
       ],
       "expo-font"
     ],
     "experiments": {
       "typedRoutes": true
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "cd6aa440-0d80-41c4-b6c9-c8d303c0b47e"
+      }
     }
   }
 }
