@@ -17,15 +17,17 @@ import {
   DefaultTheme,
   ThemeProvider as NavigationThemeProvider,
 } from '@react-navigation/native';
-import { useEffect, useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { StyleSheet } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import 'react-native-reanimated';
 
 import WebShell from '@/components/WebShell';
+import AppSplash from '@/components/AppSplash';
 import { AuthProvider } from '@/contexts/AuthContext';
 import { ThemeProvider, useTheme } from '@/contexts/ThemeContext';
+import { useAppSplashReady } from '@/lib/splash';
 
 export {
   // Catch any errors thrown by the Layout component.
@@ -48,6 +50,8 @@ export default function RootLayout() {
     NunitoSans_600SemiBold,
     NunitoSans_700Bold,
   });
+  const [splashImageReady, setSplashImageReady] = useState(false);
+  const splashReady = useAppSplashReady(loaded, splashImageReady);
 
   // Expo Router uses Error Boundaries to catch errors in the navigation tree.
   useEffect(() => {
@@ -55,13 +59,13 @@ export default function RootLayout() {
   }, [error]);
 
   useEffect(() => {
-    if (loaded) {
-      SplashScreen.hideAsync();
+    if (splashReady) {
+      void SplashScreen.hideAsync();
     }
-  }, [loaded]);
+  }, [splashReady]);
 
-  if (!loaded) {
-    return null;
+  if (!splashReady) {
+    return <AppSplash onImageReady={() => setSplashImageReady(true)} />;
   }
 
   return (
