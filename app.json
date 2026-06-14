@@ -14,7 +14,7 @@
     "android": {
       "icon": "./assets/images/icon.png",
       "adaptiveIcon": {
-        "backgroundColor": "#9ECAE8",
+        "backgroundColor": "#EDE4D4",
         "foregroundImage": "./assets/images/android-icon-foreground.png",
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
       },
@@ -33,7 +33,7 @@
         {
           "image": "./assets/images/splash-icon.png",
           "imageWidth": 200,
-          "backgroundColor": "#9ECAE8"
+          "backgroundColor": "#EDE4D4"
         }
       ],
       "expo-font"

@@ -26,8 +26,7 @@ import { doc, getDocFromCache, onSnapshot } from 'firebase/firestore';
 
 import ListOptionsSheet from '@/components/ListOptionsSheet';
 import ListFormModal from '@/components/ListFormModal';
-import ShareSheet from '@/components/ShareSheet';
-import SwipeableListItemRow from '@/components/SwipeableListItemRow';
+import ListItemRow from '@/components/ListItemRow';
 import ThemedTextInput, { getThemedInputContainerStyle } from '@/components/ThemedTextInput';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTheme } from '@/contexts/ThemeContext';
@@ -79,7 +78,7 @@ export default function ListDetailScreen() {
   const hasTitle = Boolean(paramName || listName);
   const { animatedStyle, goBack, isEnabled: slideTransitionEnabled } =
     useChildSlideTransition({ ready: hasTitle });
-  const { items, loading, addItem, toggleItem, deleteItem, clearAllItems, groupDoneItemsAtBottom } =
+  const { items, loading, addItem, toggleItem, clearAllItems, groupDoneItemsAtBottom } =
     useListItems(listId, { moveDoneToBottom });
   const listOpacity = useSharedValue(0);
   const { recordItemUsage } = useItemHistory();
@@ -87,7 +86,6 @@ export default function ListDetailScreen() {
   const [newItemName, setNewItemName] = useState('');
   const [adding, setAdding] = useState(false);
   const [isAddInputFocused, setIsAddInputFocused] = useState(false);
-  const [shareSheetVisible, setShareSheetVisible] = useState(false);
   const [listOptionsVisible, setListOptionsVisible] = useState(false);
   const [listOptionsMenuTop, setListOptionsMenuTop] = useState(0);
   const [renameModalVisible, setRenameModalVisible] = useState(false);
@@ -99,13 +97,7 @@ export default function ListDetailScreen() {
   const addItemInputRef = useRef<ElementRef<typeof ThemedTextInput>>(null);
   const listOptionsButtonRef = useRef<View>(null);
   const listOptionsIconRotation = useSharedValue(0);
-  const closeOpenSwipeable = useRef<(() => void) | null>(null);
   const consumedFocusAddRef = useRef(false);
-
-  const handleSwipeOpen = useCallback((close: () => void) => {
-    closeOpenSwipeable.current?.();
-    closeOpenSwipeable.current = close;
-  }, []);
 
   const placeCaretAtStart = (input: ElementRef<typeof ThemedTextInput> | null) => {
     if (!input || Platform.OS !== 'web') {
@@ -345,16 +337,27 @@ export default function ListDetailScreen() {
     return `${activeUsers.length} people editing`;
   }, [activeUsers]);
 
+  const displayListName = listName || paramName || 'List';
+
   const handleShare = () => {
     setListOptionsVisible(false);
     if (!user) {
       router.push('/(auth)/sign-in');
       return;
     }
-    setShareSheetVisible(true);
+    if (!listId) {
+      return;
+    }
+
+    router.push({
+      pathname: '/list/[id]/share',
+      params: {
+        id: listId,
+        name: displayListName,
+      },
+    });
   };
 
-  const displayListName = listName || paramName || 'List';
   const canDeleteList = !user || listOwnerId === 'local' || user.uid === listOwnerId;
 
   const confirmDestructiveAction = (
@@ -565,12 +568,8 @@ export default function ListDetailScreen() {
 
   const renderStaticListItem = useCallback(
     ({ item }: { item: ListItem }) => (
-      <SwipeableListItemRow
+      <ListItemRow
         item={item}
-        onDelete={() => {
-          blurAddInput();
-          void deleteItem(item.id);
-        }}
         onPress={() => {
           blurAddInput();
           if (!listId) {
@@ -581,17 +580,13 @@ export default function ListDetailScreen() {
             params: { id: listId, itemId: item.id },
           });
         }}
-        onSwipeOpen={(close) => {
-          blurAddInput();
-          handleSwipeOpen(close);
-        }}
         onToggle={() => {
           blurAddInput();
           void toggleItem(item.id);
         }}
       />
     ),
-    [deleteItem, handleSwipeOpen, listId, toggleItem],
+    [listId, toggleItem],
   );
 
   const listSections = useMemo(() => {
@@ -881,13 +876,6 @@ export default function ListDetailScreen() {
 
       {listId ? (
         <>
-          <ShareSheet
-            listId={listId}
-            listName={listName || 'List'}
-            onClose={() => setShareSheetVisible(false)}
-            visible={shareSheetVisible}
-          />
-
           <ListOptionsSheet
             menuTop={listOptionsMenuTop}
             moveDoneToBottom={moveDoneToBottom}
