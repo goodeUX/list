@@ -30,14 +30,14 @@ import Reanimated, {
 } from 'react-native-reanimated';
 
 import WebShell from '@/components/WebShell';
-import AppSplash from '@/components/AppSplash';
+import OpeningScreen from '@/components/OpeningScreen';
 import { AuthProvider } from '@/contexts/AuthContext';
 import { ThemeProvider, useTheme } from '@/contexts/ThemeContext';
 import {
-  useAppSplashReady,
-  SPLASH_IMAGE_TIMEOUT_MS,
+  OPENING_DISPLAY_MS,
+  OPENING_ZOOM_MS,
+  useOpeningTransitionReady,
 } from '@/lib/splash';
-import { getSlideDistance, PUSH_PARALLAX_RATIO, SLIDE_IN_MS } from '@/lib/slideTransition';
 
 export {
   // Catch any errors thrown by the Layout component.
@@ -48,8 +48,9 @@ export const unstable_settings = {
   initialRouteName: 'index',
 };
 
+const OPENING_ZOOM_FROM = 0.9;
+
 export default function RootLayout() {
-  const slideDistance = getSlideDistance();
   const [loaded, error] = useFonts({
     Fraunces_400Regular,
     Fraunces_600SemiBold,
@@ -58,32 +59,33 @@ export default function RootLayout() {
     NunitoSans_600SemiBold,
     NunitoSans_700Bold,
   });
-  const [splashImageReady, setSplashImageReady] = useState(false);
-  const [showSplash, setShowSplash] = useState(true);
+  const [openingComplete, setOpeningComplete] = useState(false);
+  const [showOpening, setShowOpening] = useState(true);
+  const [minDisplayElapsed, setMinDisplayElapsed] = useState(false);
   const hasStartedTransition = useRef(false);
-  const mainTranslateX = useSharedValue(slideDistance);
-  const splashTranslateX = useSharedValue(0);
-  const splashReady = useAppSplashReady(loaded, splashImageReady);
-  const handleSplashImageReady = useCallback(() => {
-    setSplashImageReady(true);
+  const mainScale = useSharedValue(OPENING_ZOOM_FROM);
+  const mainOpacity = useSharedValue(0);
+  const openingScale = useSharedValue(1);
+  const openingOpacity = useSharedValue(1);
+  const openingReady =
+    useOpeningTransitionReady(loaded, openingComplete) && minDisplayElapsed;
+  const handleOpeningComplete = useCallback(() => {
+    setOpeningComplete(true);
   }, []);
 
   const mainAnimatedStyle = useAnimatedStyle(() => ({
-    transform: [{ translateX: mainTranslateX.value }],
+    opacity: mainOpacity.value,
+    transform: [{ scale: mainScale.value }],
   }));
 
-  const splashAnimatedStyle = useAnimatedStyle(() => ({
-    transform: [{ translateX: splashTranslateX.value }],
+  const openingAnimatedStyle = useAnimatedStyle(() => ({
+    opacity: openingOpacity.value,
+    transform: [{ scale: openingScale.value }],
   }));
 
-  const finishSplashTransition = useCallback(() => {
-    setShowSplash(false);
+  const finishOpeningTransition = useCallback(() => {
+    setShowOpening(false);
   }, []);
-
-  useEffect(() => {
-    const timer = setTimeout(handleSplashImageReady, SPLASH_IMAGE_TIMEOUT_MS);
-    return () => clearTimeout(timer);
-  }, [handleSplashImageReady]);
 
   // Expo Router uses Error Boundaries to catch errors in the navigation tree.
   useEffect(() => {
@@ -91,56 +93,65 @@ export default function RootLayout() {
   }, [error]);
 
   useEffect(() => {
-    if (!splashImageReady) {
-      return;
-    }
-
     void SplashScreen.hideAsync();
-  }, [splashImageReady]);
+  }, []);
 
   useEffect(() => {
-    if (!splashReady || hasStartedTransition.current) {
+    const timer = setTimeout(() => setMinDisplayElapsed(true), OPENING_DISPLAY_MS);
+    return () => clearTimeout(timer);
+  }, []);
+
+  useEffect(() => {
+    if (!openingReady || hasStartedTransition.current) {
       return;
     }
 
     hasStartedTransition.current = true;
 
-    const pushTiming = {
-      duration: SLIDE_IN_MS,
+    const zoomTiming = {
+      duration: OPENING_ZOOM_MS,
       easing: Easing.out(Easing.cubic),
     };
 
-    mainTranslateX.value = withTiming(0, pushTiming);
-    splashTranslateX.value = withTiming(
-      -slideDistance * PUSH_PARALLAX_RATIO,
-      pushTiming,
-      (finished) => {
-        if (finished) {
-          runOnJS(finishSplashTransition)();
-        }
-      },
-    );
-  }, [finishSplashTransition, mainTranslateX, slideDistance, splashReady, splashTranslateX]);
+    mainScale.value = withTiming(1, zoomTiming);
+    mainOpacity.value = withTiming(1, zoomTiming);
+    openingScale.value = withTiming(1.08, zoomTiming);
+    openingOpacity.value = withTiming(0, zoomTiming, (finished) => {
+      if (finished) {
+        runOnJS(finishOpeningTransition)();
+      }
+    });
+  }, [
+    finishOpeningTransition,
+    mainOpacity,
+    mainScale,
+    openingOpacity,
+    openingReady,
+    openingScale,
+  ]);
 
   return (
     <View style={styles.root}>
-      {showSplash ? (
-        <Reanimated.View
-          pointerEvents={splashReady ? 'none' : 'auto'}
-          style={[styles.splashLayer, splashAnimatedStyle]}
-        >
-          <AppSplash onImageReady={handleSplashImageReady} />
-        </Reanimated.View>
-      ) : null}
-      <Reanimated.View style={[styles.mainLayer, mainAnimatedStyle]}>
-        <SafeAreaProvider>
-          <AuthProvider>
-            <ThemeProvider>
+      <SafeAreaProvider>
+        <AuthProvider>
+          <ThemeProvider>
+            {showOpening ? (
+              <Reanimated.View
+                pointerEvents={openingComplete ? 'none' : 'auto'}
+                style={[styles.openingLayer, openingAnimatedStyle]}
+              >
+                <OpeningScreen
+                  fontsLoaded={loaded}
+                  onComplete={handleOpeningComplete}
+                />
+              </Reanimated.View>
+            ) : null}
+            <Reanimated.View style={[styles.mainLayer, mainAnimatedStyle]}>
               <RootLayoutNav />
-            </ThemeProvider>
-          </AuthProvider>
-        </SafeAreaProvider>
-      </Reanimated.View>
+            </Reanimated.View>
+          </ThemeProvider>
+        </AuthProvider>
+      </SafeAreaProvider>
     </View>
   );
 }
@@ -209,12 +220,14 @@ const styles = StyleSheet.create({
   },
   mainLayer: {
     flex: 1,
+    overflow: 'hidden',
     zIndex: 2,
   },
-  splashLayer: {
+  openingLayer: {
     ...StyleSheet.absoluteFillObject,
-    elevation: 1,
-    zIndex: 1,
+    elevation: 3,
+    overflow: 'hidden',
+    zIndex: 3,
     ...(Platform.OS === 'web'
       ? {
           height: '100%',
