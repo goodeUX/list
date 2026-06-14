@@ -1,6 +1,12 @@
-import { Image, StyleSheet, View, type ImageSourcePropType } from 'react-native';
+import {
+  ActivityIndicator,
+  Image,
+  StyleSheet,
+  View,
+  type ImageSourcePropType,
+} from 'react-native';
 
-import { SPLASH_BACKGROUND_COLOR } from '@/lib/splash';
+import { SPLASH_BACKGROUND_COLOR, SPLASH_SPINNER_COLOR } from '@/lib/splash';
 
 const splashDogImage = require('../assets/images/splash-dog.png') as ImageSourcePropType;
 
@@ -11,7 +17,10 @@ type AppSplashProps = {
 export default function AppSplash({ onImageReady }: AppSplashProps) {
   return (
     <View style={styles.screen}>
-      <View style={styles.dogContainer}>
+      <View style={styles.spinnerContainer}>
+        <ActivityIndicator color={SPLASH_SPINNER_COLOR} size="large" />
+      </View>
+      <View style={styles.imageContainer}>
         <Image
           accessibilityIgnoresInvertColors
           onError={onImageReady}
@@ -27,20 +36,22 @@ export default function AppSplash({ onImageReady }: AppSplashProps) {
 
 const styles = StyleSheet.create({
   screen: {
+    ...StyleSheet.absoluteFillObject,
     backgroundColor: SPLASH_BACKGROUND_COLOR,
     flex: 1,
   },
-  dogContainer: {
-    alignItems: 'flex-end',
-    bottom: 0,
-    height: '54%',
+  spinnerContainer: {
+    alignItems: 'center',
+    flex: 1,
+    justifyContent: 'center',
+  },
+  imageContainer: {
+    alignItems: 'center',
     justifyContent: 'flex-end',
-    position: 'absolute',
-    right: 0,
-    width: '92%',
+    width: '100%',
   },
   dogImage: {
-    height: '100%',
+    aspectRatio: 1,
     width: '100%',
   },
 });

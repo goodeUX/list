@@ -17,17 +17,28 @@ import {
   DefaultTheme,
   ThemeProvider as NavigationThemeProvider,
 } from '@react-navigation/native';
-import { useEffect, useMemo, useState } from 'react';
-import { StyleSheet } from 'react-native';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Platform, StyleSheet, View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+import Reanimated, {
+  Easing,
+  runOnJS,
+  useAnimatedStyle,
+  useSharedValue,
+  withTiming,
+} from 'react-native-reanimated';
 import 'react-native-reanimated';
 
 import WebShell from '@/components/WebShell';
 import AppSplash from '@/components/AppSplash';
 import { AuthProvider } from '@/contexts/AuthContext';
 import { ThemeProvider, useTheme } from '@/contexts/ThemeContext';
-import { useAppSplashReady } from '@/lib/splash';
+import {
+  useAppSplashReady,
+  SPLASH_IMAGE_TIMEOUT_MS,
+} from '@/lib/splash';
+import { getSlideDistance, PUSH_PARALLAX_RATIO, SLIDE_IN_MS } from '@/lib/slideTransition';
 
 export {
   // Catch any errors thrown by the Layout component.
@@ -38,10 +49,8 @@ export const unstable_settings = {
   initialRouteName: 'index',
 };
 
-// Prevent the splash screen from auto-hiding before asset loading is complete.
-SplashScreen.preventAutoHideAsync();
-
 export default function RootLayout() {
+  const slideDistance = getSlideDistance();
   const [loaded, error] = useFonts({
     Fraunces_400Regular,
     Fraunces_600SemiBold,
@@ -51,7 +60,31 @@ export default function RootLayout() {
     NunitoSans_700Bold,
   });
   const [splashImageReady, setSplashImageReady] = useState(false);
+  const [showSplash, setShowSplash] = useState(true);
+  const hasStartedTransition = useRef(false);
+  const mainTranslateX = useSharedValue(slideDistance);
+  const splashTranslateX = useSharedValue(0);
   const splashReady = useAppSplashReady(loaded, splashImageReady);
+  const handleSplashImageReady = useCallback(() => {
+    setSplashImageReady(true);
+  }, []);
+
+  const mainAnimatedStyle = useAnimatedStyle(() => ({
+    transform: [{ translateX: mainTranslateX.value }],
+  }));
+
+  const splashAnimatedStyle = useAnimatedStyle(() => ({
+    transform: [{ translateX: splashTranslateX.value }],
+  }));
+
+  const finishSplashTransition = useCallback(() => {
+    setShowSplash(false);
+  }, []);
+
+  useEffect(() => {
+    const timer = setTimeout(handleSplashImageReady, SPLASH_IMAGE_TIMEOUT_MS);
+    return () => clearTimeout(timer);
+  }, [handleSplashImageReady]);
 
   // Expo Router uses Error Boundaries to catch errors in the navigation tree.
   useEffect(() => {
@@ -59,23 +92,50 @@ export default function RootLayout() {
   }, [error]);
 
   useEffect(() => {
-    if (splashReady) {
-      void SplashScreen.hideAsync();
+    if (!splashReady || hasStartedTransition.current) {
+      return;
     }
-  }, [splashReady]);
 
-  if (!splashReady) {
-    return <AppSplash onImageReady={() => setSplashImageReady(true)} />;
-  }
+    hasStartedTransition.current = true;
+    void SplashScreen.hideAsync();
+
+    const pushTiming = {
+      duration: SLIDE_IN_MS,
+      easing: Easing.out(Easing.cubic),
+    };
+
+    mainTranslateX.value = withTiming(0, pushTiming);
+    splashTranslateX.value = withTiming(
+      -slideDistance * PUSH_PARALLAX_RATIO,
+      pushTiming,
+      (finished) => {
+        if (finished) {
+          runOnJS(finishSplashTransition)();
+        }
+      },
+    );
+  }, [finishSplashTransition, mainTranslateX, slideDistance, splashReady, splashTranslateX]);
 
   return (
-    <SafeAreaProvider>
-      <AuthProvider>
-        <ThemeProvider>
-          <RootLayoutNav />
-        </ThemeProvider>
-      </AuthProvider>
-    </SafeAreaProvider>
+    <View style={styles.root}>
+      {showSplash ? (
+        <Reanimated.View
+          pointerEvents={splashReady ? 'none' : 'auto'}
+          style={[styles.splashLayer, splashAnimatedStyle]}
+        >
+          <AppSplash onImageReady={handleSplashImageReady} />
+        </Reanimated.View>
+      ) : null}
+      <Reanimated.View style={[styles.mainLayer, mainAnimatedStyle]}>
+        <SafeAreaProvider>
+          <AuthProvider>
+            <ThemeProvider>
+              <RootLayoutNav />
+            </ThemeProvider>
+          </AuthProvider>
+        </SafeAreaProvider>
+      </Reanimated.View>
+    </View>
   );
 }
 
@@ -139,5 +199,22 @@ function RootLayoutNav() {
 const styles = StyleSheet.create({
   root: {
     flex: 1,
+    overflow: 'hidden',
+  },
+  mainLayer: {
+    flex: 1,
+    zIndex: 2,
+  },
+  splashLayer: {
+    ...StyleSheet.absoluteFillObject,
+    elevation: 1,
+    zIndex: 1,
+    ...(Platform.OS === 'web'
+      ? {
+          height: '100%',
+          position: 'fixed',
+          width: '100%',
+        }
+      : null),
   },
 });
