@@ -644,20 +644,39 @@ export default function ListDetailScreen() {
   }, [items, moveDoneToBottom]);
 
   const renderSectionHeader = useCallback(
-    ({ section }: { section: { title: string } }) => (
-      <Text
+    ({ section }: { section: { title: string; data: ListItem[] } }) => (
+      <View
         style={[
-          styles.sectionHeader,
+          styles.sectionHeaderRow,
           {
-            color: colors.textSecondary,
             marginTop: section.title === 'Done' ? spacing.md : 0,
           },
         ]}
       >
-        {section.title}
-      </Text>
+        <Text
+          style={[
+            styles.sectionHeader,
+            { color: colors.textSecondary },
+          ]}
+        >
+          {section.title}
+        </Text>
+        <View
+          style={[
+            styles.sectionCountBadge,
+            {
+              backgroundColor: colors.surfaceMuted,
+              borderRadius: radii.checkbox,
+            },
+          ]}
+        >
+          <Text style={[styles.sectionCount, { color: colors.textSecondary }]}>
+            {section.data.length}
+          </Text>
+        </View>
+      </View>
     ),
-    [colors.textSecondary, spacing.md],
+    [colors.surfaceMuted, colors.textSecondary, radii.checkbox, spacing.md],
   );
 
   const listContentStyle = useMemo(
@@ -1066,13 +1085,31 @@ const styles = StyleSheet.create({
   itemSeparator: {
     height: StyleSheet.hairlineWidth,
   },
+  sectionHeaderRow: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: 8,
+    marginBottom: 8,
+  },
   sectionHeader: {
     fontFamily: 'NunitoSans_600SemiBold',
     fontSize: 13,
     letterSpacing: 0.4,
     lineHeight: 18,
-    marginBottom: 8,
     textTransform: 'uppercase',
+  },
+  sectionCountBadge: {
+    alignItems: 'center',
+    height: 20,
+    justifyContent: 'center',
+    minWidth: 20,
+    paddingHorizontal: 6,
+  },
+  sectionCount: {
+    fontFamily: 'NunitoSans_600SemiBold',
+    fontSize: 12,
+    lineHeight: 14,
+    textAlign: 'center',
   },
   emptyText: {
     fontFamily: 'NunitoSans_400Regular',

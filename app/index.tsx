@@ -194,7 +194,7 @@ export default function ListsHomeScreen() {
                 contentContainerStyle={[
                   styles.listContent,
                   {
-                    gap: spacing.md,
+                    gap: 12,
                     padding: spacing.lg,
                     paddingBottom: showCreateBar ? listBottomPadding : spacing.xl,
                   },
