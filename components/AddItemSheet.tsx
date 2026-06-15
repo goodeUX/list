@@ -11,8 +11,10 @@ import {
   View,
 } from 'react-native';
 
+import KeyboardDismissScrollView from '@/components/KeyboardDismissScrollView';
 import ThemedTextInput from '@/components/ThemedTextInput';
 import { useTheme } from '@/contexts/ThemeContext';
+import { buttonLabelStyle, buttonLayoutStyle } from '@/lib/buttonStyles';
 import { ITEM_NAME_LIMIT_MESSAGE, getItemNameInputUpdate } from '@/lib/itemName';
 import type { ItemHistoryEntry } from '@/lib/types';
 
@@ -83,8 +85,10 @@ export default function AddItemSheet({
         style={styles.overlay}
       >
         <Pressable onPress={handleClose} style={styles.backdrop} />
-        <View
-          style={[
+        <KeyboardDismissScrollView
+          bounces={false}
+          style={styles.sheetScroll}
+          contentContainerStyle={[
             styles.sheet,
             {
               backgroundColor: colors.surface,
@@ -94,6 +98,7 @@ export default function AddItemSheet({
               padding: spacing.lg,
             },
           ]}
+          keyboardDismissMode="on-drag"
         >
           <Text style={[styles.title, { color: colors.text }]}>Add item</Text>
 
@@ -164,6 +169,7 @@ export default function AddItemSheet({
               }}
               style={({ pressed }) => [
                 styles.createButton,
+                buttonLayoutStyle,
                 {
                   backgroundColor: colors.accent,
                   borderRadius: radii.item,
@@ -175,7 +181,7 @@ export default function AddItemSheet({
               {adding ? (
                 <ActivityIndicator color={colors.surface} />
               ) : (
-                <Text style={[styles.createButtonText, { color: colors.surface }]}>
+                <Text style={[buttonLabelStyle(16), { color: colors.surface }]}>
                   Create “{trimmedText}”
                 </Text>
               )}
@@ -187,6 +193,7 @@ export default function AddItemSheet({
             onPress={handleClose}
             style={({ pressed }) => [
               styles.cancelButton,
+              buttonLayoutStyle,
               {
                 borderColor: colors.border,
                 borderRadius: radii.item,
@@ -195,11 +202,11 @@ export default function AddItemSheet({
               },
             ]}
           >
-            <Text style={[styles.cancelButtonText, { color: colors.text }]}>
+            <Text style={[buttonLabelStyle(15), { color: colors.text }]}>
               Cancel
             </Text>
           </Pressable>
-        </View>
+        </KeyboardDismissScrollView>
       </KeyboardAvoidingView>
     </Modal>
   );
@@ -217,6 +224,10 @@ const styles = StyleSheet.create({
   sheet: {
     borderTopWidth: 1,
     gap: 8,
+  },
+  sheetScroll: {
+    flexGrow: 0,
+    maxHeight: '90%',
   },
   title: {
     fontFamily: 'Fraunces_600SemiBold',
@@ -244,24 +255,10 @@ const styles = StyleSheet.create({
     lineHeight: 18,
   },
   createButton: {
-    alignItems: 'center',
-    justifyContent: 'center',
     minHeight: 48,
-    paddingHorizontal: 16,
-  },
-  createButtonText: {
-    fontFamily: 'NunitoSans_600SemiBold',
-    fontSize: 16,
   },
   cancelButton: {
-    alignItems: 'center',
     borderWidth: 1,
-    justifyContent: 'center',
     minHeight: 44,
-    paddingHorizontal: 16,
-  },
-  cancelButtonText: {
-    fontFamily: 'NunitoSans_600SemiBold',
-    fontSize: 15,
   },
 });

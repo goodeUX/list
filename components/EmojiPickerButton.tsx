@@ -12,18 +12,28 @@ import {
 import { useTheme } from '@/contexts/ThemeContext';
 import { getBorderedInputHeight } from '@/components/ThemedTextInput';
 
+// One emoji per list category (6 columns × 5 rows).
 const LIST_EMOJIS = [
-  '📋', '🛒', '✅', '🎁', '✈️', '🏠', '📚', '🍎', '💼', '🎉',
-  '🧳', '📝', '⭐', '❤️', '🐶', '🐱', '🌿', '🌸', '☀️', '🌙',
-  '🔥', '💡', '🎯', '🏃', '🧘', '💪', '🍕', '☕', '🎵', '📷',
-  '🚗', '🛠️', '💊', '🧹', '👕', '🎨', '📅', '💰', '🌮', '🥗',
-  '🍰', '🎂', '🍼', '👶', '🎓', '🏋️', '🎮', '📱', '💻', '🌍',
+  '📋', '🛒', '📚', '🎵', '🐛', '🐦',
+  '🐟', '🐱', '🐶', '✈️', '👶', '🏠',
+  '🏋️', '🎉', '🚗', '⛺', '👪', '📅',
+  '💊', '🎯', '💰', '🗺️', '🎨', '🧹',
+  '💼', '📷', '🔗', '📍', '🧵', '⭐',
 ];
 
 const EMOJI_COLUMNS = 6;
-const VISIBLE_ROWS = 4;
-const EMOJI_OPTION_HEIGHT = 40;
+const VISIBLE_ROWS = 5;
 const BUTTON_SIZE = getBorderedInputHeight();
+
+function getEmojiCellSize(
+  dropdownWidth: number,
+  horizontalPadding: number,
+  columnGap: number,
+): number {
+  const horizontalGaps = (EMOJI_COLUMNS - 1) * columnGap;
+  const availableWidth = dropdownWidth - horizontalPadding * 2 - horizontalGaps;
+  return Math.floor(availableWidth / EMOJI_COLUMNS);
+}
 
 function chunkEmojis(emojis: string[], columns: number): string[][] {
   const rows: string[][] = [];
@@ -80,8 +90,9 @@ export default function EmojiPickerButton({
   const containerLeft = dropdownContainerLayout?.x ?? anchorLayout?.x ?? 0;
   const dropdownWidth = dropdownContainerLayout?.width ?? 288;
   const dropdownLeft = containerLeft;
+  const emojiCellSize = getEmojiCellSize(dropdownWidth, spacing.sm, spacing.xs);
   const gridMaxHeight =
-    VISIBLE_ROWS * EMOJI_OPTION_HEIGHT + (VISIBLE_ROWS - 1) * spacing.xs;
+    VISIBLE_ROWS * emojiCellSize + (VISIBLE_ROWS - 1) * spacing.xs;
 
   return (
     <>
@@ -154,8 +165,9 @@ export default function EmojiPickerButton({
                           backgroundColor:
                             item === value ? colors.surfaceMuted : 'transparent',
                           borderRadius: radii.checkbox,
-                          height: EMOJI_OPTION_HEIGHT,
+                          height: emojiCellSize,
                           opacity: pressed ? 0.85 : 1,
+                          width: emojiCellSize,
                         },
                       ]}
                     >
@@ -203,12 +215,10 @@ const styles = StyleSheet.create({
   },
   emojiOption: {
     alignItems: 'center',
-    flex: 1,
     justifyContent: 'center',
-    minWidth: 0,
   },
   emojiOptionText: {
-    fontSize: 20,
-    lineHeight: 24,
+    fontSize: 24,
+    lineHeight: 28,
   },
 });

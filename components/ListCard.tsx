@@ -14,13 +14,14 @@ const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
 type ListCardProps = {
   list: AppList;
+  countsRefreshKey?: number;
 };
 
-export default function ListCard({ list }: ListCardProps) {
+export default function ListCard({ list, countsRefreshKey = 0 }: ListCardProps) {
   const { colors, radii, spacing } = useTheme();
   const scale = useSharedValue(1);
 
-  const { doneCount, totalCount } = useListItemCounts(list.id);
+  const { doneCount, totalCount } = useListItemCounts(list.id, countsRefreshKey);
   const incompleteCount = totalCount - doneCount;
   const collaboratorCount = list.memberIds.length;
   const isShared = collaboratorCount > 1;

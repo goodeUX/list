@@ -18,6 +18,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import ThemedTextInput from '@/components/ThemedTextInput';
 import { useTheme } from '@/contexts/ThemeContext';
+import { buttonLabelStyle, buttonLayoutStyle } from '@/lib/buttonStyles';
 import { useChildSlideTransition } from '@/hooks/useSlideTransition';
 import { useListItems } from '@/hooks/useListItems';
 import { isValidUrl, normalizeUrl } from '@/lib/urls';
@@ -285,6 +286,7 @@ export default function ItemDetailScreen() {
             onPress={handleSave}
             style={({ pressed }) => [
               styles.saveButton,
+              buttonLayoutStyle,
               {
                 backgroundColor: colors.accent,
                 borderRadius: radii.item,
@@ -295,7 +297,7 @@ export default function ItemDetailScreen() {
             {saving ? (
               <ActivityIndicator color={colors.surface} />
             ) : (
-              <Text style={[styles.saveButtonText, { color: colors.surface }]}>Save</Text>
+              <Text style={[buttonLabelStyle(16), { color: colors.surface }]}>Save</Text>
             )}
           </Pressable>
 
@@ -304,6 +306,7 @@ export default function ItemDetailScreen() {
             onPress={handleDelete}
             style={({ pressed }) => [
               styles.deleteButton,
+              buttonLayoutStyle,
               {
                 borderColor: colors.border,
                 borderRadius: radii.item,
@@ -311,7 +314,7 @@ export default function ItemDetailScreen() {
               },
             ]}
           >
-            <Text style={[styles.deleteButtonText, { color: colors.accent }]}>
+            <Text style={[buttonLabelStyle(15), { color: colors.accent }]}>
               Delete item
             </Text>
           </Pressable>
@@ -391,23 +394,11 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   saveButton: {
-    alignItems: 'center',
-    justifyContent: 'center',
     minHeight: 52,
     marginTop: 8,
   },
-  saveButtonText: {
-    fontFamily: 'NunitoSans_600SemiBold',
-    fontSize: 16,
-  },
   deleteButton: {
-    alignItems: 'center',
     borderWidth: 1,
-    justifyContent: 'center',
     minHeight: 48,
-  },
-  deleteButtonText: {
-    fontFamily: 'NunitoSans_600SemiBold',
-    fontSize: 15,
   },
 });

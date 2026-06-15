@@ -12,9 +12,11 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import KeyboardDismissScrollView from '@/components/KeyboardDismissScrollView';
 import ThemedTextInput from '@/components/ThemedTextInput';
 import { getAuthErrorMessage, useAuth } from '@/contexts/AuthContext';
 import { useTheme } from '@/contexts/ThemeContext';
+import { buttonLabelStyle, buttonLayoutStyle } from '@/lib/buttonStyles';
 
 function navigateAfterAuth() {
   if (router.canGoBack()) {
@@ -65,7 +67,10 @@ export default function SignInScreen() {
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={styles.flex}
       >
-        <View style={[styles.container, { padding: spacing.lg }]}>
+        <KeyboardDismissScrollView
+          contentContainerStyle={[styles.container, { padding: spacing.lg }]}
+          showsVerticalScrollIndicator={false}
+        >
           <Pressable
             accessibilityLabel="Close"
             accessibilityRole="button"
@@ -136,6 +141,7 @@ export default function SignInScreen() {
               onPress={handleSignIn}
               style={({ pressed }) => [
                 styles.button,
+                buttonLayoutStyle,
                 {
                   backgroundColor: colors.accent,
                   borderRadius: radii.item,
@@ -147,7 +153,7 @@ export default function SignInScreen() {
               {submitting ? (
                 <ActivityIndicator color={colors.surface} />
               ) : (
-                <Text style={[styles.buttonText, { color: colors.surface }]}>
+                <Text style={[buttonLabelStyle(16), { color: colors.surface }]}>
                   Sign in
                 </Text>
               )}
@@ -166,7 +172,7 @@ export default function SignInScreen() {
               </Pressable>
             </Link>
           </View>
-        </View>
+        </KeyboardDismissScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
@@ -219,14 +225,7 @@ const styles = StyleSheet.create({
     lineHeight: 20,
   },
   button: {
-    alignItems: 'center',
-    justifyContent: 'center',
     minHeight: 52,
-    paddingHorizontal: 24,
-  },
-  buttonText: {
-    fontFamily: 'NunitoSans_600SemiBold',
-    fontSize: 16,
   },
   footer: {
     alignItems: 'center',

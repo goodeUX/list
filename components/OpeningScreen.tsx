@@ -14,8 +14,10 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import KeyboardDismissScrollView from '@/components/KeyboardDismissScrollView';
 import ThemedTextInput from '@/components/ThemedTextInput';
 import { getAuthErrorMessage, useAuth } from '@/contexts/AuthContext';
+import { buttonLabelStyle, buttonLayoutStyle } from '@/lib/buttonStyles';
 import { OPENING_WELCOME_MS, SPLASH_BACKGROUND_COLOR } from '@/lib/splash';
 
 const openingDogImage =
@@ -110,6 +112,10 @@ export default function OpeningScreen({ fontsLoaded, onComplete }: OpeningScreen
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={[styles.content, { paddingTop: insets.top + 48 }]}
       >
+        <KeyboardDismissScrollView
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+        >
         {showLoading ? (
           <View style={styles.loadingContainer}>
             <ActivityIndicator color={ACCENT_COLOR} size="large" />
@@ -166,13 +172,14 @@ export default function OpeningScreen({ fontsLoaded, onComplete }: OpeningScreen
                 onPress={handleSignIn}
                 style={({ pressed }) => [
                   styles.primaryButton,
+                  buttonLayoutStyle,
                   { opacity: pressed || submitting ? 0.85 : 1 },
                 ]}
               >
                 {submitting ? (
                   <ActivityIndicator color={SURFACE_COLOR} />
                 ) : (
-                  <Text style={styles.primaryButtonText}>Sign in</Text>
+                  <Text style={[buttonLabelStyle(16), { color: SURFACE_COLOR }]}>Sign in</Text>
                 )}
               </Pressable>
 
@@ -181,10 +188,11 @@ export default function OpeningScreen({ fontsLoaded, onComplete }: OpeningScreen
                 onPress={handleSkipLogin}
                 style={({ pressed }) => [
                   styles.secondaryButton,
+                  buttonLayoutStyle,
                   { opacity: pressed || submitting ? 0.7 : 1 },
                 ]}
               >
-                <Text style={styles.secondaryButtonText}>Skip login</Text>
+                <Text style={[buttonLabelStyle(16), { color: OPENING_TEXT_MUTED }]}>Skip login</Text>
               </Pressable>
             </View>
 
@@ -198,6 +206,7 @@ export default function OpeningScreen({ fontsLoaded, onComplete }: OpeningScreen
             </View>
           </View>
         ) : null}
+        </KeyboardDismissScrollView>
       </KeyboardAvoidingView>
     </View>
   );
@@ -224,6 +233,9 @@ const styles = StyleSheet.create({
   content: {
     flex: 1,
     paddingHorizontal: 32,
+  },
+  scrollContent: {
+    flexGrow: 1,
   },
   loadingContainer: {
     alignItems: 'center',
@@ -284,29 +296,13 @@ const styles = StyleSheet.create({
     lineHeight: 20,
   },
   primaryButton: {
-    alignItems: 'center',
     backgroundColor: ACCENT_COLOR,
     borderRadius: 14,
-    justifyContent: 'center',
     marginTop: 8,
     minHeight: 52,
-    paddingHorizontal: 24,
-  },
-  primaryButtonText: {
-    color: SURFACE_COLOR,
-    fontFamily: 'NunitoSans_600SemiBold',
-    fontSize: 16,
   },
   secondaryButton: {
-    alignItems: 'center',
-    justifyContent: 'center',
     minHeight: 44,
-    paddingHorizontal: 16,
-  },
-  secondaryButtonText: {
-    color: OPENING_TEXT_MUTED,
-    fontFamily: 'NunitoSans_600SemiBold',
-    fontSize: 16,
   },
   footer: {
     alignItems: 'center',

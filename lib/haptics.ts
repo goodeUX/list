@@ -16,11 +16,3 @@ export function playAddItemHaptic(): void {
 
   void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
 }
-
-export function playDeleteItemHaptic(): void {
-  if (Platform.OS === 'web') {
-    return;
-  }
-
-  void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
-}

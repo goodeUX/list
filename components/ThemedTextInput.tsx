@@ -145,6 +145,7 @@ const ThemedTextInput = forwardRef<TextInput, ThemedTextInputProps>(
         selectionColor={colors.accentSoft}
         showSoftInputOnFocus
         style={themedStyle}
+        underlineColorAndroid="transparent"
         {...props}
       />
     );
@@ -155,6 +156,8 @@ const styles = StyleSheet.create({
   base: {
     fontFamily: 'NunitoSans_400Regular',
     fontSize: 16,
+    lineHeight: 22,
+    ...(Platform.OS === 'android' ? { includeFontPadding: false } : null),
   },
   bordered: {
     borderWidth: BORDERED_INPUT_BORDER_WIDTH,

@@ -9,6 +9,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useChildSlideTransition } from '@/hooks/useSlideTransition';
 import type { ThemePreference } from '@/lib/theme';
+import { buttonLabelStyle, buttonLayoutStyle } from '@/lib/buttonStyles';
 
 const THEME_OPTION_ICON_SIZE = 18;
 
@@ -185,6 +186,7 @@ export default function SettingsScreen() {
                 onPress={handleSignOut}
                 style={({ pressed }) => [
                   styles.actionButton,
+                  buttonLayoutStyle,
                   {
                     borderColor: colors.border,
                     borderRadius: radii.item,
@@ -193,7 +195,7 @@ export default function SettingsScreen() {
                   },
                 ]}
               >
-                <Text style={[styles.actionButtonText, { color: colors.text }]}>
+                <Text style={[buttonLabelStyle(16), { color: colors.text }]}>
                   Sign out
                 </Text>
               </Pressable>
@@ -204,6 +206,7 @@ export default function SettingsScreen() {
                 onPress={() => router.push('/(auth)/sign-in')}
                 style={({ pressed }) => [
                   styles.actionButton,
+                  buttonLayoutStyle,
                   {
                     backgroundColor: colors.accent,
                     borderRadius: radii.item,
@@ -211,7 +214,7 @@ export default function SettingsScreen() {
                   },
                 ]}
               >
-                <Text style={[styles.actionButtonText, { color: colors.surface }]}>
+                <Text style={[buttonLabelStyle(16), { color: colors.surface }]}>
                   Sign in
                 </Text>
               </Pressable>
@@ -220,6 +223,7 @@ export default function SettingsScreen() {
                 onPress={() => router.push('/(auth)/sign-up')}
                 style={({ pressed }) => [
                   styles.actionButton,
+                  buttonLayoutStyle,
                   {
                     borderColor: colors.border,
                     borderRadius: radii.item,
@@ -227,7 +231,7 @@ export default function SettingsScreen() {
                   },
                 ]}
               >
-                <Text style={[styles.actionButtonText, { color: colors.text }]}>
+                <Text style={[buttonLabelStyle(16), { color: colors.text }]}>
                   Create account
                 </Text>
               </Pressable>
@@ -320,14 +324,7 @@ const styles = StyleSheet.create({
   },
   accountActions: {},
   actionButton: {
-    alignItems: 'center',
     borderWidth: 1,
-    justifyContent: 'center',
     minHeight: 48,
-    paddingHorizontal: 16,
-  },
-  actionButtonText: {
-    fontFamily: 'NunitoSans_600SemiBold',
-    fontSize: 16,
   },
 });

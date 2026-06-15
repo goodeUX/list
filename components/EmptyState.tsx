@@ -1,6 +1,7 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { useTheme } from '@/contexts/ThemeContext';
+import { buttonLabelStyle, buttonLayoutStyle } from '@/lib/buttonStyles';
 
 type EmptyStateProps = {
   title?: string;
@@ -24,6 +25,7 @@ export default function EmptyState({
         onPressIn={onCreateList}
         style={({ pressed }) => [
           styles.button,
+          buttonLayoutStyle,
           {
             backgroundColor: colors.accent,
             borderRadius: radii.item,
@@ -32,7 +34,7 @@ export default function EmptyState({
           },
         ]}
       >
-        <Text style={[styles.buttonText, { color: colors.surface }]}>
+        <Text style={[buttonLabelStyle(16), { color: colors.surface }]}>
           + Create list
         </Text>
       </Pressable>
@@ -58,13 +60,6 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   button: {
-    alignItems: 'center',
-    justifyContent: 'center',
     minHeight: 48,
-    paddingHorizontal: 24,
-  },
-  buttonText: {
-    fontFamily: 'NunitoSans_600SemiBold',
-    fontSize: 16,
   },
 });

@@ -1,5 +1,6 @@
 // @refresh reset
 import { router } from 'expo-router';
+import { useFocusEffect } from '@react-navigation/native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
@@ -23,6 +24,7 @@ import EmptyState from '@/components/EmptyState';
 import ListCard from '@/components/ListCard';
 import ListFormModal from '@/components/ListFormModal';
 import { useTheme } from '@/contexts/ThemeContext';
+import { buttonLabelStyle, buttonLayoutStyle } from '@/lib/buttonStyles';
 import { useLists } from '@/hooks/useLists';
 import {
   acquireKeyboardSession,
@@ -57,6 +59,13 @@ export default function ListsHomeScreen() {
   const [modalVisible, setModalVisible] = useState(false);
   const [creating, setCreating] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [countsRefreshKey, setCountsRefreshKey] = useState(0);
+
+  useFocusEffect(
+    useCallback(() => {
+      setCountsRefreshKey((current) => current + 1);
+    }, []),
+  );
 
   const sharedCount = useMemo(
     () => lists.filter((list) => list.memberIds.length > 1).length,
@@ -191,8 +200,11 @@ export default function ListsHomeScreen() {
                   },
                 ]}
                 data={lists}
+                extraData={countsRefreshKey}
                 keyExtractor={(item) => item.id}
-                renderItem={({ item }) => <ListCard list={item} />}
+                renderItem={({ item }) => (
+                  <ListCard countsRefreshKey={countsRefreshKey} list={item} />
+                )}
                 showsVerticalScrollIndicator={false}
               />
             )}
@@ -229,6 +241,7 @@ export default function ListsHomeScreen() {
                 onPressIn={openCreateModal}
                 style={({ pressed }) => [
                   styles.createListButton,
+                  buttonLayoutStyle,
                   {
                     backgroundColor: colors.surface,
                     borderRadius: radii.item,
@@ -238,7 +251,7 @@ export default function ListsHomeScreen() {
               >
                 <View style={styles.createListButtonContent}>
                   <MaterialIcons color={colors.accent} name="add" size={24} />
-                  <Text style={[styles.createListButtonText, { color: colors.text }]}>
+                  <Text style={[buttonLabelStyle(16), { color: colors.text }]}>
                     Create a new list
                   </Text>
                 </View>
@@ -254,7 +267,7 @@ export default function ListsHomeScreen() {
         onClose={closeCreateModal}
         onSubmit={handleCreateList}
         onSubmitPressIn={prepareCreateListKeyboard}
-        submitLabel="Create"
+        submitLabel="Create list"
         submitting={creating}
         title="New list"
         visible={modalVisible}
@@ -324,19 +337,12 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   createListButton: {
-    alignItems: 'center',
-    justifyContent: 'center',
     minHeight: 54,
-    paddingHorizontal: 16,
     width: '100%',
   },
   createListButtonContent: {
     alignItems: 'center',
     flexDirection: 'row',
     gap: 8,
-  },
-  createListButtonText: {
-    fontFamily: 'NunitoSans_600SemiBold',
-    fontSize: 16,
   },
 });

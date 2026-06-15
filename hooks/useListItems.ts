@@ -12,14 +12,14 @@ import {
   Timestamp,
   updateDoc,
 } from 'firebase/firestore';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { useIsFocused } from '@react-navigation/native';
 import type { User } from 'firebase/auth';
 
 import { useAuth } from '@/contexts/AuthContext';
 import { db } from '@/lib/firebase';
 import { handleFirestoreListenerError } from '@/lib/firestoreListenerErrors';
 import { normalizeItemName } from '@/lib/itemName';
-import { playDeleteItemHaptic } from '@/lib/haptics';
 import { clearListItemsById } from '@/lib/listMutations';
 import {
   groupItemsWithDoneAtBottom,
@@ -59,6 +59,55 @@ function docToListItem(id: string, data: Record<string, unknown>): ListItem {
     createdAt: toDate(data.createdAt),
     updatedAt: toDate(data.updatedAt),
   };
+}
+
+const OPTIMISTIC_ITEM_ID_PREFIX = 'optimistic:';
+
+export function isOptimisticListItem(item: ListItem): boolean {
+  return item.id.startsWith(OPTIMISTIC_ITEM_ID_PREFIX);
+}
+
+function getPersistedItems(items: ListItem[]): ListItem[] {
+  return items.filter((item) => !isOptimisticListItem(item));
+}
+
+function createOptimisticItem(
+  name: string,
+  fields: NewItemFields,
+  existingItems: ListItem[],
+  createdBy: string,
+): ListItem {
+  const now = new Date();
+  const persistedItems = getPersistedItems(existingItems);
+  const maxOrder = persistedItems.reduce((max, item) => Math.max(max, item.order), -1);
+
+  return {
+    id: `${OPTIMISTIC_ITEM_ID_PREFIX}${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
+    name,
+    quantity: fields.quantity ?? null,
+    description: fields.description ?? null,
+    link: fields.link ?? null,
+    checked: false,
+    order: maxOrder + 1,
+    createdBy,
+    createdAt: now,
+    updatedAt: now,
+  };
+}
+
+function reconcileOptimisticItems(
+  serverItems: ListItem[],
+  optimisticItems: ListItem[],
+): ListItem[] {
+  const pendingOptimistic = optimisticItems.filter(
+    (optimistic) =>
+      !serverItems.some(
+        (serverItem) =>
+          serverItem.name === optimistic.name && serverItem.order === optimistic.order,
+      ),
+  );
+
+  return [...serverItems, ...pendingOptimistic].sort((a, b) => a.order - b.order);
 }
 
 export async function addItemToList(
@@ -106,15 +155,73 @@ export async function addItemToList(
   });
 }
 
-export function useListItemCounts(listId: string) {
+function countItems(items: ListItem[]) {
+  return {
+    doneCount: items.filter((item) => item.checked).length,
+    totalCount: items.length,
+  };
+}
+
+function getInitialCounts(listId: string, user: User | null) {
+  if (!listId) {
+    return { doneCount: 0, totalCount: 0 };
+  }
+
+  if (!user) {
+    const items = getCachedLocalItems(listId);
+    return countItems(items);
+  }
+
+  return { doneCount: 0, totalCount: 0 };
+}
+
+export function useListItemCounts(listId: string, refreshKey = 0) {
   const { user } = useAuth();
-  const [doneCount, setDoneCount] = useState(0);
-  const [totalCount, setTotalCount] = useState(0);
+  const isFocused = useIsFocused();
+  const [doneCount, setDoneCount] = useState(
+    () => getInitialCounts(listId, user).doneCount,
+  );
+  const [totalCount, setTotalCount] = useState(
+    () => getInitialCounts(listId, user).totalCount,
+  );
+
+  const applyCounts = useCallback((items: ListItem[]) => {
+    const next = countItems(items);
+    setDoneCount(next.doneCount);
+    setTotalCount(next.totalCount);
+  }, []);
+
+  const refreshCounts = useCallback(async () => {
+    if (!listId) {
+      applyCounts([]);
+      return;
+    }
+
+    if (!user) {
+      applyCounts(await getLocalItems(listId));
+      return;
+    }
+
+    const itemsQuery = query(
+      collection(db, 'lists', listId, 'items'),
+      orderBy('order'),
+    );
+
+    try {
+      const cachedSnapshot = await getDocsFromCache(itemsQuery);
+      applyCounts(
+        cachedSnapshot.docs.map((docSnap) =>
+          docToListItem(docSnap.id, docSnap.data()),
+        ),
+      );
+    } catch {
+      // Listener below will keep counts in sync.
+    }
+  }, [applyCounts, listId, user]);
 
   useEffect(() => {
     if (!listId) {
-      setDoneCount(0);
-      setTotalCount(0);
+      applyCounts([]);
       return;
     }
 
@@ -124,8 +231,7 @@ export function useListItemCounts(listId: string) {
       const refresh = async () => {
         const nextItems = await getLocalItems(listId);
         if (active) {
-          setTotalCount(nextItems.length);
-          setDoneCount(nextItems.filter((item) => item.checked).length);
+          applyCounts(nextItems);
         }
       };
 
@@ -145,20 +251,40 @@ export function useListItemCounts(listId: string) {
       orderBy('order'),
     );
 
+    void getDocsFromCache(itemsQuery)
+      .then((snapshot) => {
+        applyCounts(
+          snapshot.docs.map((docSnap) =>
+            docToListItem(docSnap.id, docSnap.data()),
+          ),
+        );
+      })
+      .catch(() => {
+        // Cache miss — onSnapshot will populate counts.
+      });
+
     const unsubscribe = onSnapshot(
       itemsQuery,
       (snapshot) => {
-        const nextItems = snapshot.docs.map((docSnap) =>
-          docToListItem(docSnap.id, docSnap.data()),
+        applyCounts(
+          snapshot.docs.map((docSnap) =>
+            docToListItem(docSnap.id, docSnap.data()),
+          ),
         );
-        setTotalCount(nextItems.length);
-        setDoneCount(nextItems.filter((item) => item.checked).length);
       },
       handleFirestoreListenerError,
     );
 
     return unsubscribe;
-  }, [listId, user]);
+  }, [applyCounts, listId, user]);
+
+  useEffect(() => {
+    if (!isFocused) {
+      return;
+    }
+
+    void refreshCounts();
+  }, [isFocused, refreshCounts, refreshKey]);
 
   return { doneCount, totalCount };
 }
@@ -169,12 +295,29 @@ export function useListItems(
 ) {
   const { moveDoneToBottom = false } = options;
   const { user } = useAuth();
+  const optimisticItemsRef = useRef<ListItem[]>([]);
   const cachedItems = listId && !user ? getCachedLocalItems(listId) : [];
   const [items, setItems] = useState<ListItem[]>(cachedItems);
   const [loading, setLoading] = useState(cachedItems.length === 0);
 
+  const applyServerItems = useCallback((serverItems: ListItem[]) => {
+    optimisticItemsRef.current = optimisticItemsRef.current.filter(
+      (optimistic) =>
+        !serverItems.some(
+          (serverItem) =>
+            serverItem.name === optimistic.name && serverItem.order === optimistic.order,
+        ),
+    );
+    setItems(reconcileOptimisticItems(serverItems, optimisticItemsRef.current));
+  }, []);
+
+  useEffect(() => {
+    optimisticItemsRef.current = [];
+  }, [listId]);
+
   useEffect(() => {
     if (!listId) {
+      optimisticItemsRef.current = [];
       setItems([]);
       setLoading(false);
       return;
@@ -187,7 +330,7 @@ export function useListItems(
       const refresh = async () => {
         const nextItems = await getLocalItems(listId);
         if (active) {
-          setItems(nextItems);
+          applyServerItems(nextItems);
           setLoading(false);
         }
       };
@@ -215,7 +358,7 @@ export function useListItems(
         const nextItems = snapshot.docs.map((docSnap) =>
           docToListItem(docSnap.id, docSnap.data()),
         );
-        setItems(nextItems);
+        applyServerItems(nextItems);
         setLoading(false);
       })
       .catch(() => {
@@ -228,7 +371,7 @@ export function useListItems(
         const nextItems = snapshot.docs.map((docSnap) =>
           docToListItem(docSnap.id, docSnap.data()),
         );
-        setItems(nextItems);
+        applyServerItems(nextItems);
         setLoading(false);
       },
       (error) => {
@@ -238,7 +381,7 @@ export function useListItems(
     );
 
     return unsubscribe;
-  }, [listId, user]);
+  }, [applyServerItems, listId, user]);
 
   const addItem = useCallback(
     async (name: string, fields: NewItemFields = {}) => {
@@ -251,12 +394,32 @@ export function useListItems(
         return;
       }
 
-      if (!user) {
-        await addLocalItem(listId, trimmedName, fields);
-        return;
-      }
+      const persistedItems = getPersistedItems(items);
+      const optimisticItem = createOptimisticItem(
+        trimmedName,
+        fields,
+        persistedItems,
+        user?.uid ?? 'local',
+      );
+      optimisticItemsRef.current = [...optimisticItemsRef.current, optimisticItem];
+      setItems((current) =>
+        [...current, optimisticItem].sort((a, b) => a.order - b.order),
+      );
 
-      await addItemToList(listId, user, trimmedName, fields, items);
+      try {
+        if (!user) {
+          await addLocalItem(listId, trimmedName, fields);
+          return;
+        }
+
+        await addItemToList(listId, user, trimmedName, fields, persistedItems);
+      } catch (error) {
+        optimisticItemsRef.current = optimisticItemsRef.current.filter(
+          (item) => item.id !== optimisticItem.id,
+        );
+        setItems((current) => current.filter((item) => item.id !== optimisticItem.id));
+        throw error;
+      }
     },
     [items, listId, user],
   );
@@ -373,12 +536,10 @@ export function useListItems(
 
       if (!user) {
         await deleteLocalItem(listId, id);
-        playDeleteItemHaptic();
         return;
       }
 
       await deleteDoc(doc(db, 'lists', listId, 'items', id));
-      playDeleteItemHaptic();
     },
     [listId, user],
   );
@@ -390,7 +551,6 @@ export function useListItems(
       }
 
       await clearListItemsById(listId, user);
-      playDeleteItemHaptic();
     },
     [listId, user],
   );

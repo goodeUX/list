@@ -16,6 +16,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import ThemedTextInput from '@/components/ThemedTextInput';
 import { getAuthErrorMessage, useAuth } from '@/contexts/AuthContext';
 import { useTheme } from '@/contexts/ThemeContext';
+import { buttonLabelStyle, buttonLayoutStyle } from '@/lib/buttonStyles';
 
 function navigateAfterAuth() {
   if (router.canGoBack()) {
@@ -159,6 +160,7 @@ export default function SignUpScreen() {
               onPress={handleSignUp}
               style={({ pressed }) => [
                 styles.button,
+                buttonLayoutStyle,
                 {
                   backgroundColor: colors.accent,
                   borderRadius: radii.item,
@@ -170,7 +172,7 @@ export default function SignUpScreen() {
               {submitting ? (
                 <ActivityIndicator color={colors.surface} />
               ) : (
-                <Text style={[styles.buttonText, { color: colors.surface }]}>
+                <Text style={[buttonLabelStyle(16), { color: colors.surface }]}>
                   Create account
                 </Text>
               )}
@@ -242,14 +244,7 @@ const styles = StyleSheet.create({
     lineHeight: 20,
   },
   button: {
-    alignItems: 'center',
-    justifyContent: 'center',
     minHeight: 52,
-    paddingHorizontal: 24,
-  },
-  buttonText: {
-    fontFamily: 'NunitoSans_600SemiBold',
-    fontSize: 16,
   },
   footer: {
     alignItems: 'center',

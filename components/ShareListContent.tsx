@@ -13,6 +13,7 @@ import { doc, getDoc, onSnapshot } from 'firebase/firestore';
 
 import { useAuth } from '@/contexts/AuthContext';
 import { useTheme } from '@/contexts/ThemeContext';
+import { buttonLabelStyle, buttonLayoutStyle } from '@/lib/buttonStyles';
 import { db } from '@/lib/firebase';
 import { handleFirestoreListenerError } from '@/lib/firestoreListenerErrors';
 
@@ -112,6 +113,7 @@ export default function ShareListContent({
         onPress={handleShare}
         style={({ pressed }) => [
           styles.actionButton,
+          buttonLayoutStyle,
           {
             backgroundColor: colors.accent,
             borderRadius: radii.item,
@@ -119,7 +121,7 @@ export default function ShareListContent({
           },
         ]}
       >
-        <Text style={[styles.actionButtonText, { color: colors.surface }]}>
+        <Text style={[buttonLabelStyle(15), { color: colors.surface }]}>
           Invite someone
         </Text>
       </Pressable>
@@ -168,16 +170,9 @@ const styles = StyleSheet.create({
     lineHeight: 22,
   },
   actionButton: {
-    alignItems: 'center',
     borderWidth: 1,
-    justifyContent: 'center',
     minHeight: 48,
-    paddingHorizontal: 12,
     width: '100%',
-  },
-  actionButtonText: {
-    fontFamily: 'NunitoSans_600SemiBold',
-    fontSize: 15,
   },
   sectionLabel: {
     fontFamily: 'NunitoSans_600SemiBold',

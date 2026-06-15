@@ -5,7 +5,6 @@ import { useCallback, useEffect, useMemo, useRef, useState, type ElementRef } fr
 import {
   Alert,
   FlatList,
-  Keyboard,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -39,6 +38,8 @@ import { handleFirestoreListenerError } from '@/lib/firestoreListenerErrors';
 import { getLocalList, getCachedLocalList, subscribeLocalData } from '@/lib/localStore';
 import { playAddItemHaptic } from '@/lib/haptics';
 import { scheduleAddItemInputFocus } from '@/lib/focusAddItemInput';
+import { dismissKeyboard } from '@/lib/dismissKeyboard';
+import { focusTextInputNow } from '@/lib/focusTextInput';
 import {
   ITEM_NAME_MAX_LENGTH,
   limitItemNameLength,
@@ -84,7 +85,6 @@ export default function ListDetailScreen() {
   const { recordItemUsage } = useItemHistory();
   const { activeUsers } = usePresence(user ? listId : undefined);
   const [newItemName, setNewItemName] = useState('');
-  const [adding, setAdding] = useState(false);
   const [isAddInputFocused, setIsAddInputFocused] = useState(false);
   const [listOptionsVisible, setListOptionsVisible] = useState(false);
   const [listOptionsMenuTop, setListOptionsMenuTop] = useState(0);
@@ -94,10 +94,15 @@ export default function ListDetailScreen() {
   const newItemNameRef = useRef('');
   const submitFromKeyboard = useRef(false);
   const refocusingInput = useRef(false);
+  const lastAddSubmitRef = useRef<{ name: string; at: number } | null>(null);
   const addItemInputRef = useRef<ElementRef<typeof ThemedTextInput>>(null);
   const listOptionsButtonRef = useRef<View>(null);
   const listOptionsIconRotation = useSharedValue(0);
   const consumedFocusAddRef = useRef(false);
+
+  useEffect(() => {
+    consumedFocusAddRef.current = false;
+  }, [listId]);
 
   const placeCaretAtStart = (input: ElementRef<typeof ThemedTextInput> | null) => {
     if (!input || Platform.OS !== 'web') {
@@ -127,11 +132,16 @@ export default function ListDetailScreen() {
       return;
     }
 
-    Keyboard.dismiss();
+    dismissKeyboard(addItemInputRef.current);
     setIsAddInputFocused(false);
     newItemNameRef.current = '';
     setNewItemName('');
-    addItemInputRef.current?.blur();
+  }, []);
+
+  const focusAddInput = useCallback(() => {
+    focusTextInputNow(addItemInputRef.current);
+    setIsAddInputFocused(true);
+    placeCaretAtStart(addItemInputRef.current);
   }, []);
 
   const blurAddInput = dismissAddInput;
@@ -178,27 +188,33 @@ export default function ListDetailScreen() {
     transform: [{ rotate: `${listOptionsIconRotation.value}deg` }],
   }));
 
-  const refocusAddInput = () => {
+  const refocusAddInput = useCallback(() => {
+    submitFromKeyboard.current = true;
     refocusingInput.current = true;
     setIsAddInputFocused(true);
 
-    const applyFocus = () => {
-      focusInputWithCaret(addItemInputRef.current);
-      setIsAddInputFocused(true);
-      refocusingInput.current = false;
+    const clearRefocusFlags = () => {
+      setTimeout(() => {
+        refocusingInput.current = false;
+        submitFromKeyboard.current = false;
+      }, 200);
     };
 
     if (Platform.OS === 'web') {
-      requestAnimationFrame(() => {
-        requestAnimationFrame(applyFocus);
-      });
+      focusTextInputNow(addItemInputRef.current);
+      setIsAddInputFocused(true);
+      clearRefocusFlags();
       return;
     }
 
-    requestAnimationFrame(() => {
-      requestAnimationFrame(applyFocus);
-    });
-  };
+    scheduleAddItemInputFocus(
+      () => addItemInputRef.current,
+      () => {
+        setIsAddInputFocused(true);
+        clearRefocusFlags();
+      },
+    );
+  }, []);
 
   useFocusEffect(
     useCallback(() => {
@@ -385,6 +401,7 @@ export default function ListDetailScreen() {
 
   const handleRenameList = () => {
     blurAddInput();
+    setListOptionsVisible(false);
     setRenameError(null);
     setRenameModalVisible(true);
   };
@@ -496,48 +513,67 @@ export default function ListDetailScreen() {
     setNewItemName(limitedText);
   };
 
-  const handleAddItem = async (refocusAfter = false) => {
-    const trimmedName = newItemNameRef.current.trim();
-    if (!listId || !trimmedName || adding) {
-      return;
-    }
+  const handleAddItem = useCallback(() => {
+      const trimmedName = newItemNameRef.current.trim();
+      if (!listId || !trimmedName) {
+        return;
+      }
 
-    setAdding(true);
-    try {
-      await addItem(trimmedName);
-      await recordItemUsage(trimmedName, null, listId);
+      const now = Date.now();
+      const lastSubmit = lastAddSubmitRef.current;
+      if (
+        lastSubmit &&
+        lastSubmit.name === trimmedName &&
+        now - lastSubmit.at < 500
+      ) {
+        return;
+      }
+      lastAddSubmitRef.current = { name: trimmedName, at: now };
+
+      const nameToAdd = trimmedName;
       playAddItemHaptic();
       newItemNameRef.current = '';
       setNewItemName('');
-    } finally {
-      setAdding(false);
-      if (refocusAfter) {
-        refocusAddInput();
-      }
-    }
-  };
+      refocusAddInput();
+
+      void addItem(nameToAdd)
+        .then(() => {
+          void recordItemUsage(nameToAdd, null, listId);
+        })
+        .catch(() => {
+          newItemNameRef.current = nameToAdd;
+          setNewItemName(nameToAdd);
+          Alert.alert('Could not add item', 'Please try again.');
+        });
+    },
+    [addItem, listId, recordItemUsage, refocusAddInput],
+  );
 
   const handleSubmitEditing = () => {
-    submitFromKeyboard.current = true;
-    void handleAddItem(true);
+    handleAddItem();
   };
 
   const handleSubmitPress = () => {
+    handleAddItem();
+  };
+
+  const handleSubmitPressIn = () => {
     submitFromKeyboard.current = true;
-    void handleAddItem(true);
+    refocusingInput.current = true;
+    setIsAddInputFocused(true);
   };
 
   const handleSubmitMouseDown = (event: { preventDefault: () => void }) => {
     event.preventDefault();
-    if (!newItemNameRef.current.trim() || adding) {
+    if (!newItemNameRef.current.trim()) {
       return;
     }
 
-    submitFromKeyboard.current = true;
-    void handleAddItem(true);
+    handleSubmitPressIn();
+    handleAddItem();
   };
 
-  const canSubmitNewItem = Boolean(newItemName.trim()) && !adding;
+  const canSubmitNewItem = Boolean(newItemName.trim());
   const showSubmitButton = isAddInputFocused && newItemName.length > 0;
 
   const handleInputFocus = () => {
@@ -546,17 +582,14 @@ export default function ListDetailScreen() {
   };
 
   const handleInputBlur = () => {
-    if (refocusingInput.current) {
+    if (refocusingInput.current || submitFromKeyboard.current) {
+      setIsAddInputFocused(true);
       return;
     }
 
     setTimeout(() => {
-      if (refocusingInput.current) {
-        return;
-      }
-
-      if (submitFromKeyboard.current) {
-        submitFromKeyboard.current = false;
+      if (refocusingInput.current || submitFromKeyboard.current) {
+        setIsAddInputFocused(true);
         return;
       }
 
@@ -670,11 +703,10 @@ export default function ListDetailScreen() {
         ]}
       >
       <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        enabled={Platform.OS === 'ios' && isAddInputFocused}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        enabled={isAddInputFocused}
         style={styles.flex}
       >
-      <Pressable onPress={handleBackgroundPress}>
       <View
         style={[
           styles.header,
@@ -705,11 +737,23 @@ export default function ListDetailScreen() {
           <MaterialIcons color={colors.accent} name="chevron-left" size={24} />
         </Pressable>
 
-        <View style={styles.titleBlock}>
-          <Text style={styles.emoji}>{listEmoji || paramEmoji}</Text>
-          <View style={styles.titleTextBlock}>
+        <Pressable
+          accessibilityLabel="Rename list"
+          accessibilityRole="button"
+          onPress={handleRenameList}
+          style={({ pressed }) => [
+            styles.titleBlock,
+            { opacity: pressed ? 0.7 : 1 },
+            Platform.OS === 'web' ? ({ cursor: 'pointer' } as object) : null,
+          ]}
+        >
+          <Text pointerEvents="none" style={styles.emoji}>
+            {listEmoji || paramEmoji}
+          </Text>
+          <View pointerEvents="none" style={styles.titleTextBlock}>
             <Text
               numberOfLines={2}
+              pointerEvents="none"
               style={[styles.title, { color: colors.text }]}
             >
               {listName || paramName || 'List'}
@@ -725,7 +769,7 @@ export default function ListDetailScreen() {
               </View>
             ) : null}
           </View>
-        </View>
+        </Pressable>
 
         <View style={styles.headerActions}>
           <View collapsable={false} ref={listOptionsButtonRef}>
@@ -773,48 +817,54 @@ export default function ListDetailScreen() {
           </Pressable>
         </View>
       </View>
-      </Pressable>
 
       <View
         style={{ paddingHorizontal: spacing.lg, paddingTop: spacing.lg }}
       >
-        <View
+        <Pressable
           nativeID={ADD_INPUT_ROW_NATIVE_ID}
+          onPress={focusAddInput}
           style={[
             styles.addInputRow,
             getThemedInputContainerStyle(colors, isAddInputFocused),
             {
               borderRadius: radii.item,
-              paddingRight: showSubmitButton ? spacing.xs : 15,
+              paddingRight: showSubmitButton
+                ? spacing.xs
+                : isAddInputFocused
+                  ? 12
+                  : 15,
             },
           ]}
         >
           <ThemedTextInput
             ref={addItemInputRef}
-            editable={!adding}
             onBlur={handleInputBlur}
             onChangeText={handleChangeNewItemName}
             onFocus={handleInputFocus}
             onSubmitEditing={handleSubmitEditing}
             placeholder="Add an item..."
             returnKeyType="done"
+            showSoftInputOnFocus
             style={styles.addInput}
             value={newItemName}
             variant="plain"
           />
-          <Text
-            style={[
-              styles.charCounter,
-              {
-                color:
-                  newItemName.length >= ITEM_NAME_MAX_LENGTH
-                    ? colors.accent
-                    : colors.textSecondary,
-              },
-            ]}
-          >
-            {newItemName.length}/{ITEM_NAME_MAX_LENGTH}
-          </Text>
+          {isAddInputFocused ? (
+            <Text
+              style={[
+                styles.charCounter,
+                {
+                  color:
+                    newItemName.length >= ITEM_NAME_MAX_LENGTH
+                      ? colors.accent
+                      : colors.textSecondary,
+                },
+              ]}
+            >
+              {newItemName.length}/{ITEM_NAME_MAX_LENGTH}
+            </Text>
+          ) : null}
           <Pressable
             accessibilityLabel="Add item"
             accessibilityRole="button"
@@ -822,6 +872,7 @@ export default function ListDetailScreen() {
             disabled={Platform.OS !== 'web' && !canSubmitNewItem}
             onMouseDown={Platform.OS === 'web' ? handleSubmitMouseDown : undefined}
             onPress={Platform.OS === 'web' ? undefined : handleSubmitPress}
+            onPressIn={Platform.OS === 'web' ? undefined : handleSubmitPressIn}
             pointerEvents={showSubmitButton ? 'auto' : 'none'}
             style={({ pressed }) => [
               styles.addSubmitButton,
@@ -835,7 +886,7 @@ export default function ListDetailScreen() {
           >
             <MaterialIcons color={colors.surface} name="check" size={22} />
           </Pressable>
-        </View>
+        </Pressable>
       </View>
 
       <Animated.View style={[styles.listContainer, listFadeStyle]}>
@@ -846,7 +897,7 @@ export default function ListDetailScreen() {
             ItemSeparatorComponent={itemSeparator}
             keyExtractor={(item) => item.id}
             keyboardDismissMode="on-drag"
-            keyboardShouldPersistTaps="never"
+            keyboardShouldPersistTaps="handled"
             ListEmptyComponent={emptyList}
             renderItem={renderStaticListItem}
             renderSectionHeader={renderSectionHeader}
@@ -863,7 +914,7 @@ export default function ListDetailScreen() {
             ItemSeparatorComponent={itemSeparator}
             keyExtractor={(item) => item.id}
             keyboardDismissMode="on-drag"
-            keyboardShouldPersistTaps="never"
+            keyboardShouldPersistTaps="handled"
             ListEmptyComponent={emptyList}
             renderItem={renderStaticListItem}
             removeClippedSubviews={false}

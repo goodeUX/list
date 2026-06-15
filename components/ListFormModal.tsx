@@ -1,10 +1,11 @@
-import { MaterialIcons } from '@expo/vector-icons';
 import { useCallback, useEffect, useMemo, useRef, useState, type ElementRef } from 'react';
 import {
   ActivityIndicator,
   BackHandler,
+  KeyboardAvoidingView,
   Platform,
   Pressable,
+  ScrollView,
   StyleSheet,
   Text,
   useWindowDimensions,
@@ -26,7 +27,9 @@ import ThemedTextInput, {
   getThemedInputContainerStyle,
 } from '@/components/ThemedTextInput';
 import { useTheme } from '@/contexts/ThemeContext';
-import { focusTextInputNow } from '@/lib/focusTextInput';
+import { buttonLabelStyle, buttonLayoutStyle } from '@/lib/buttonStyles';
+import { focusTextInputNow, scheduleTextInputFocus } from '@/lib/focusTextInput';
+import { dismissKeyboard } from '@/lib/dismissKeyboard';
 import {
   acquireKeyboardSession,
   releaseKeyboardProxy,
@@ -42,6 +45,7 @@ import { CONTENT_MAX_WIDTH } from '@/lib/slideTransition';
 const DEFAULT_EMOJI = '📋';
 const MODAL_DELAY_MS = 100;
 const MODAL_DURATION_MS = 280;
+const MODAL_FOCUS_DELAY_MS = MODAL_DELAY_MS + MODAL_DURATION_MS + 32;
 const MODAL_TRANSLATE_Y = 48;
 const MODAL_ESTIMATED_HEIGHT = 300;
 const MODAL_VERTICAL_OFFSET = 84;
@@ -127,12 +131,45 @@ export default function ListFormModal({
     modalBackdropOpacity.value = 0;
     modalDialogOpacity.value = 0;
     modalDialogTranslateY.value = MODAL_TRANSLATE_Y;
-    listNameInputRef.current?.blur();
+    dismissKeyboard(listNameInputRef.current);
     releaseKeyboardProxy();
     setIsListNameFocused(false);
     setModalLayerHeight(null);
     onClose();
   }, [modalBackdropOpacity, modalDialogOpacity, modalDialogTranslateY, onClose]);
+
+  const focusNameInput = useCallback(() => {
+    if (!autoFocusOnOpen) {
+      return;
+    }
+
+    const runFocus = () => {
+      if (Platform.OS === 'web') {
+        transferKeyboardFocus(listNameInputRef.current);
+        setIsListNameFocused(true);
+        return;
+      }
+
+      scheduleTextInputFocus(listNameInputRef.current);
+      setIsListNameFocused(true);
+    };
+
+    setTimeout(runFocus, MODAL_FOCUS_DELAY_MS);
+
+    if (Platform.OS === 'android') {
+      setTimeout(runFocus, MODAL_FOCUS_DELAY_MS + 150);
+    }
+  }, [autoFocusOnOpen]);
+
+  const handleFocusNameInput = useCallback(() => {
+    if (Platform.OS === 'web') {
+      transferKeyboardFocus(listNameInputRef.current);
+    } else {
+      focusTextInputNow(listNameInputRef.current);
+    }
+
+    setIsListNameFocused(true);
+  }, []);
 
   const playOpenModalAnimation = useCallback(() => {
     modalBackdropOpacity.value = 0;
@@ -161,24 +198,6 @@ export default function ListFormModal({
       }),
     );
   }, [modalBackdropOpacity, modalDialogOpacity, modalDialogTranslateY]);
-
-  const focusNameInput = useCallback(() => {
-    if (!autoFocusOnOpen) {
-      return;
-    }
-
-    if (Platform.OS === 'web') {
-      transferKeyboardFocus(listNameInputRef.current);
-      if (!listNameInputRef.current) {
-        requestAnimationFrame(() => {
-          transferKeyboardFocus(listNameInputRef.current);
-        });
-      }
-      return;
-    }
-
-    focusTextInputNow(listNameInputRef.current);
-  }, [autoFocusOnOpen]);
 
   useEffect(() => {
     if (!visible) {
@@ -307,108 +326,127 @@ export default function ListFormModal({
               backgroundColor: colors.surface,
               borderColor: colors.border,
               borderRadius: radii.card,
-              padding: spacing.lg,
               ...(Platform.OS === 'web'
                 ? { boxShadow: '0 12px 40px rgba(44, 36, 23, 0.2)' }
                 : null),
             },
           ]}
         >
-          <View style={styles.modalHeader}>
-            <Text style={[styles.modalTitle, { color: colors.text }]}>{title}</Text>
-            <Pressable
-              accessibilityLabel="Close"
-              accessibilityRole="button"
-              disabled={submitting}
-              hitSlop={8}
-              onPress={handleClose}
-              style={({ pressed }) => [
-                styles.modalCloseButton,
-                { opacity: pressed || submitting ? 0.7 : 1 },
-              ]}
+          <KeyboardAvoidingView
+            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          >
+            <ScrollView
+              bounces={false}
+              keyboardDismissMode="on-drag"
+              keyboardShouldPersistTaps="handled"
+              contentContainerStyle={{ gap: 16, padding: spacing.lg }}
             >
-              <MaterialIcons color={colors.textSecondary} name="close" size={24} />
-            </Pressable>
-          </View>
+              <Text style={[styles.modalTitle, { color: colors.text }]}>{title}</Text>
 
-          <View style={styles.field}>
-            <Text style={[styles.label, { color: colors.textSecondary }]}>Name</Text>
-            <View style={styles.nameRow}>
-              <EmojiPickerButton
-                disabled={submitting}
-                dropdownContainerLayout={modalContentLayout}
-                onChange={setListEmoji}
-                value={listEmoji}
-              />
-              <View
-                style={[
-                  styles.nameInputContainer,
-                  getThemedInputContainerStyle(colors, isListNameFocused),
-                  { borderRadius: radii.item },
-                ]}
-              >
-                <ThemedTextInput
-                  editable={!submitting}
-                  onBlur={() => setIsListNameFocused(false)}
-                  onChangeText={handleChangeListName}
-                  onFocus={() => setIsListNameFocused(true)}
-                  onSubmitEditing={() => {
+              <View style={styles.field}>
+                <View style={styles.nameRow}>
+                  <EmojiPickerButton
+                    disabled={submitting}
+                    dropdownContainerLayout={modalContentLayout}
+                    onChange={setListEmoji}
+                    value={listEmoji}
+                  />
+                  <Pressable
+                    onPress={handleFocusNameInput}
+                    style={[
+                      styles.nameInputContainer,
+                      getThemedInputContainerStyle(colors, isListNameFocused),
+                      {
+                        borderRadius: radii.item,
+                        paddingRight: isListNameFocused ? 12 : 16,
+                      },
+                    ]}
+                  >
+                    <ThemedTextInput
+                      editable={!submitting}
+                      onBlur={() => setIsListNameFocused(false)}
+                      onChangeText={handleChangeListName}
+                      onFocus={() => setIsListNameFocused(true)}
+                      onSubmitEditing={() => {
+                        void handleSubmit();
+                      }}
+                      placeholder="Groceries, packing, gifts..."
+                      ref={listNameInputRef}
+                      returnKeyType="done"
+                      showSoftInputOnFocus
+                      style={styles.nameInput}
+                      value={listName}
+                      variant="plain"
+                    />
+                    {isListNameFocused ? (
+                      <Text
+                        style={[
+                          styles.charCounter,
+                          {
+                            color:
+                              listName.length >= LIST_NAME_MAX_LENGTH
+                                ? colors.accent
+                                : colors.textSecondary,
+                          },
+                        ]}
+                      >
+                        {listName.length}/{LIST_NAME_MAX_LENGTH}
+                      </Text>
+                    ) : null}
+                  </Pressable>
+                </View>
+              </View>
+
+              {error || validationError ? (
+                <Text style={[styles.error, { color: colors.accent }]}>
+                  {error ?? validationError}
+                </Text>
+              ) : null}
+
+              <View style={styles.actions}>
+                <Pressable
+                  disabled={submitting}
+                  onPress={() => {
                     void handleSubmit();
                   }}
-                  placeholder="Groceries, packing, gifts..."
-                  ref={listNameInputRef}
-                  returnKeyType="done"
-                  style={styles.nameInput}
-                  value={listName}
-                  variant="plain"
-                />
-                <Text
-                  style={[
-                    styles.charCounter,
+                  onPressIn={onSubmitPressIn}
+                  style={({ pressed }) => [
+                    styles.submitButton,
+                    buttonLayoutStyle,
                     {
-                      color:
-                        listName.length >= LIST_NAME_MAX_LENGTH
-                          ? colors.accent
-                          : colors.textSecondary,
+                      backgroundColor: colors.accent,
+                      borderRadius: radii.item,
+                      opacity: pressed || submitting ? 0.85 : 1,
                     },
                   ]}
                 >
-                  {listName.length}/{LIST_NAME_MAX_LENGTH}
-                </Text>
+                  {submitting ? (
+                    <ActivityIndicator color={colors.surface} />
+                  ) : (
+                    <Text style={[buttonLabelStyle(16), { color: colors.surface }]}>
+                      {submitLabel}
+                    </Text>
+                  )}
+                </Pressable>
+
+                <Pressable
+                  disabled={submitting}
+                  onPress={handleClose}
+                  style={({ pressed }) => [
+                    styles.cancelButton,
+                    buttonLayoutStyle,
+                    {
+                      opacity: pressed || submitting ? 0.7 : 1,
+                    },
+                  ]}
+                >
+                  <Text style={[buttonLabelStyle(15), { color: colors.textSecondary }]}>
+                    Cancel
+                  </Text>
+                </Pressable>
               </View>
-            </View>
-          </View>
-
-          {error || validationError ? (
-            <Text style={[styles.error, { color: colors.accent }]}>
-              {error ?? validationError}
-            </Text>
-          ) : null}
-
-          <Pressable
-            disabled={submitting}
-            onPress={() => {
-              void handleSubmit();
-            }}
-            onPressIn={onSubmitPressIn}
-            style={({ pressed }) => [
-              styles.submitButton,
-              {
-                backgroundColor: colors.accent,
-                borderRadius: radii.item,
-                marginTop: spacing.md,
-                opacity: pressed || submitting ? 0.85 : 1,
-              },
-            ]}
-          >
-            {submitting ? (
-              <ActivityIndicator color={colors.surface} />
-            ) : (
-              <Text style={[styles.submitButtonText, { color: colors.surface }]}>
-                {submitLabel}
-              </Text>
-            )}
-          </Pressable>
+            </ScrollView>
+          </KeyboardAvoidingView>
         </Animated.View>
       </View>
     </View>
@@ -433,28 +471,15 @@ const styles = StyleSheet.create({
   },
   modalDialog: {
     borderWidth: 1,
-    gap: 16,
     maxWidth: CONTENT_MAX_WIDTH - MODAL_WIDTH_INSET,
+    overflow: 'hidden',
     width: '100%',
     zIndex: 1,
   },
   modalTitle: {
-    flex: 1,
     fontFamily: 'Fraunces_600SemiBold',
     fontSize: 24,
     lineHeight: 32,
-  },
-  modalHeader: {
-    alignItems: 'center',
-    flexDirection: 'row',
-    gap: 12,
-  },
-  modalCloseButton: {
-    alignItems: 'center',
-    flexShrink: 0,
-    height: 32,
-    justifyContent: 'center',
-    width: 32,
   },
   field: {
     gap: 6,
@@ -478,10 +503,6 @@ const styles = StyleSheet.create({
     paddingLeft: 16,
     paddingVertical: 14,
   },
-  label: {
-    fontFamily: 'NunitoSans_600SemiBold',
-    fontSize: 14,
-  },
   error: {
     fontFamily: 'NunitoSans_400Regular',
     fontSize: 14,
@@ -493,15 +514,16 @@ const styles = StyleSheet.create({
     fontSize: 14,
     lineHeight: 20,
   },
+  actions: {
+    gap: 8,
+  },
   submitButton: {
-    alignItems: 'center',
-    justifyContent: 'center',
     minHeight: 48,
-    paddingHorizontal: 16,
+    paddingVertical: 12,
     width: '100%',
   },
-  submitButtonText: {
-    fontFamily: 'NunitoSans_600SemiBold',
-    fontSize: 16,
+  cancelButton: {
+    minHeight: 44,
+    width: '100%',
   },
 });
