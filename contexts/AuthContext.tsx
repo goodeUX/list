@@ -68,7 +68,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signIn = useCallback(async (email: string, password: string) => {
     const credential = await signInWithEmailAndPassword(auth, email.trim(), password);
-    await migrateLocalDataToCloud(credential.user.uid);
+    await setDoc(
+      doc(db, 'users', credential.user.uid),
+      {
+        uid: credential.user.uid,
+        displayName: credential.user.displayName ?? '',
+        email: credential.user.email ?? email.trim(),
+        themePreference: 'system',
+      },
+      { merge: true },
+    );
+
+    try {
+      await migrateLocalDataToCloud(credential.user.uid);
+    } catch (error) {
+      console.error('Failed to migrate local data after sign in', error);
+    }
   }, []);
 
   const signUp = useCallback(

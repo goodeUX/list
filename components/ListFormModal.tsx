@@ -519,11 +519,13 @@ const styles = StyleSheet.create({
   },
   submitButton: {
     minHeight: 48,
+    overflow: 'visible',
     paddingVertical: 12,
     width: '100%',
   },
   cancelButton: {
     minHeight: 44,
+    overflow: 'visible',
     width: '100%',
   },
 });

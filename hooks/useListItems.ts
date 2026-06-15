@@ -19,6 +19,7 @@ import type { User } from 'firebase/auth';
 import { useAuth } from '@/contexts/AuthContext';
 import { db } from '@/lib/firebase';
 import { handleFirestoreListenerError } from '@/lib/firestoreListenerErrors';
+import { usesCloudListData } from '@/lib/listIds';
 import { normalizeItemName } from '@/lib/itemName';
 import { clearListItemsById } from '@/lib/listMutations';
 import {
@@ -122,7 +123,7 @@ export async function addItemToList(
     return;
   }
 
-  if (!user) {
+  if (!usesCloudListData(user, listId)) {
     await addLocalItem(listId, trimmedName, fields);
     return;
   }
@@ -167,7 +168,7 @@ function getInitialCounts(listId: string, user: User | null) {
     return { doneCount: 0, totalCount: 0 };
   }
 
-  if (!user) {
+  if (!usesCloudListData(user, listId)) {
     const items = getCachedLocalItems(listId);
     return countItems(items);
   }
@@ -197,7 +198,7 @@ export function useListItemCounts(listId: string, refreshKey = 0) {
       return;
     }
 
-    if (!user) {
+    if (!usesCloudListData(user, listId)) {
       applyCounts(await getLocalItems(listId));
       return;
     }
@@ -225,7 +226,7 @@ export function useListItemCounts(listId: string, refreshKey = 0) {
       return;
     }
 
-    if (!user) {
+    if (!usesCloudListData(user, listId)) {
       let active = true;
 
       const refresh = async () => {
@@ -296,7 +297,8 @@ export function useListItems(
   const { moveDoneToBottom = false } = options;
   const { user } = useAuth();
   const optimisticItemsRef = useRef<ListItem[]>([]);
-  const cachedItems = listId && !user ? getCachedLocalItems(listId) : [];
+  const cachedItems =
+    listId && !usesCloudListData(user, listId) ? getCachedLocalItems(listId) : [];
   const [items, setItems] = useState<ListItem[]>(cachedItems);
   const [loading, setLoading] = useState(cachedItems.length === 0);
 
@@ -323,7 +325,7 @@ export function useListItems(
       return;
     }
 
-    if (!user) {
+    if (!usesCloudListData(user, listId)) {
       let active = true;
       setLoading(true);
 
@@ -407,7 +409,7 @@ export function useListItems(
       );
 
       try {
-        if (!user) {
+        if (!usesCloudListData(user, listId)) {
           await addLocalItem(listId, trimmedName, fields);
           return;
         }
@@ -432,7 +434,7 @@ export function useListItems(
 
       const sequential = withSequentialOrder(orderedItems);
 
-      if (!user) {
+      if (!usesCloudListData(user, listId)) {
         await syncLocalItems(listId, sequential);
         return;
       }
@@ -471,7 +473,7 @@ export function useListItems(
         return;
       }
 
-      if (!user) {
+      if (!usesCloudListData(user, listId)) {
         await toggleLocalItem(listId, id);
         return;
       }
@@ -495,7 +497,7 @@ export function useListItems(
         return;
       }
 
-      if (!user) {
+      if (!usesCloudListData(user, listId)) {
         await updateLocalItem(listId, id, updates);
         return;
       }
@@ -534,7 +536,7 @@ export function useListItems(
         return;
       }
 
-      if (!user) {
+      if (!usesCloudListData(user, listId)) {
         await deleteLocalItem(listId, id);
         return;
       }
@@ -574,7 +576,7 @@ export function useListItems(
         return;
       }
 
-      if (!user) {
+      if (!usesCloudListData(user, listId)) {
         await reorderLocalItems(
           listId,
           nextOrder.map((entry) => entry.id),

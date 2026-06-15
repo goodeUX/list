@@ -11,7 +11,8 @@ import {
 
 import { useAuth } from '@/contexts/AuthContext';
 import { db } from '@/lib/firebase';
-import { handleFirestoreListenerError } from '@/lib/firestoreListenerErrors';
+import { handleFirestoreListenerError, isFirestorePermissionError } from '@/lib/firestoreListenerErrors';
+import { usesCloudListData } from '@/lib/listIds';
 
 const PRESENCE_INTERVAL_MS = 15_000;
 const ACTIVE_THRESHOLD_MS = 30_000;
@@ -33,22 +34,28 @@ export function usePresence(listId: string | undefined) {
   const [activeUsers, setActiveUsers] = useState<PresenceUser[]>([]);
 
   const writePresence = useCallback(async () => {
-    if (!user || !listId) {
+    if (!usesCloudListData(user, listId)) {
       return;
     }
 
-    await setDoc(
-      doc(db, 'lists', listId, 'presence', user.uid),
-      {
-        displayName: user.displayName || user.email || 'Someone',
-        lastActive: serverTimestamp(),
-      },
-      { merge: true },
-    );
+    try {
+      await setDoc(
+        doc(db, 'lists', listId, 'presence', user.uid),
+        {
+          displayName: user.displayName || user.email || 'Someone',
+          lastActive: serverTimestamp(),
+        },
+        { merge: true },
+      );
+    } catch (error) {
+      if (!isFirestorePermissionError(error)) {
+        console.error(error);
+      }
+    }
   }, [listId, user]);
 
   useEffect(() => {
-    if (!user || !listId) {
+    if (!usesCloudListData(user, listId)) {
       setActiveUsers([]);
       return;
     }

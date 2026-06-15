@@ -40,6 +40,7 @@ import { playAddItemHaptic } from '@/lib/haptics';
 import { scheduleAddItemInputFocus } from '@/lib/focusAddItemInput';
 import { dismissKeyboard } from '@/lib/dismissKeyboard';
 import { focusTextInputNow } from '@/lib/focusTextInput';
+import { isLocalListId, usesCloudListData } from '@/lib/listIds';
 import {
   ITEM_NAME_MAX_LENGTH,
   limitItemNameLength,
@@ -83,7 +84,7 @@ export default function ListDetailScreen() {
     useListItems(listId, { moveDoneToBottom });
   const listOpacity = useSharedValue(0);
   const { recordItemUsage } = useItemHistory();
-  const { activeUsers } = usePresence(user ? listId : undefined);
+  const { activeUsers } = usePresence(usesCloudListData(user, listId) ? listId : undefined);
   const [newItemName, setNewItemName] = useState('');
   const [isAddInputFocused, setIsAddInputFocused] = useState(false);
   const [listOptionsVisible, setListOptionsVisible] = useState(false);
@@ -245,11 +246,17 @@ export default function ListDetailScreen() {
   );
 
   useEffect(() => {
+    if (user && isLocalListId(listId)) {
+      router.replace('/');
+    }
+  }, [listId, user]);
+
+  useEffect(() => {
     if (!listId) {
       return;
     }
 
-    if (!user) {
+    if (!usesCloudListData(user, listId)) {
       let active = true;
 
       const refresh = async () => {
@@ -798,7 +805,7 @@ export default function ListDetailScreen() {
           </View>
 
           <Pressable
-            accessibilityLabel="Share list"
+            accessibilityLabel="Invite someone"
             accessibilityRole="button"
             hitSlop={8}
             onPress={() => {
@@ -813,7 +820,7 @@ export default function ListDetailScreen() {
               },
             ]}
           >
-            <MaterialIcons color={colors.accent} name="share" size={22} />
+            <MaterialIcons color={colors.accent} name="person-add" size={22} />
           </Pressable>
         </View>
       </View>

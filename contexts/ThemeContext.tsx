@@ -53,13 +53,17 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
       return;
     }
 
-    void getDoc(doc(db, 'users', user.uid)).then((snapshot) => {
-      const stored = snapshot.data()?.themePreference;
-      if (stored === 'light' || stored === 'dark' || stored === 'system') {
-        setPreferenceState(stored);
-        void AsyncStorage.setItem(THEME_PREFERENCE_KEY, stored);
-      }
-    });
+    void getDoc(doc(db, 'users', user.uid))
+      .then((snapshot) => {
+        const stored = snapshot.data()?.themePreference;
+        if (stored === 'light' || stored === 'dark' || stored === 'system') {
+          setPreferenceState(stored);
+          void AsyncStorage.setItem(THEME_PREFERENCE_KEY, stored);
+        }
+      })
+      .catch(() => {
+        // Ignore missing user profile or offline read failures.
+      });
   }, [user]);
 
   const setPreference = useCallback(
@@ -67,7 +71,9 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
       setPreferenceState(next);
       void AsyncStorage.setItem(THEME_PREFERENCE_KEY, next);
       if (user) {
-        void updateDoc(doc(db, 'users', user.uid), { themePreference: next });
+        void updateDoc(doc(db, 'users', user.uid), { themePreference: next }).catch(() => {
+          // Ignore profile sync failures; local preference is already saved.
+        });
       }
     },
     [user],

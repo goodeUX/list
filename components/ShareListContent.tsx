@@ -170,7 +170,6 @@ const styles = StyleSheet.create({
     lineHeight: 22,
   },
   actionButton: {
-    borderWidth: 1,
     minHeight: 48,
     width: '100%',
   },

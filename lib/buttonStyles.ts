@@ -7,14 +7,26 @@ export const buttonLayoutStyle: ViewStyle = {
   justifyContent: 'center',
   overflow: 'visible',
   paddingHorizontal: BUTTON_HORIZONTAL_PADDING,
+  paddingVertical: 4,
 };
+
+// Semibold custom fonts can draw past their advance width; pad labels so glyphs
+// are not clipped by overflow:hidden ancestors (e.g. rounded modal shells).
+const BUTTON_LABEL_GLYPH_PADDING = Platform.OS === 'ios' ? 4 : 8;
 
 export function buttonLabelStyle(fontSize: number): TextStyle {
   return {
     fontFamily: 'NunitoSans_600SemiBold',
     fontSize,
-    lineHeight: fontSize >= 16 ? 22 : 20,
+    lineHeight: Math.round(fontSize * 1.5),
     textAlign: 'center',
-    ...(Platform.OS === 'android' ? { includeFontPadding: false } : null),
+    flexShrink: 0,
+    paddingHorizontal: BUTTON_LABEL_GLYPH_PADDING,
+    ...(Platform.OS === 'android'
+      ? {
+          includeFontPadding: true,
+          textAlignVertical: 'center',
+        }
+      : null),
   };
 }

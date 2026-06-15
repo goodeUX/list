@@ -9,6 +9,7 @@ import {
 } from 'firebase/firestore';
 
 import { db } from '@/lib/firebase';
+import { usesCloudListData } from '@/lib/listIds';
 import { normalizeListName } from '@/lib/listName';
 import {
   clearLocalListItems,
@@ -24,7 +25,7 @@ export async function deleteListById(
     return;
   }
 
-  if (!user) {
+  if (!usesCloudListData(user, listId)) {
     await deleteLocalList(listId);
     return;
   }
@@ -46,7 +47,7 @@ export async function clearListItemsById(
     return;
   }
 
-  if (!user) {
+  if (!usesCloudListData(user, listId)) {
     await clearLocalListItems(listId);
     return;
   }
@@ -78,7 +79,7 @@ export async function updateListDetails(
 
   const emoji = updates.emoji || '📋';
 
-  if (!user) {
+  if (!usesCloudListData(user, listId)) {
     await updateLocalList(listId, { name: trimmedName, emoji });
     return;
   }
@@ -99,7 +100,7 @@ export async function setListMoveDoneToBottom(
     return;
   }
 
-  if (!user) {
+  if (!usesCloudListData(user, listId)) {
     await updateLocalList(listId, { moveDoneToBottom });
     return;
   }
