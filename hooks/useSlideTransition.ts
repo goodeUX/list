@@ -2,7 +2,6 @@ import { usePreventRemove, useNavigation } from '@react-navigation/native';
 import { useRouter } from 'expo-router';
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import {
-  Easing,
   runOnJS,
   useAnimatedStyle,
   useSharedValue,
@@ -12,7 +11,9 @@ import {
 import type { NavigationAction } from '@react-navigation/native';
 
 import {
+  SLIDE_IN_EASING,
   SLIDE_IN_MS,
+  SLIDE_OUT_EASING,
   SLIDE_OUT_MS,
   getSlideDistance,
   isSlideTransitionEnabled,
@@ -84,15 +85,20 @@ export function useChildSlideTransition(
   );
 
   useLayoutEffect(() => {
-    if (!isEnabled || !ready) {
+    if (!isEnabled) {
+      return;
+    }
+
+    if (!ready) {
+      translateX.value = slideDistance;
       return;
     }
 
     translateX.value = withTiming(0, {
       duration: SLIDE_IN_MS,
-      easing: Easing.out(Easing.cubic),
+      easing: SLIDE_IN_EASING,
     });
-  }, [isEnabled, ready, translateX]);
+  }, [isEnabled, ready, slideDistance, translateX]);
 
   usePreventRemove(
     isEnabled && shouldPreventRemove,
@@ -108,7 +114,7 @@ export function useChildSlideTransition(
         slideDistance,
         {
           duration: SLIDE_OUT_MS,
-          easing: Easing.in(Easing.cubic),
+          easing: SLIDE_OUT_EASING,
         },
         (finished) => {
           'worklet';

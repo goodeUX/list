@@ -1,10 +1,9 @@
 import { MaterialIcons } from '@expo/vector-icons';
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { Modal, Platform, Pressable, StyleSheet, Switch, Text, View } from 'react-native';
 import Animated, {
   useAnimatedStyle,
   useSharedValue,
-  withSpring,
   withTiming,
 } from 'react-native-reanimated';
 
@@ -21,11 +20,12 @@ type ListOptionsSheetProps = {
   showDeleteList: boolean;
   moveDoneToBottom: boolean;
   onMoveDoneToBottomChange: (value: boolean) => void;
-  onRenameList: () => void;
   onClearList: () => void;
   onDeleteList: () => void;
   menuTop: number;
 };
+
+const MENU_OPEN_MS = 140;
 
 export default function ListOptionsSheet({
   visible,
@@ -33,38 +33,33 @@ export default function ListOptionsSheet({
   showDeleteList,
   moveDoneToBottom,
   onMoveDoneToBottomChange,
-  onRenameList,
   onClearList,
   onDeleteList,
   menuTop,
 }: ListOptionsSheetProps) {
   const { colors, radii, spacing } = useTheme();
-  const menuScale = useSharedValue(0.9);
+  const menuScale = useSharedValue(0.96);
   const menuOpacity = useSharedValue(0);
+  const wasVisibleRef = useRef(false);
 
   useEffect(() => {
-    if (!visible) {
-      return;
+    if (visible && !wasVisibleRef.current) {
+      menuScale.value = 0.96;
+      menuOpacity.value = 0;
+      menuOpacity.value = withTiming(1, { duration: MENU_OPEN_MS });
+      menuScale.value = withTiming(1, { duration: MENU_OPEN_MS });
+    } else if (!visible) {
+      menuScale.value = 0.96;
+      menuOpacity.value = 0;
     }
 
-    menuScale.value = 0.9;
-    menuOpacity.value = 0;
-    menuOpacity.value = withTiming(1, { duration: 160 });
-    menuScale.value = withSpring(1, {
-      damping: 13,
-      mass: 0.65,
-      stiffness: 340,
-    });
+    wasVisibleRef.current = visible;
   }, [menuOpacity, menuScale, visible]);
 
   const menuAnimatedStyle = useAnimatedStyle(() => ({
     opacity: menuOpacity.value,
     transform: [{ scale: menuScale.value }],
   }));
-
-  if (!visible) {
-    return null;
-  }
 
   return (
     <Modal animationType="none" onRequestClose={onClose} transparent visible={visible}>
@@ -92,24 +87,6 @@ export default function ListOptionsSheet({
               },
             ]}
           >
-          <Pressable
-            onPress={() => {
-              onClose();
-              onRenameList();
-            }}
-            style={({ pressed }) => [
-              styles.menuItem,
-              {
-                opacity: pressed ? 0.7 : 1,
-              },
-            ]}
-          >
-            <MaterialIcons color={colors.text} name="edit" size={MENU_ITEM_ICON_SIZE} />
-            <Text style={[styles.menuItemText, { color: colors.text }]}>
-              Rename list
-            </Text>
-          </Pressable>
-
           <View style={styles.menuItem}>
             <MaterialIcons color={colors.text} name="move-down" size={MENU_ITEM_ICON_SIZE} />
             <Text style={[styles.menuItemText, styles.menuItemLabel, { color: colors.text }]}>

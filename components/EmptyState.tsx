@@ -1,7 +1,18 @@
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import {
+  Image,
+  Pressable,
+  StyleSheet,
+  Text,
+  View,
+  type ImageSourcePropType,
+} from 'react-native';
+import { MaterialIcons } from '@expo/vector-icons';
 
 import { useTheme } from '@/contexts/ThemeContext';
 import { buttonLabelStyle, buttonLayoutStyle } from '@/lib/buttonStyles';
+
+const listEmptyStateImage =
+  require('../assets/images/listEmptyState.png') as ImageSourcePropType;
 
 type EmptyStateProps = {
   title?: string;
@@ -16,27 +27,34 @@ export default function EmptyState({
 
   return (
     <View style={[styles.container, { padding: spacing.lg }]}>
-      <Text style={styles.emoji}>🌱</Text>
+      <Image
+        accessibilityIgnoresInvertColors
+        resizeMode="contain"
+        source={listEmptyStateImage}
+        style={styles.illustration}
+      />
       <Text style={[styles.title, { color: colors.text }]}>{title}</Text>
       <Pressable
-        accessibilityLabel="Create list"
+        accessibilityLabel="Create a new list"
         accessibilityRole="button"
         onPress={onCreateList}
-        onPressIn={onCreateList}
         style={({ pressed }) => [
-          styles.button,
+          styles.createListButton,
           buttonLayoutStyle,
           {
             backgroundColor: colors.accent,
             borderRadius: radii.item,
             marginTop: spacing.md,
-            opacity: pressed ? 0.85 : 1,
+            opacity: pressed ? 0.7 : 1,
           },
         ]}
       >
-        <Text style={[buttonLabelStyle(16), { color: colors.surface }]}>
-          + Create list
-        </Text>
+        <View style={styles.createListButtonContent}>
+          <MaterialIcons color={colors.surface} name="add" size={24} />
+          <Text style={[buttonLabelStyle(16), { color: colors.surface }]}>
+            Create a new list
+          </Text>
+        </View>
       </Pressable>
     </View>
   );
@@ -48,10 +66,10 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
   },
-  emoji: {
-    fontSize: 48,
-    lineHeight: 56,
+  illustration: {
+    height: 140,
     marginBottom: 16,
+    width: 140,
   },
   title: {
     fontFamily: 'Fraunces_600SemiBold',
@@ -59,7 +77,12 @@ const styles = StyleSheet.create({
     lineHeight: 28,
     textAlign: 'center',
   },
-  button: {
-    minHeight: 48,
+  createListButton: {
+    minHeight: 54,
+  },
+  createListButtonContent: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: 8,
   },
 });

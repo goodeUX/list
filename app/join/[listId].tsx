@@ -26,7 +26,10 @@ export default function JoinListScreen() {
     }
 
     if (!user) {
-      router.replace('/(auth)/sign-in');
+      router.replace({
+        pathname: '/(auth)/sign-in',
+        params: { redirect: `/join/${resolvedListId}` },
+      });
       return;
     }
 

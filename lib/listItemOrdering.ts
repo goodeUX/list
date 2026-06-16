@@ -33,8 +33,14 @@ export function orderItemsAfterToggle(
 }
 
 export function withSequentialOrder(items: ListItem[]): ListItem[] {
-  return items.map((item, index) => ({
-    ...item,
-    order: index,
-  }));
+  return items.map((item, index) => {
+    if (item.order === index) {
+      return item;
+    }
+
+    return {
+      ...item,
+      order: index,
+    };
+  });
 }

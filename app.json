@@ -46,11 +46,13 @@
             "enableFullScreenImage_legacy": true
           },
           "android": {
-            "backgroundColor": "#DBB793"
+            "backgroundColor": "#DBB793",
+            "drawable": {
+              "icon": "./assets/images/android-splash-icon.xml"
+            }
           }
         }
       ],
-      "./plugins/withAndroidSplashNoIcon.js",
       "expo-font"
     ],
     "experiments": {

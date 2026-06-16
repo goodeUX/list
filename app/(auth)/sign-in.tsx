@@ -1,4 +1,4 @@
-import { Link, router } from 'expo-router';
+import { Link, router, useLocalSearchParams } from 'expo-router';
 import { SymbolView } from 'expo-symbols';
 import { useState } from 'react';
 import {
@@ -18,7 +18,12 @@ import { getAuthErrorMessage, useAuth } from '@/contexts/AuthContext';
 import { useTheme } from '@/contexts/ThemeContext';
 import { buttonLabelStyle, buttonLayoutStyle } from '@/lib/buttonStyles';
 
-function navigateAfterAuth() {
+function navigateAfterAuth(redirect?: string) {
+  if (typeof redirect === 'string' && redirect.startsWith('/')) {
+    router.replace(redirect as '/');
+    return;
+  }
+
   if (router.canGoBack()) {
     router.back();
     return;
@@ -28,6 +33,9 @@ function navigateAfterAuth() {
 
 export default function SignInScreen() {
   const { colors, radii, spacing } = useTheme();
+  const { redirect } = useLocalSearchParams<{ redirect?: string }>();
+  const resolvedRedirect =
+    typeof redirect === 'string' && redirect.startsWith('/') ? redirect : undefined;
   const { signIn } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -45,7 +53,7 @@ export default function SignInScreen() {
     setSubmitting(true);
     try {
       await signIn(email, password);
-      navigateAfterAuth();
+      navigateAfterAuth(resolvedRedirect);
     } catch (err) {
       setError(getAuthErrorMessage(err));
     } finally {

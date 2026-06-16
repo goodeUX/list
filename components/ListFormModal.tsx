@@ -94,6 +94,7 @@ export default function ListFormModal({
   const [modalOverlayPaddingTop, setModalOverlayPaddingTop] = useState(24);
   const [modalLayerHeight, setModalLayerHeight] = useState<number | null>(null);
   const [validationError, setValidationError] = useState<string | null>(null);
+  const isListNameAtLimit = listName.length >= LIST_NAME_MAX_LENGTH;
 
   const modalBackdropStyle = useAnimatedStyle(() => ({
     opacity: modalBackdropOpacity.value,
@@ -355,7 +356,11 @@ export default function ListFormModal({
                     onPress={handleFocusNameInput}
                     style={[
                       styles.nameInputContainer,
-                      getThemedInputContainerStyle(colors, isListNameFocused),
+                      getThemedInputContainerStyle(
+                        colors,
+                        isListNameFocused,
+                        isListNameAtLimit,
+                      ),
                       {
                         borderRadius: radii.item,
                         paddingRight: isListNameFocused ? 12 : 16,
@@ -364,6 +369,7 @@ export default function ListFormModal({
                   >
                     <ThemedTextInput
                       editable={!submitting}
+                      invalid={isListNameAtLimit}
                       onBlur={() => setIsListNameFocused(false)}
                       onChangeText={handleChangeListName}
                       onFocus={() => setIsListNameFocused(true)}
@@ -491,7 +497,6 @@ const styles = StyleSheet.create({
   },
   nameInputContainer: {
     alignItems: 'center',
-    borderWidth: 1,
     flex: 1,
     flexDirection: 'row',
     gap: 8,

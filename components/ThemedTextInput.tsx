@@ -13,7 +13,7 @@ import { useTheme } from '@/contexts/ThemeContext';
 import { scheduleTextInputFocus } from '@/lib/focusTextInput';
 import type { ThemeColors } from '@/lib/theme';
 
-const BORDERED_INPUT_BORDER_WIDTH = 1;
+export const BORDERED_INPUT_BORDER_WIDTH = 1;
 const BORDERED_INPUT_PADDING_VERTICAL = 14;
 const BORDERED_INPUT_LINE_HEIGHT = 22;
 
@@ -32,22 +32,31 @@ export type ThemedTextInputProps = TextInputProps & {
   variant?: 'bordered' | 'plain';
 };
 
-export function getThemedInputContainerStyle(
+export function getThemedInputBackgroundColor(
   colors: ThemeColors,
   focused: boolean,
-): Pick<ViewStyle, 'backgroundColor' | 'borderColor'> {
-  return {
-    backgroundColor: focused ? colors.surfaceMuted : colors.surface,
-    borderColor: focused ? colors.accent : colors.border,
-  };
+): string {
+  return focused ? colors.surfaceMuted : colors.surface;
 }
 
 export function getThemedInputBorderColor(
   colors: ThemeColors,
   focused: boolean,
   invalid = false,
-) {
+): string {
   return focused || invalid ? colors.accent : colors.border;
+}
+
+export function getThemedInputContainerStyle(
+  colors: ThemeColors,
+  focused: boolean,
+  invalid = false,
+): Pick<ViewStyle, 'backgroundColor' | 'borderColor' | 'borderWidth'> {
+  return {
+    backgroundColor: getThemedInputBackgroundColor(colors, focused),
+    borderColor: getThemedInputBorderColor(colors, focused, invalid),
+    borderWidth: BORDERED_INPUT_BORDER_WIDTH,
+  };
 }
 
 function assignInputRef(
@@ -117,12 +126,13 @@ const ThemedTextInput = forwardRef<TextInput, ThemedTextInputProps>(
     );
 
     const borderColor = getThemedInputBorderColor(colors, focused, invalid);
+    const backgroundColor = getThemedInputBackgroundColor(colors, focused);
 
     const themedStyle: StyleProp<TextStyle> = [
       styles.base,
       variant === 'bordered' && styles.bordered,
       variant === 'bordered' && {
-        backgroundColor: colors.surfaceMuted,
+        backgroundColor,
         borderColor,
         borderRadius: radii.item,
         color: colors.text,

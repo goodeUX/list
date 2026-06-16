@@ -79,16 +79,12 @@ type ListItemRowProps = {
   item: ListItem;
   onToggle: () => void;
   onPress: () => void;
-  onLongPress?: () => void;
-  isDragging?: boolean;
 };
 
 export default function ListItemRow({
   item,
   onToggle,
   onPress,
-  onLongPress,
-  isDragging = false,
 }: ListItemRowProps) {
   const { colors, radii, spacing } = useTheme();
   const checkScale = useSharedValue(1);
@@ -120,14 +116,11 @@ export default function ListItemRow({
 
   return (
     <Pressable
-      delayLongPress={300}
-      onLongPress={onLongPress}
       onPress={onPress}
       style={({ pressed }) => [
         styles.row,
         {
-          backgroundColor: isDragging ? colors.surfaceMuted : 'transparent',
-          opacity: isDragging ? 1 : pressed ? 0.72 : 1,
+          opacity: pressed ? 0.72 : 1,
           paddingVertical: spacing.sm,
         },
       ]}

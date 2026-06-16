@@ -310,7 +310,30 @@ export function useListItems(
             serverItem.name === optimistic.name && serverItem.order === optimistic.order,
         ),
     );
-    setItems(reconcileOptimisticItems(serverItems, optimisticItemsRef.current));
+    const nextItems = reconcileOptimisticItems(serverItems, optimisticItemsRef.current);
+    setItems((current) => {
+      if (
+        current.length === nextItems.length &&
+        current.every((item, index) => {
+          const nextItem = nextItems[index];
+          if (!nextItem || item.id !== nextItem.id) {
+            return false;
+          }
+
+          return (
+            item.order === nextItem.order &&
+            item.checked === nextItem.checked &&
+            item.name === nextItem.name &&
+            item.quantity === nextItem.quantity &&
+            item.description === nextItem.description &&
+            item.link === nextItem.link
+          );
+        })
+      ) {
+        return current;
+      }
+      return nextItems;
+    });
   }, []);
 
   useEffect(() => {
@@ -469,7 +492,15 @@ export function useListItems(
 
       if (moveDoneToBottom) {
         const nextOrdered = withSequentialOrder(orderItemsAfterToggle(items, id));
-        await applyItemLayout(nextOrdered);
+        const previousItems = items;
+        setItems(nextOrdered);
+
+        try {
+          await applyItemLayout(nextOrdered);
+        } catch (error) {
+          setItems(previousItems);
+          throw error;
+        }
         return;
       }
 
@@ -563,18 +594,20 @@ export function useListItems(
         return;
       }
 
-      const nextOrder = orderedItems.map((item, index) => ({
-        id: item.id,
-        order: index,
-      }));
+      const nextItems = withSequentialOrder(orderedItems);
 
-      const hasChanges = nextOrder.some(
-        (entry) => items.find((item) => item.id === entry.id)?.order !== entry.order,
+      const hasChanges = nextItems.some(
+        (item) => items.find((entry) => entry.id === item.id)?.order !== item.order,
       );
 
       if (!hasChanges) {
         return;
       }
+
+      const nextOrder = nextItems.map((item, index) => ({
+        id: item.id,
+        order: index,
+      }));
 
       if (!usesCloudListData(user, listId)) {
         await reorderLocalItems(

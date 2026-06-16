@@ -10,7 +10,7 @@ import {
 } from 'react-native';
 
 import { useTheme } from '@/contexts/ThemeContext';
-import { getBorderedInputHeight } from '@/components/ThemedTextInput';
+import { getBorderedInputHeight, getThemedInputBackgroundColor, getThemedInputBorderColor, BORDERED_INPUT_BORDER_WIDTH } from '@/components/ThemedTextInput';
 
 // One emoji per list category (6 columns × 5 rows).
 const LIST_EMOJIS = [
@@ -106,8 +106,8 @@ export default function EmojiPickerButton({
           style={({ pressed }) => [
             styles.button,
             {
-              backgroundColor: colors.surfaceMuted,
-              borderColor: dropdownVisible ? colors.accent : colors.border,
+              backgroundColor: getThemedInputBackgroundColor(colors, dropdownVisible),
+              borderColor: getThemedInputBorderColor(colors, dropdownVisible),
               borderRadius: radii.item,
               height: BUTTON_SIZE,
               opacity: disabled ? 0.6 : pressed ? 0.85 : 1,
@@ -190,7 +190,7 @@ const styles = StyleSheet.create({
   },
   button: {
     alignItems: 'center',
-    borderWidth: 1,
+    borderWidth: BORDERED_INPUT_BORDER_WIDTH,
     justifyContent: 'center',
   },
   emoji: {

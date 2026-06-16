@@ -1,8 +1,10 @@
+import * as Clipboard from 'expo-clipboard';
 import * as Linking from 'expo-linking';
 import { useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
+  Platform,
   Pressable,
   Share,
   StyleSheet,
@@ -16,6 +18,7 @@ import { useTheme } from '@/contexts/ThemeContext';
 import { buttonLabelStyle, buttonLayoutStyle } from '@/lib/buttonStyles';
 import { db } from '@/lib/firebase';
 import { handleFirestoreListenerError } from '@/lib/firestoreListenerErrors';
+import { getInviteUrl } from '@/lib/inviteUrl';
 
 type Collaborator = {
   uid: string;
@@ -37,10 +40,7 @@ export default function ShareListContent({
   const [collaborators, setCollaborators] = useState<Collaborator[]>([]);
   const [loadingMembers, setLoadingMembers] = useState(true);
 
-  const inviteUrl = useMemo(
-    () => Linking.createURL(`join/${listId}`),
-    [listId],
-  );
+  const inviteUrl = useMemo(() => getInviteUrl(listId), [listId]);
 
   useEffect(() => {
     if (!listId) {
@@ -91,11 +91,38 @@ export default function ShareListContent({
     };
   }, [memberIds]);
 
-  const handleShare = async () => {
+  const handleCopyLink = async () => {
     try {
+      await Clipboard.setStringAsync(inviteUrl);
+      Alert.alert('Link copied', 'Invite link copied to clipboard.');
+    } catch {
+      Alert.alert('Could not copy', 'Please try again.');
+    }
+  };
+
+  const handleOpenLink = async () => {
+    try {
+      await Linking.openURL(inviteUrl);
+    } catch {
+      Alert.alert('Could not open link', 'Please try again.');
+    }
+  };
+
+  const handleShare = async () => {
+    const message = `Join my list “${listName}” on List App:\n${inviteUrl}`;
+
+    try {
+      if (Platform.OS === 'ios') {
+        await Share.share({
+          message,
+          url: inviteUrl,
+          title: `Join ${listName}`,
+        });
+        return;
+      }
+
       await Share.share({
-        message: `Join my list “${listName}” on List App: ${inviteUrl}`,
-        url: inviteUrl,
+        message,
         title: `Join ${listName}`,
       });
     } catch {
@@ -108,6 +135,45 @@ export default function ShareListContent({
       <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
         Invite someone to collaborate on “{listName}”
       </Text>
+
+      <View style={{ gap: spacing.xs }}>
+        <Text style={[styles.sectionLabel, { color: colors.textSecondary }]}>
+          Invite link
+        </Text>
+        <Pressable
+          accessibilityRole="link"
+          onPress={handleOpenLink}
+          style={({ pressed }) => [
+            styles.linkBox,
+            {
+              backgroundColor: colors.surface,
+              borderColor: colors.border,
+              borderRadius: radii.item,
+              opacity: pressed ? 0.85 : 1,
+            },
+          ]}
+        >
+          <Text selectable style={[styles.linkText, { color: colors.accent }]}>
+            {inviteUrl}
+          </Text>
+        </Pressable>
+        <Pressable
+          onPress={handleCopyLink}
+          style={({ pressed }) => [
+            styles.secondaryButton,
+            buttonLayoutStyle,
+            {
+              backgroundColor: colors.surfaceMuted,
+              borderRadius: radii.item,
+              opacity: pressed ? 0.85 : 1,
+            },
+          ]}
+        >
+          <Text style={[buttonLabelStyle(15), { color: colors.text }]}>
+            Copy link
+          </Text>
+        </Pressable>
+      </View>
 
       <Pressable
         onPress={handleShare}
@@ -168,6 +234,20 @@ const styles = StyleSheet.create({
     fontFamily: 'NunitoSans_400Regular',
     fontSize: 15,
     lineHeight: 22,
+  },
+  linkBox: {
+    borderWidth: 1,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+  },
+  linkText: {
+    fontFamily: 'NunitoSans_400Regular',
+    fontSize: 14,
+    lineHeight: 20,
+  },
+  secondaryButton: {
+    minHeight: 44,
+    width: '100%',
   },
   actionButton: {
     minHeight: 48,

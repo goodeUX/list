@@ -219,6 +219,7 @@ export default function ItemDetailScreen() {
             <Text style={[styles.label, { color: colors.textSecondary }]}>Name</Text>
             <ThemedTextInput
               editable={!saving}
+              invalid={nameLimitError}
               onChangeText={(text) => {
                 const { limitReached, value } = getItemNameInputUpdate(text);
                 setNameLimitError(limitReached);

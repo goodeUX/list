@@ -105,6 +105,7 @@ export default function AddItemSheet({
           <ThemedTextInput
             autoFocus
             editable={!adding}
+            invalid={nameLimitError}
             onChangeText={(value) => {
               const { limitReached, value: limitedValue } = getItemNameInputUpdate(value);
               setNameLimitError(limitReached);

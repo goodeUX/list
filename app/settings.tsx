@@ -32,6 +32,7 @@ export default function SettingsScreen() {
 
   const handleSignOut = async () => {
     await signOut();
+    router.replace('/');
   };
 
   const handleClose = () => {
@@ -203,13 +204,19 @@ export default function SettingsScreen() {
           ) : (
             <View style={[styles.accountActions, { gap: spacing.sm, marginTop: spacing.md }]}>
               <Pressable
-                onPress={() => router.push('/(auth)/sign-in')}
+                onPress={() =>
+                  router.push({
+                    pathname: '/(auth)/sign-in',
+                    params: { redirect: '/' },
+                  })
+                }
                 style={({ pressed }) => [
                   styles.actionButton,
                   buttonLayoutStyle,
                   {
                     backgroundColor: colors.accent,
                     borderRadius: radii.item,
+                    borderWidth: 0,
                     opacity: pressed ? 0.85 : 1,
                   },
                 ]}
@@ -220,7 +227,12 @@ export default function SettingsScreen() {
               </Pressable>
 
               <Pressable
-                onPress={() => router.push('/(auth)/sign-up')}
+                onPress={() =>
+                  router.push({
+                    pathname: '/(auth)/sign-up',
+                    params: { redirect: '/' },
+                  })
+                }
                 style={({ pressed }) => [
                   styles.actionButton,
                   buttonLayoutStyle,

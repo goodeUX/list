@@ -5,6 +5,7 @@ import { useCallback, useEffect, useMemo, useRef, useState, type ElementRef } fr
 import {
   Alert,
   FlatList,
+  Image,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -12,6 +13,7 @@ import {
   StyleSheet,
   Text,
   View,
+  type ImageSourcePropType,
 } from 'react-native';
 import Animated, {
   Easing,
@@ -47,12 +49,15 @@ import {
 } from '@/lib/itemName';
 import { deleteListById, setListMoveDoneToBottom, updateListDetails } from '@/lib/listMutations';
 import { consumePendingAddInputFocus } from '@/lib/pendingAddInputFocus';
+import { SLIDE_IN_MS } from '@/lib/slideTransition';
 import type { ListItem } from '@/lib/types';
 
-const LIST_ITEMS_FADE_DELAY_MS = 100;
 const LIST_ITEMS_FADE_MS = 500;
 const LIST_ITEMS_FADE_EASING = Easing.bezier(0, 0, 0.58, 1);
+
 const ADD_SUBMIT_BUTTON_SIZE = 40;
+const listEmptyStateImage =
+  require('../../../assets/images/listEmptyState2.png') as ImageSourcePropType;
 const ADD_INPUT_ROW_NATIVE_ID = 'list-add-input-row';
 const LIST_OPTIONS_ICON_ROTATION_MS = 200;
 
@@ -77,11 +82,12 @@ export default function ListDetailScreen() {
   const [moveDoneToBottom, setMoveDoneToBottom] = useState(
     cachedList?.moveDoneToBottom ?? false,
   );
-  const hasTitle = Boolean(paramName || listName);
-  const { animatedStyle, goBack, isEnabled: slideTransitionEnabled } =
-    useChildSlideTransition({ ready: hasTitle });
   const { items, loading, addItem, toggleItem, clearAllItems, groupDoneItemsAtBottom } =
     useListItems(listId, { moveDoneToBottom });
+  const hasTitle = Boolean(paramName || listName);
+  const isSlideReady = hasTitle && !loading;
+  const { animatedStyle, goBack, isEnabled: slideTransitionEnabled } =
+    useChildSlideTransition({ ready: isSlideReady });
   const listOpacity = useSharedValue(0);
   const { recordItemUsage } = useItemHistory();
   const { activeUsers } = usePresence(usesCloudListData(user, listId) ? listId : undefined);
@@ -185,8 +191,32 @@ export default function ListDetailScreen() {
     });
   }, [listOptionsIconRotation, listOptionsVisible]);
 
+  useEffect(() => {
+    listOpacity.value = 0;
+  }, [listId, listOpacity]);
+
+  useEffect(() => {
+    if (!isSlideReady) {
+      return;
+    }
+
+    const slideInDelayMs = slideTransitionEnabled ? SLIDE_IN_MS : 0;
+
+    listOpacity.value = withDelay(
+      slideInDelayMs,
+      withTiming(1, {
+        duration: LIST_ITEMS_FADE_MS,
+        easing: LIST_ITEMS_FADE_EASING,
+      }),
+    );
+  }, [isSlideReady, listId, listOpacity, slideTransitionEnabled]);
+
   const listOptionsIconStyle = useAnimatedStyle(() => ({
     transform: [{ rotate: `${listOptionsIconRotation.value}deg` }],
+  }));
+
+  const listFadeStyle = useAnimatedStyle(() => ({
+    opacity: listOpacity.value,
   }));
 
   const refocusAddInput = useCallback(() => {
@@ -328,28 +358,6 @@ export default function ListDetailScreen() {
     return unsubscribe;
   }, [listId, user]);
 
-  useEffect(() => {
-    listOpacity.value = 0;
-  }, [listId, listOpacity]);
-
-  useEffect(() => {
-    if (loading) {
-      return;
-    }
-
-    listOpacity.value = withDelay(
-      LIST_ITEMS_FADE_DELAY_MS,
-      withTiming(1, {
-        duration: LIST_ITEMS_FADE_MS,
-        easing: LIST_ITEMS_FADE_EASING,
-      }),
-    );
-  }, [listId, listOpacity, loading]);
-
-  const listFadeStyle = useAnimatedStyle(() => ({
-    opacity: listOpacity.value,
-  }));
-
   const presenceLabel = useMemo(() => {
     if (activeUsers.length === 0) {
       return null;
@@ -467,12 +475,6 @@ export default function ListDetailScreen() {
     );
   };
 
-  const measureListOptionsAnchor = useCallback(() => {
-    listOptionsButtonRef.current?.measureInWindow((x, y, width, height) => {
-      setListOptionsMenuTop(y + height + spacing.xs);
-    });
-  }, [spacing.xs]);
-
   const handleToggleListOptions = () => {
     blurAddInput();
 
@@ -481,18 +483,19 @@ export default function ListDetailScreen() {
       return;
     }
 
-    const openMenu = () => {
-      measureListOptionsAnchor();
+    const openMenu = (top: number) => {
+      setListOptionsMenuTop(top);
       setListOptionsVisible(true);
     };
 
-    if (Platform.OS === 'web') {
-      openMenu();
+    const button = listOptionsButtonRef.current;
+    if (!button) {
+      openMenu(listOptionsMenuTop);
       return;
     }
 
-    requestAnimationFrame(() => {
-      requestAnimationFrame(openMenu);
+    button.measureInWindow((_x, y, _width, height) => {
+      openMenu(y + height + spacing.xs);
     });
   };
 
@@ -626,9 +629,8 @@ export default function ListDetailScreen() {
         }}
       />
     ),
-    [listId, toggleItem],
+    [blurAddInput, listId, toggleItem],
   );
-
   const listSections = useMemo(() => {
     if (!moveDoneToBottom) {
       return null;
@@ -704,9 +706,17 @@ export default function ListDetailScreen() {
   );
 
   const emptyList = (
-    <Text style={[styles.emptyText, { color: colors.textSecondary }]}>
-      No items yet. Add your first one above.
-    </Text>
+    <View style={styles.emptyList}>
+      <Image
+        accessibilityIgnoresInvertColors
+        resizeMode="contain"
+        source={listEmptyStateImage}
+        style={styles.emptyListImage}
+      />
+      <Text style={[styles.emptyText, { color: colors.textSecondary }]}>
+        No items yet. Add your first one above.
+      </Text>
+    </View>
   );
 
   return (
@@ -852,7 +862,11 @@ export default function ListDetailScreen() {
           onPress={focusAddInput}
           style={[
             styles.addInputRow,
-            getThemedInputContainerStyle(colors, isAddInputFocused),
+            getThemedInputContainerStyle(
+              colors,
+              isAddInputFocused,
+              newItemName.length >= ITEM_NAME_MAX_LENGTH,
+            ),
             {
               borderRadius: radii.item,
               paddingRight: showSubmitButton
@@ -960,7 +974,6 @@ export default function ListDetailScreen() {
             onClose={() => setListOptionsVisible(false)}
             onDeleteList={handleDeleteList}
             onMoveDoneToBottomChange={handleMoveDoneToBottomChange}
-            onRenameList={handleRenameList}
             showDeleteList={canDeleteList}
             visible={listOptionsVisible}
           />
@@ -1056,7 +1069,6 @@ const styles = StyleSheet.create({
   },
   addInputRow: {
     alignItems: 'center',
-    borderWidth: 2,
     flexDirection: 'row',
     gap: 8,
     paddingLeft: 15,
@@ -1111,11 +1123,19 @@ const styles = StyleSheet.create({
     lineHeight: 14,
     textAlign: 'center',
   },
+  emptyList: {
+    alignItems: 'center',
+    paddingHorizontal: 24,
+  },
+  emptyListImage: {
+    height: 168,
+    width: 168,
+  },
   emptyText: {
     fontFamily: 'NunitoSans_400Regular',
     fontSize: 15,
     lineHeight: 22,
-    marginTop: 24,
+    marginTop: 16,
     textAlign: 'center',
   },
 });
