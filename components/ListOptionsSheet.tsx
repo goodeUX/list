@@ -12,6 +12,18 @@ import { useTheme } from '@/contexts/ThemeContext';
 const DESTRUCTIVE_COLOR = '#D64545';
 const MENU_ITEM_ICON_SIZE = 22;
 const MENU_ITEM_REM = 16;
+const MENU_ITEM_HORIZONTAL_PADDING = 14;
+const MENU_ITEM_GAP = 10;
+// Fits icon + "Move 'done' to bottom" + switch with single-line labels.
+const MENU_MIN_WIDTH = 320;
+
+const menuItemTextStyle = {
+  flexShrink: 0,
+  fontFamily: 'NunitoSans_600SemiBold',
+  fontSize: MENU_ITEM_REM,
+  lineHeight: 22,
+  ...(Platform.OS === 'web' ? ({ whiteSpace: 'nowrap' } as object) : null),
+};
 
 type ListOptionsSheetProps = {
   visible: boolean;
@@ -46,7 +58,7 @@ export default function ListOptionsSheet({
   const menuOpacity = useSharedValue(0);
   const wasVisibleRef = useRef(false);
   const windowWidth = Dimensions.get('window').width;
-  const menuMaxWidth = Math.min(330, windowWidth - spacing.lg * 2);
+  const menuMaxWidth = Math.max(MENU_MIN_WIDTH, windowWidth - spacing.lg * 2);
 
   useEffect(() => {
     if (visible && !wasVisibleRef.current) {
@@ -105,9 +117,10 @@ export default function ListOptionsSheet({
           >
           <View style={styles.menuItem}>
             <MaterialIcons color={colors.text} name="move-down" size={MENU_ITEM_ICON_SIZE} />
-            <Text style={[styles.menuItemText, styles.menuItemLabel, { color: colors.text }]}>
+            <Text style={[menuItemTextStyle, { color: colors.text }]}>
               Move 'done' to bottom
             </Text>
+            <View style={styles.menuItemSpacer} />
             <Switch
               accessibilityLabel="Move 'done' to bottom"
               onValueChange={onMoveDoneToBottomChange}
@@ -130,7 +143,7 @@ export default function ListOptionsSheet({
             ]}
           >
             <MaterialIcons color={colors.text} name="person-add" size={MENU_ITEM_ICON_SIZE} />
-            <Text style={[styles.menuItemText, { color: colors.text }]}>
+            <Text style={[menuItemTextStyle, { color: colors.text }]}>
               Invite someone
             </Text>
           </Pressable>
@@ -148,7 +161,7 @@ export default function ListOptionsSheet({
             ]}
           >
             <MaterialIcons color={colors.text} name="playlist-remove" size={MENU_ITEM_ICON_SIZE} />
-            <Text style={[styles.menuItemText, { color: colors.text }]}>
+            <Text style={[menuItemTextStyle, { color: colors.text }]}>
               Clear list
             </Text>
           </Pressable>
@@ -167,7 +180,7 @@ export default function ListOptionsSheet({
               ]}
             >
               <MaterialIcons color={DESTRUCTIVE_COLOR} name="delete-outline" size={MENU_ITEM_ICON_SIZE} />
-              <Text style={[styles.menuItemText, { color: DESTRUCTIVE_COLOR }]}>
+              <Text style={[menuItemTextStyle, { color: DESTRUCTIVE_COLOR }]}>
                 Delete list
               </Text>
             </Pressable>
@@ -191,22 +204,20 @@ const styles = StyleSheet.create({
     position: 'absolute',
   },
   menu: {
+    alignSelf: 'flex-start',
     borderWidth: 1,
-    minWidth: 220,
+    minWidth: MENU_MIN_WIDTH,
   },
   menuItem: {
     alignItems: 'center',
     flexDirection: 'row',
-    gap: 10,
+    gap: MENU_ITEM_GAP,
     minHeight: 44,
-    paddingHorizontal: 14,
+    paddingHorizontal: MENU_ITEM_HORIZONTAL_PADDING,
   },
-  menuItemLabel: {
-    flex: 1,
-  },
-  menuItemText: {
-    fontFamily: 'NunitoSans_600SemiBold',
-    fontSize: MENU_ITEM_REM,
-    lineHeight: 22,
+  menuItemSpacer: {
+    flexGrow: 1,
+    flexShrink: 1,
+    minWidth: MENU_ITEM_GAP,
   },
 });
