@@ -1,4 +1,4 @@
-import { Link } from 'expo-router';
+import { router } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 import {
   ActivityIndicator,
@@ -17,6 +17,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import KeyboardDismissScrollView from '@/components/KeyboardDismissScrollView';
 import ThemedTextInput from '@/components/ThemedTextInput';
 import { getAuthErrorMessage, useAuth } from '@/contexts/AuthContext';
+import { APP_NAME } from '@/lib/appName';
 import { buttonLabelStyle, buttonLayoutStyle } from '@/lib/buttonStyles';
 import { OPENING_WELCOME_MS, SPLASH_BACKGROUND_COLOR } from '@/lib/splash';
 
@@ -80,6 +81,7 @@ export default function OpeningScreen({ fontsLoaded, onComplete }: OpeningScreen
     setSubmitting(true);
     try {
       await signIn(email, password);
+      router.replace('/');
       onComplete();
     } catch (err) {
       setError(getAuthErrorMessage(err));
@@ -90,6 +92,11 @@ export default function OpeningScreen({ fontsLoaded, onComplete }: OpeningScreen
 
   const handleSkipLogin = useCallback(() => {
     onComplete();
+  }, [onComplete]);
+
+  const handleCreateAccount = useCallback(() => {
+    onComplete();
+    router.push('/(auth)/sign-up');
   }, [onComplete]);
 
   const welcomeName = getWelcomeName(user?.displayName, user?.email);
@@ -131,7 +138,7 @@ export default function OpeningScreen({ fontsLoaded, onComplete }: OpeningScreen
 
         {showLogin ? (
           <View style={styles.loginContainer}>
-            <Text style={styles.loginTitle}>Welcome to List App</Text>
+            <Text style={styles.loginTitle}>Welcome to {APP_NAME}</Text>
             <Text style={styles.loginSubtitle}>
               Sign in to sync your lists, or continue without an account.
             </Text>
@@ -197,12 +204,14 @@ export default function OpeningScreen({ fontsLoaded, onComplete }: OpeningScreen
             </View>
 
             <View style={styles.footer}>
-              <Text style={styles.footerText}>New to List App? </Text>
-              <Link href="/(auth)/sign-up" asChild>
-                <Pressable disabled={submitting}>
-                  <Text style={styles.footerLink}>Create an account</Text>
-                </Pressable>
-              </Link>
+              <Text style={styles.footerText}>New to {APP_NAME}? </Text>
+              <Pressable
+                accessibilityRole="link"
+                disabled={submitting}
+                onPress={handleCreateAccount}
+              >
+                <Text style={styles.footerLink}>Create an account</Text>
+              </Pressable>
             </View>
           </View>
         ) : null}

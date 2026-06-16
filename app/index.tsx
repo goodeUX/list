@@ -64,7 +64,14 @@ export default function ListsHomeScreen() {
   useFocusEffect(
     useCallback(() => {
       setCountsRefreshKey((current) => current + 1);
-    }, []),
+
+      if (!loading) {
+        listsOpacity.value = withTiming(1, {
+          duration: LISTS_FADE_MS,
+          easing: Easing.out(Easing.cubic),
+        });
+      }
+    }, [listsOpacity, loading]),
   );
 
   const sharedCount = useMemo(
@@ -152,7 +159,12 @@ export default function ListsHomeScreen() {
   return (
     <View style={[styles.flex, { backgroundColor: colors.bg }]}>
       <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.bg }]}>
-        <View style={[styles.header, { paddingHorizontal: spacing.lg, paddingTop: spacing.md }]}>
+        <View
+          style={[
+            styles.header,
+            { paddingHorizontal: spacing.lg, paddingTop: spacing.md },
+          ]}
+        >
           <View style={styles.headerTop}>
             <View style={styles.titleBlock}>
               <Text style={[styles.title, { color: colors.text }]}>My Lists</Text>
@@ -176,7 +188,7 @@ export default function ListsHomeScreen() {
                 },
               ]}
             >
-              <MaterialIcons color={colors.accent} name="tune" size={24} />
+              <MaterialIcons color={colors.accent} name="more-horiz" size={24} />
             </Pressable>
           </View>
         </View>
@@ -186,7 +198,7 @@ export default function ListsHomeScreen() {
             <ActivityIndicator color={colors.accent} size="large" />
           </View>
         ) : (
-          <Animated.View style={[styles.content, listsFadeStyle]}>
+          <Animated.View pointerEvents="box-none" style={[styles.content, listsFadeStyle]}>
             {lists.length === 0 ? (
               <EmptyState onCreateList={openCreateModal} />
             ) : (
@@ -285,6 +297,8 @@ const styles = StyleSheet.create({
   },
   header: {
     gap: 4,
+    position: 'relative',
+    zIndex: 2,
   },
   headerTop: {
     alignItems: 'flex-start',

@@ -58,6 +58,7 @@ export default function RootLayout() {
     NunitoSans_400Regular,
     NunitoSans_600SemiBold,
     NunitoSans_700Bold,
+    MaterialSymbolsOutlined: require('../assets/fonts/MaterialSymbolsOutlined.ttf'),
   });
   const [openingComplete, setOpeningComplete] = useState(false);
   const [showOpening, setShowOpening] = useState(true);

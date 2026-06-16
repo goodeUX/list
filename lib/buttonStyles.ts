@@ -12,7 +12,7 @@ export const buttonLayoutStyle: ViewStyle = {
 
 // Semibold custom fonts can draw past their advance width; pad labels so glyphs
 // are not clipped by overflow:hidden ancestors (e.g. rounded modal shells).
-const BUTTON_LABEL_GLYPH_PADDING = Platform.OS === 'ios' ? 4 : 8;
+const BUTTON_LABEL_GLYPH_PADDING = Platform.OS === 'ios' ? 4 : 12;
 
 export function buttonLabelStyle(fontSize: number): TextStyle {
   return {

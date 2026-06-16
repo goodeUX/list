@@ -6,6 +6,8 @@ import Animated from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useAuth } from '@/contexts/AuthContext';
+import Button from '@/components/Button';
+import MaterialSymbol from '@/components/MaterialSymbol';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useChildSlideTransition } from '@/hooks/useSlideTransition';
 import type { ThemePreference } from '@/lib/theme';
@@ -32,6 +34,10 @@ export default function SettingsScreen() {
 
   const handleSignOut = async () => {
     await signOut();
+    if (router.canGoBack()) {
+      goBack();
+      return;
+    }
     router.replace('/');
   };
 
@@ -42,6 +48,9 @@ export default function SettingsScreen() {
     }
     router.replace('/');
   };
+
+  const accountLabel = user?.displayName || user?.email || '';
+  const accountInitial = accountLabel.trim().charAt(0).toUpperCase() || '?';
 
   return (
     <Animated.View
@@ -97,6 +106,7 @@ export default function SettingsScreen() {
       </View>
 
       <ScrollView
+        style={styles.scroll}
         contentContainerStyle={[styles.container, { padding: spacing.lg, gap: spacing.lg }]}
       >
         <View
@@ -159,50 +169,40 @@ export default function SettingsScreen() {
           ]}
         >
           <Text style={[styles.sectionTitle, { color: colors.text }]}>Account</Text>
-          <Text
-            style={[
-              styles.sectionBody,
-              { color: colors.textSecondary, marginTop: spacing.sm },
-            ]}
-          >
-            Your lists are saved on this device. Create an account to sync across devices
-            and share lists with others.
-          </Text>
 
           {user ? (
-            <View style={{ gap: spacing.sm, marginTop: spacing.md }}>
-              <Text style={[styles.accountLabel, { color: colors.textSecondary }]}>
-                Signed in as
-              </Text>
-              <Text style={[styles.accountEmail, { color: colors.text }]}>
-                {user.displayName || user.email}
-              </Text>
-              {user.displayName && user.email ? (
-                <Text style={[styles.accountEmail, { color: colors.textSecondary }]}>
-                  {user.email}
+            <View style={[styles.accountRow, { gap: spacing.sm, marginTop: spacing.sm }]}>
+              <View
+                style={[
+                  styles.avatar,
+                  { backgroundColor: colors.accentSoft },
+                ]}
+              >
+                <Text style={[styles.avatarText, { color: colors.text }]}>
+                  {accountInitial}
                 </Text>
-              ) : null}
-
+              </View>
+              <Text style={[styles.accountEmail, { color: colors.text, flex: 1 }]}>
+                {accountLabel}
+              </Text>
               <Pressable
-                onPress={handleSignOut}
+                accessibilityLabel="Edit account"
+                accessibilityRole="button"
+                hitSlop={8}
+                onPress={() => router.push('/settings/edit-account')}
                 style={({ pressed }) => [
-                  styles.actionButton,
-                  buttonLayoutStyle,
+                  styles.editButton,
                   {
-                    borderColor: colors.border,
-                    borderRadius: radii.item,
-                    marginTop: spacing.sm,
-                    opacity: pressed ? 0.85 : 1,
+                    backgroundColor: colors.surface,
+                    opacity: pressed ? 0.7 : 1,
                   },
                 ]}
               >
-                <Text style={[buttonLabelStyle(16), { color: colors.text }]}>
-                  Sign out
-                </Text>
+                <MaterialSymbol color={colors.accent} filled name="person_edit" size={22} />
               </Pressable>
             </View>
           ) : (
-            <View style={[styles.accountActions, { gap: spacing.sm, marginTop: spacing.md }]}>
+            <View style={[styles.accountActions, { gap: spacing.sm, marginTop: spacing.sm }]}>
               <Pressable
                 onPress={() =>
                   router.push({
@@ -251,6 +251,22 @@ export default function SettingsScreen() {
           )}
         </View>
       </ScrollView>
+
+      {user ? (
+        <View
+          style={[
+            styles.bottomBar,
+            {
+              borderTopColor: colors.border,
+              paddingHorizontal: spacing.lg,
+              paddingTop: spacing.md,
+              paddingBottom: spacing.lg,
+            },
+          ]}
+        >
+          <Button icon="logout" label="Sign out" onPress={handleSignOut} variant="surface" />
+        </View>
+      ) : null}
       </View>
     </Animated.View>
   );
@@ -294,6 +310,9 @@ const styles = StyleSheet.create({
   container: {
     flexGrow: 1,
   },
+  scroll: {
+    flex: 1,
+  },
   section: {
     borderWidth: 1,
     gap: 4,
@@ -302,11 +321,6 @@ const styles = StyleSheet.create({
     fontFamily: 'Fraunces_600SemiBold',
     fontSize: 20,
     lineHeight: 28,
-  },
-  sectionBody: {
-    fontFamily: 'NunitoSans_400Regular',
-    fontSize: 15,
-    lineHeight: 22,
   },
   themeRow: {
     flexDirection: 'row',
@@ -325,8 +339,19 @@ const styles = StyleSheet.create({
     fontFamily: 'NunitoSans_600SemiBold',
     fontSize: 14,
   },
-  accountLabel: {
-    fontFamily: 'NunitoSans_400Regular',
+  accountRow: {
+    alignItems: 'center',
+    flexDirection: 'row',
+  },
+  avatar: {
+    alignItems: 'center',
+    borderRadius: 16,
+    height: 32,
+    justifyContent: 'center',
+    width: 32,
+  },
+  avatarText: {
+    fontFamily: 'NunitoSans_600SemiBold',
     fontSize: 14,
   },
   accountEmail: {
@@ -334,7 +359,18 @@ const styles = StyleSheet.create({
     fontSize: 16,
     lineHeight: 22,
   },
+  editButton: {
+    alignItems: 'center',
+    borderRadius: 20,
+    flexShrink: 0,
+    height: 40,
+    justifyContent: 'center',
+    width: 40,
+  },
   accountActions: {},
+  bottomBar: {
+    borderTopWidth: StyleSheet.hairlineWidth,
+  },
   actionButton: {
     borderWidth: 1,
     minHeight: 48,

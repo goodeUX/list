@@ -13,6 +13,7 @@ import {
 } from 'react-native';
 import { doc, getDoc, onSnapshot } from 'firebase/firestore';
 
+import { APP_NAME } from '@/lib/appName';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTheme } from '@/contexts/ThemeContext';
 import { buttonLabelStyle, buttonLayoutStyle } from '@/lib/buttonStyles';
@@ -109,7 +110,7 @@ export default function ShareListContent({
   };
 
   const handleShare = async () => {
-    const message = `Join my list “${listName}” on List App:\n${inviteUrl}`;
+    const message = `Join my list “${listName}” on ${APP_NAME}:\n${inviteUrl}`;
 
     try {
       if (Platform.OS === 'ios') {

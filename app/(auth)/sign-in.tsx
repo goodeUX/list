@@ -16,19 +16,15 @@ import KeyboardDismissScrollView from '@/components/KeyboardDismissScrollView';
 import ThemedTextInput from '@/components/ThemedTextInput';
 import { getAuthErrorMessage, useAuth } from '@/contexts/AuthContext';
 import { useTheme } from '@/contexts/ThemeContext';
+import { APP_NAME } from '@/lib/appName';
 import { buttonLabelStyle, buttonLayoutStyle } from '@/lib/buttonStyles';
 
 function navigateAfterAuth(redirect?: string) {
-  if (typeof redirect === 'string' && redirect.startsWith('/')) {
-    router.replace(redirect as '/');
-    return;
-  }
-
-  if (router.canGoBack()) {
-    router.back();
-    return;
-  }
-  router.replace('/');
+  router.replace(
+    typeof redirect === 'string' && redirect.startsWith('/')
+      ? (redirect as '/')
+      : '/',
+  );
 }
 
 export default function SignInScreen() {
@@ -98,7 +94,7 @@ export default function SignInScreen() {
 
           <View style={styles.header}>
             <Text style={[styles.title, { color: colors.text }]}>
-              Welcome to List App
+              Welcome to {APP_NAME}
             </Text>
             <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
               Sign in to sync your lists and share with others
@@ -170,7 +166,7 @@ export default function SignInScreen() {
 
           <View style={[styles.footer, { marginTop: spacing.xl }]}>
             <Text style={[styles.footerText, { color: colors.textSecondary }]}>
-              New to List App?{' '}
+              New to {APP_NAME}?{' '}
             </Text>
             <Link href="/(auth)/sign-up" asChild>
               <Pressable disabled={submitting}>

@@ -443,10 +443,11 @@ export default function ListFormModal({
                     buttonLayoutStyle,
                     {
                       opacity: pressed || submitting ? 0.7 : 1,
+                      paddingHorizontal: 24,
                     },
                   ]}
                 >
-                  <Text style={[buttonLabelStyle(15), { color: colors.textSecondary }]}>
+                  <Text style={[styles.cancelLabel, { color: colors.textSecondary }]}>
                     Cancel
                   </Text>
                 </Pressable>
@@ -478,7 +479,7 @@ const styles = StyleSheet.create({
   modalDialog: {
     borderWidth: 1,
     maxWidth: CONTENT_MAX_WIDTH - MODAL_WIDTH_INSET,
-    overflow: 'hidden',
+    overflow: 'visible',
     width: '100%',
     zIndex: 1,
   },
@@ -521,6 +522,7 @@ const styles = StyleSheet.create({
   },
   actions: {
     gap: 8,
+    overflow: 'visible',
   },
   submitButton: {
     minHeight: 48,
@@ -529,8 +531,12 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   cancelButton: {
+    alignSelf: 'stretch',
     minHeight: 44,
     overflow: 'visible',
-    width: '100%',
+  },
+  cancelLabel: {
+    ...buttonLabelStyle(15),
+    alignSelf: 'center',
   },
 });

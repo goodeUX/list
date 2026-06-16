@@ -6,7 +6,7 @@ export function playToggleHaptic(): void {
     return;
   }
 
-  void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+  void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
 }
 
 export function playAddItemHaptic(): void {

@@ -4,6 +4,7 @@ import { MaterialIcons } from '@expo/vector-icons';
 import { useCallback, useEffect, useMemo, useRef, useState, type ElementRef } from 'react';
 import {
   Alert,
+  Dimensions,
   FlatList,
   Image,
   KeyboardAvoidingView,
@@ -56,6 +57,7 @@ const LIST_ITEMS_FADE_MS = 500;
 const LIST_ITEMS_FADE_EASING = Easing.bezier(0, 0, 0.58, 1);
 
 const ADD_SUBMIT_BUTTON_SIZE = 40;
+const LIST_OPTIONS_MENU_GAP = 8;
 const listEmptyStateImage =
   require('../../../assets/images/listEmptyState2.png') as ImageSourcePropType;
 const ADD_INPUT_ROW_NATIVE_ID = 'list-add-input-row';
@@ -95,6 +97,7 @@ export default function ListDetailScreen() {
   const [isAddInputFocused, setIsAddInputFocused] = useState(false);
   const [listOptionsVisible, setListOptionsVisible] = useState(false);
   const [listOptionsMenuTop, setListOptionsMenuTop] = useState(0);
+  const [listOptionsMenuRight, setListOptionsMenuRight] = useState(0);
   const [renameModalVisible, setRenameModalVisible] = useState(false);
   const [renaming, setRenaming] = useState(false);
   const [renameError, setRenameError] = useState<string | null>(null);
@@ -103,7 +106,7 @@ export default function ListDetailScreen() {
   const refocusingInput = useRef(false);
   const lastAddSubmitRef = useRef<{ name: string; at: number } | null>(null);
   const addItemInputRef = useRef<ElementRef<typeof ThemedTextInput>>(null);
-  const listOptionsButtonRef = useRef<View>(null);
+  const listOptionsButtonRef = useRef<ElementRef<typeof Pressable>>(null);
   const listOptionsIconRotation = useSharedValue(0);
   const consumedFocusAddRef = useRef(false);
 
@@ -371,7 +374,6 @@ export default function ListDetailScreen() {
   const displayListName = listName || paramName || 'List';
 
   const handleShare = () => {
-    setListOptionsVisible(false);
     if (!user) {
       router.push('/(auth)/sign-in');
       return;
@@ -483,19 +485,21 @@ export default function ListDetailScreen() {
       return;
     }
 
-    const openMenu = (top: number) => {
+    const openMenu = (top: number, right: number) => {
       setListOptionsMenuTop(top);
+      setListOptionsMenuRight(right);
       setListOptionsVisible(true);
     };
 
     const button = listOptionsButtonRef.current;
     if (!button) {
-      openMenu(listOptionsMenuTop);
+      openMenu(listOptionsMenuTop, listOptionsMenuRight);
       return;
     }
 
-    button.measureInWindow((_x, y, _width, height) => {
-      openMenu(y + height + spacing.xs);
+    button.measureInWindow((x, y, width, height) => {
+      const windowWidth = Dimensions.get('window').width;
+      openMenu(y + height + LIST_OPTIONS_MENU_GAP, windowWidth - x - width);
     });
   };
 
@@ -808,8 +812,8 @@ export default function ListDetailScreen() {
         </Pressable>
 
         <View style={styles.headerActions}>
-          <View collapsable={false} ref={listOptionsButtonRef}>
             <Pressable
+              ref={listOptionsButtonRef}
               accessibilityLabel="List options"
               accessibilityRole="button"
               accessibilityState={{ expanded: listOptionsVisible }}
@@ -831,26 +835,6 @@ export default function ListDetailScreen() {
                 <MaterialIcons color={colors.accent} name="more-horiz" size={22} />
               </Animated.View>
             </Pressable>
-          </View>
-
-          <Pressable
-            accessibilityLabel="Invite someone"
-            accessibilityRole="button"
-            hitSlop={8}
-            onPress={() => {
-              blurAddInput();
-              handleShare();
-            }}
-            style={({ pressed }) => [
-              styles.shareButton,
-              {
-                backgroundColor: colors.surface,
-                opacity: pressed ? 0.7 : 1,
-              },
-            ]}
-          >
-            <MaterialIcons color={colors.accent} name="person-add" size={22} />
-          </Pressable>
         </View>
       </View>
 
@@ -968,11 +952,13 @@ export default function ListDetailScreen() {
       {listId ? (
         <>
           <ListOptionsSheet
+            menuRight={listOptionsMenuRight}
             menuTop={listOptionsMenuTop}
             moveDoneToBottom={moveDoneToBottom}
             onClearList={handleClearList}
             onClose={() => setListOptionsVisible(false)}
             onDeleteList={handleDeleteList}
+            onInvite={handleShare}
             onMoveDoneToBottomChange={handleMoveDoneToBottomChange}
             showDeleteList={canDeleteList}
             visible={listOptionsVisible}

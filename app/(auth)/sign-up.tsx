@@ -16,19 +16,15 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import ThemedTextInput from '@/components/ThemedTextInput';
 import { getAuthErrorMessage, useAuth } from '@/contexts/AuthContext';
 import { useTheme } from '@/contexts/ThemeContext';
+import { APP_NAME } from '@/lib/appName';
 import { buttonLabelStyle, buttonLayoutStyle } from '@/lib/buttonStyles';
 
 function navigateAfterAuth(redirect?: string) {
-  if (typeof redirect === 'string' && redirect.startsWith('/')) {
-    router.replace(redirect as '/');
-    return;
-  }
-
-  if (router.canGoBack()) {
-    router.back();
-    return;
-  }
-  router.replace('/');
+  router.replace(
+    typeof redirect === 'string' && redirect.startsWith('/')
+      ? (redirect as '/')
+      : '/',
+  );
 }
 
 export default function SignUpScreen() {
@@ -103,7 +99,7 @@ export default function SignUpScreen() {
 
           <View style={styles.header}>
             <Text style={[styles.title, { color: colors.text }]}>
-              Join List App
+              Join {APP_NAME}
             </Text>
             <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
               Your local lists will be synced to your account

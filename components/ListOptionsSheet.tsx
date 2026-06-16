@@ -1,6 +1,6 @@
 import { MaterialIcons } from '@expo/vector-icons';
 import { useEffect, useRef } from 'react';
-import { Modal, Platform, Pressable, StyleSheet, Switch, Text, View } from 'react-native';
+import { Dimensions, Modal, Platform, Pressable, StyleSheet, Switch, Text, View } from 'react-native';
 import Animated, {
   useAnimatedStyle,
   useSharedValue,
@@ -12,17 +12,19 @@ import { useTheme } from '@/contexts/ThemeContext';
 const DESTRUCTIVE_COLOR = '#D64545';
 const MENU_ITEM_ICON_SIZE = 22;
 const MENU_ITEM_REM = 16;
-const MENU_VERTICAL_OFFSET = 8;
 
 type ListOptionsSheetProps = {
   visible: boolean;
   onClose: () => void;
+  onInvite: () => void;
   showDeleteList: boolean;
   moveDoneToBottom: boolean;
   onMoveDoneToBottomChange: (value: boolean) => void;
   onClearList: () => void;
   onDeleteList: () => void;
   menuTop: number;
+  /** Distance from the window's right edge to the menu's right edge. */
+  menuRight: number;
 };
 
 const MENU_OPEN_MS = 140;
@@ -30,17 +32,21 @@ const MENU_OPEN_MS = 140;
 export default function ListOptionsSheet({
   visible,
   onClose,
+  onInvite,
   showDeleteList,
   moveDoneToBottom,
   onMoveDoneToBottomChange,
   onClearList,
   onDeleteList,
   menuTop,
+  menuRight,
 }: ListOptionsSheetProps) {
   const { colors, radii, spacing } = useTheme();
   const menuScale = useSharedValue(0.96);
   const menuOpacity = useSharedValue(0);
   const wasVisibleRef = useRef(false);
+  const windowWidth = Dimensions.get('window').width;
+  const menuMaxWidth = Math.min(330, windowWidth - spacing.lg * 2);
 
   useEffect(() => {
     if (visible && !wasVisibleRef.current) {
@@ -65,7 +71,15 @@ export default function ListOptionsSheet({
     <Modal animationType="none" onRequestClose={onClose} transparent visible={visible}>
       <View style={styles.overlay}>
         <Pressable onPress={onClose} style={styles.backdrop} />
-        <View style={[styles.menuContainer, { top: menuTop + MENU_VERTICAL_OFFSET }]}>
+        <View
+          style={[
+            styles.menuContainer,
+            {
+              right: menuRight,
+              top: menuTop,
+            },
+          ]}
+        >
           <Animated.View
             style={[
               styles.menu,
@@ -74,7 +88,9 @@ export default function ListOptionsSheet({
                 backgroundColor: colors.surface,
                 borderColor: colors.border,
                 borderRadius: radii.card,
+                maxWidth: menuMaxWidth,
                 paddingVertical: spacing.xs,
+                transformOrigin: 'top right',
                 ...(Platform.OS === 'web'
                   ? { boxShadow: '0 8px 24px rgba(44, 36, 23, 0.18)' }
                   : {
@@ -100,6 +116,24 @@ export default function ListOptionsSheet({
               value={moveDoneToBottom}
             />
           </View>
+
+          <Pressable
+            onPress={() => {
+              onClose();
+              onInvite();
+            }}
+            style={({ pressed }) => [
+              styles.menuItem,
+              {
+                opacity: pressed ? 0.7 : 1,
+              },
+            ]}
+          >
+            <MaterialIcons color={colors.text} name="person-add" size={MENU_ITEM_ICON_SIZE} />
+            <Text style={[styles.menuItemText, { color: colors.text }]}>
+              Invite someone
+            </Text>
+          </Pressable>
 
           <Pressable
             onPress={() => {
@@ -153,14 +187,12 @@ const styles = StyleSheet.create({
     ...StyleSheet.absoluteFillObject,
   },
   menuContainer: {
-    alignItems: 'center',
-    left: 0,
+    alignItems: 'flex-end',
     position: 'absolute',
-    right: 0,
   },
   menu: {
     borderWidth: 1,
-    minWidth: 330,
+    minWidth: 220,
   },
   menuItem: {
     alignItems: 'center',
