@@ -691,6 +691,7 @@ export default function ListDetailScreen() {
         styles.screen,
         { backgroundColor: colors.bg },
         slideTransitionEnabled ? animatedStyle : null,
+        listOptionsVisible ? styles.screenMenuOpen : null,
       ]}
     >
       <View
@@ -718,6 +719,7 @@ export default function ListDetailScreen() {
             paddingTop: spacing.md,
             paddingBottom: spacing.md,
           },
+          listOptionsVisible ? styles.headerMenuOpen : null,
         ]}
       >
         <Pressable
@@ -923,6 +925,9 @@ const styles = StyleSheet.create({
   screen: {
     ...StyleSheet.absoluteFillObject,
   },
+  screenMenuOpen: {
+    overflow: 'visible',
+  },
   flex: {
     flex: 1,
   },
@@ -931,6 +936,10 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     flexDirection: 'row',
     gap: 12,
+  },
+  headerMenuOpen: {
+    overflow: 'visible',
+    zIndex: 10,
   },
   shareButton: {
     alignItems: 'center',

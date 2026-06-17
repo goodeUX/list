@@ -5,6 +5,7 @@ import {
   Pressable,
   StyleSheet,
   Text,
+  View,
   type StyleProp,
   type ViewStyle,
 } from 'react-native';
@@ -59,6 +60,7 @@ export default function Button({
         ? colors.textSecondary
         : colors.text;
   const iconSize = isLarge ? SURFACE_BUTTON_ICON_SIZE : BUTTON_ICON_SIZE;
+  const labelStyle = [buttonLabelStyle(16), { color: labelColor }];
 
   return (
     <Pressable
@@ -73,7 +75,6 @@ export default function Button({
         isLarge ? styles.largeButton : null,
         isGhost ? styles.ghostButton : null,
         buttonLayoutStyle,
-        icon && !loading ? styles.content : null,
         {
           backgroundColor: isPrimary
             ? colors.accent
@@ -91,22 +92,12 @@ export default function Button({
       {loading ? (
         <ActivityIndicator color={labelColor} />
       ) : icon ? (
-        <>
+        <View style={styles.iconRow}>
           <MaterialIcons color={iconColor} name={icon} size={iconSize} />
-          <Text
-            numberOfLines={1}
-            style={[buttonLabelStyle(16), styles.label, { color: labelColor }]}
-          >
-            {label}
-          </Text>
-        </>
+          <Text style={labelStyle}>{label}</Text>
+        </View>
       ) : (
-        <Text
-          numberOfLines={1}
-          style={[buttonLabelStyle(16), styles.label, { color: labelColor }]}
-        >
-          {label}
-        </Text>
+        <Text style={[labelStyle, styles.labelOnly]}>{label}</Text>
       )}
     </Pressable>
   );
@@ -115,7 +106,6 @@ export default function Button({
 const styles = StyleSheet.create({
   button: {
     minHeight: 48,
-    overflow: 'visible',
     width: '100%',
   },
   largeButton: {
@@ -123,17 +113,14 @@ const styles = StyleSheet.create({
   },
   ghostButton: {
     minHeight: 44,
-    overflow: 'visible',
   },
-  content: {
+  labelOnly: {
+    width: '100%',
+  },
+  iconRow: {
     alignItems: 'center',
     flexDirection: 'row',
     gap: 8,
     justifyContent: 'center',
-    overflow: 'visible',
-  },
-  label: {
-    overflow: 'visible',
-    textAlign: 'center',
   },
 });

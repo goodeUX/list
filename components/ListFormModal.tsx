@@ -502,8 +502,8 @@ const styles = StyleSheet.create({
     lineHeight: 20,
   },
   buttonGroup: {
+    alignSelf: 'stretch',
     gap: 8,
-    overflow: 'visible',
-    paddingHorizontal: 4,
+    width: '100%',
   },
 });

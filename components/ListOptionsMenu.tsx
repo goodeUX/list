@@ -1,14 +1,11 @@
 import { MaterialIcons } from '@expo/vector-icons';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect } from 'react';
 import {
   BackHandler,
-  Modal,
   Platform,
   Pressable,
   StyleSheet,
-  Switch,
   Text,
-  useWindowDimensions,
   View,
 } from 'react-native';
 import Animated, {
@@ -19,6 +16,7 @@ import Animated, {
 } from 'react-native-reanimated';
 
 import { useTheme } from '@/contexts/ThemeContext';
+import type { ThemeColors } from '@/lib/theme';
 
 const DESTRUCTIVE_COLOR = '#D64545';
 const MENU_ITEM_ICON_SIZE = 22;
@@ -29,7 +27,11 @@ const MENU_MIN_WIDTH = 320;
 const BUTTON_SIZE = 44;
 const MENU_ANCHOR_GAP = 8;
 const ICON_ROTATION_MS = 200;
-const MENU_OPEN_MS = 140;
+const MENU_NATIVE_ID = 'list-options-menu';
+const TOGGLE_WIDTH = 40;
+const TOGGLE_HEIGHT = 24;
+const TOGGLE_THUMB_SIZE = 20;
+const TOGGLE_THUMB_TRAVEL = TOGGLE_WIDTH - TOGGLE_THUMB_SIZE - 4;
 
 const menuItemTextStyle = {
   flexShrink: 0,
@@ -51,10 +53,27 @@ type ListOptionsMenuProps = {
   onOpen?: () => void;
 };
 
-type MenuLayout = {
-  right: number;
-  top: number;
-};
+function MenuToggle({ colors, value }: { colors: ThemeColors; value: boolean }) {
+  return (
+    <View
+      pointerEvents="none"
+      style={[
+        styles.toggleTrack,
+        { backgroundColor: value ? colors.accentSoft : colors.border },
+      ]}
+    >
+      <View
+        style={[
+          styles.toggleThumb,
+          {
+            backgroundColor: value ? colors.accent : colors.surface,
+            transform: [{ translateX: value ? TOGGLE_THUMB_TRAVEL : 0 }],
+          },
+        ]}
+      />
+    </View>
+  );
+}
 
 export default function ListOptionsMenu({
   visible,
@@ -68,37 +87,11 @@ export default function ListOptionsMenu({
   onOpen,
 }: ListOptionsMenuProps) {
   const { colors, radii, spacing } = useTheme();
-  const { width: windowWidth } = useWindowDimensions();
-  const [menuLayout, setMenuLayout] = useState<MenuLayout | null>(null);
-  const anchorRef = useRef<View>(null);
-  const overlayRef = useRef<View>(null);
   const iconRotation = useSharedValue(0);
-  const menuScale = useSharedValue(0.96);
-  const menuOpacity = useSharedValue(0);
-  const wasVisibleRef = useRef(false);
-  const menuMaxWidth = Math.max(MENU_MIN_WIDTH, windowWidth - spacing.lg * 2);
 
   const closeMenu = useCallback(() => {
     onVisibleChange(false);
-    setMenuLayout(null);
   }, [onVisibleChange]);
-
-  const updateMenuLayout = useCallback(() => {
-    const anchor = anchorRef.current;
-    const overlay = overlayRef.current;
-    if (!anchor || !overlay) {
-      return;
-    }
-
-    anchor.measureInWindow((anchorX, anchorY, anchorWidth, anchorHeight) => {
-      overlay.measureInWindow((overlayX, _overlayY, overlayWidth) => {
-        setMenuLayout({
-          top: anchorY - _overlayY + anchorHeight + MENU_ANCHOR_GAP,
-          right: overlayX + overlayWidth - (anchorX + anchorWidth),
-        });
-      });
-    });
-  }, []);
 
   const openMenu = useCallback(() => {
     onOpen?.();
@@ -114,35 +107,16 @@ export default function ListOptionsMenu({
     openMenu();
   }, [closeMenu, openMenu, visible]);
 
+  const toggleMoveDoneToBottom = useCallback(() => {
+    onMoveDoneToBottomChange(!moveDoneToBottom);
+  }, [moveDoneToBottom, onMoveDoneToBottomChange]);
+
   useEffect(() => {
     iconRotation.value = withTiming(visible ? 90 : 0, {
       duration: ICON_ROTATION_MS,
       easing: Easing.inOut(Easing.ease),
     });
   }, [iconRotation, visible]);
-
-  useEffect(() => {
-    if (visible && !wasVisibleRef.current) {
-      menuScale.value = 0.96;
-      menuOpacity.value = 0;
-      menuOpacity.value = withTiming(1, { duration: MENU_OPEN_MS });
-      menuScale.value = withTiming(1, { duration: MENU_OPEN_MS });
-    } else if (!visible) {
-      menuScale.value = 0.96;
-      menuOpacity.value = 0;
-    }
-
-    wasVisibleRef.current = visible;
-  }, [menuOpacity, menuScale, visible]);
-
-  useEffect(() => {
-    if (!visible) {
-      return;
-    }
-
-    const frame = requestAnimationFrame(updateMenuLayout);
-    return () => cancelAnimationFrame(frame);
-  }, [updateMenuLayout, visible, windowWidth]);
 
   useEffect(() => {
     if (!visible) {
@@ -157,18 +131,34 @@ export default function ListOptionsMenu({
     return () => subscription.remove();
   }, [closeMenu, visible]);
 
+  useEffect(() => {
+    if (!visible || Platform.OS !== 'web') {
+      return;
+    }
+
+    const handlePointerDown = (event: PointerEvent) => {
+      const menuAnchor = document.getElementById(MENU_NATIVE_ID);
+      if (menuAnchor?.contains(event.target as Node)) {
+        return;
+      }
+
+      closeMenu();
+    };
+
+    document.addEventListener('pointerdown', handlePointerDown);
+    return () => document.removeEventListener('pointerdown', handlePointerDown);
+  }, [closeMenu, visible]);
+
   const iconStyle = useAnimatedStyle(() => ({
     transform: [{ rotate: `${iconRotation.value}deg` }],
   }));
 
-  const menuAnimatedStyle = useAnimatedStyle(() => ({
-    opacity: menuOpacity.value,
-    transform: [{ scale: menuScale.value }],
-  }));
-
   return (
-    <>
-      <View collapsable={false} ref={anchorRef} style={styles.anchor}>
+    <View collapsable={false} nativeID={MENU_NATIVE_ID} style={styles.layoutSlot}>
+      <View
+        collapsable={false}
+        style={[styles.root, visible && styles.rootOpen]}
+      >
         <Pressable
           accessibilityLabel="List options"
           accessibilityRole="button"
@@ -189,156 +179,135 @@ export default function ListOptionsMenu({
             <MaterialIcons color={colors.accent} name="more-horiz" size={22} />
           </Animated.View>
         </Pressable>
-      </View>
 
-      <Modal animationType="none" onRequestClose={closeMenu} transparent visible={visible}>
-        <View
-          ref={overlayRef}
-          collapsable={false}
-          onLayout={updateMenuLayout}
-          style={styles.overlay}
-        >
-          <Pressable onPress={closeMenu} style={styles.backdrop} />
-          {menuLayout ? (
+        {visible ? (
+          <View style={styles.dropdown}>
             <View
               style={[
-                styles.menuContainer,
+                styles.menu,
                 {
-                  pointerEvents: 'box-none',
-                  right: menuLayout.right,
-                  top: menuLayout.top,
+                  backgroundColor: colors.surface,
+                  borderColor: colors.border,
+                  borderRadius: radii.card,
+                  paddingVertical: spacing.xs,
+                  ...(Platform.OS === 'web'
+                    ? { boxShadow: '0 8px 24px rgba(44, 36, 23, 0.18)' }
+                    : {
+                        elevation: 8,
+                        shadowColor: '#000',
+                        shadowOffset: { width: 0, height: 4 },
+                        shadowOpacity: 0.14,
+                        shadowRadius: 10,
+                      }),
                 },
               ]}
             >
-              <Animated.View
-                style={[
-                  styles.menu,
-                  menuAnimatedStyle,
-                  {
-                    backgroundColor: colors.surface,
-                    borderColor: colors.border,
-                    borderRadius: radii.card,
-                    maxWidth: menuMaxWidth,
-                    paddingVertical: spacing.xs,
-                    transformOrigin: 'top right',
-                    ...(Platform.OS === 'web'
-                      ? { boxShadow: '0 8px 24px rgba(44, 36, 23, 0.18)' }
-                      : {
-                          elevation: 6,
-                          shadowColor: '#000',
-                          shadowOffset: { width: 0, height: 4 },
-                          shadowOpacity: 0.14,
-                          shadowRadius: 10,
-                        }),
-                  },
+              <Pressable
+                accessibilityLabel="Move 'done' to bottom"
+                accessibilityRole="switch"
+                accessibilityState={{ checked: moveDoneToBottom }}
+                onPress={toggleMoveDoneToBottom}
+                style={({ pressed }) => [
+                  styles.menuItem,
+                  { opacity: pressed ? 0.7 : 1 },
                 ]}
               >
-                <View style={styles.menuItem}>
-                  <MaterialIcons color={colors.text} name="move-down" size={MENU_ITEM_ICON_SIZE} />
-                  <Text style={[menuItemTextStyle, { color: colors.text }]}>
-                    Move 'done' to bottom
-                  </Text>
-                  <View style={styles.menuItemSpacer} />
-                  <Switch
-                    accessibilityLabel="Move 'done' to bottom"
-                    onValueChange={onMoveDoneToBottomChange}
-                    thumbColor={moveDoneToBottom ? colors.accent : colors.surface}
-                    trackColor={{ false: colors.border, true: colors.accentSoft }}
-                    value={moveDoneToBottom}
-                  />
-                </View>
+                <MaterialIcons color={colors.text} name="move-down" size={MENU_ITEM_ICON_SIZE} />
+                <Text style={[menuItemTextStyle, styles.menuItemLabel, { color: colors.text }]}>
+                  Move 'done' to bottom
+                </Text>
+                <MenuToggle colors={colors} value={moveDoneToBottom} />
+              </Pressable>
 
+              <Pressable
+                onPress={() => {
+                  closeMenu();
+                  onInvite();
+                }}
+                style={({ pressed }) => [styles.menuItem, { opacity: pressed ? 0.7 : 1 }]}
+              >
+                <MaterialIcons color={colors.text} name="person-add" size={MENU_ITEM_ICON_SIZE} />
+                <Text style={[menuItemTextStyle, { color: colors.text }]}>Invite someone</Text>
+              </Pressable>
+
+              <Pressable
+                onPress={() => {
+                  closeMenu();
+                  onClearList();
+                }}
+                style={({ pressed }) => [styles.menuItem, { opacity: pressed ? 0.7 : 1 }]}
+              >
+                <MaterialIcons
+                  color={colors.text}
+                  name="playlist-remove"
+                  size={MENU_ITEM_ICON_SIZE}
+                />
+                <Text style={[menuItemTextStyle, { color: colors.text }]}>Clear list</Text>
+              </Pressable>
+
+              {showDeleteList ? (
                 <Pressable
                   onPress={() => {
                     closeMenu();
-                    onInvite();
+                    onDeleteList();
                   }}
-                  style={({ pressed }) => [
-                    styles.menuItem,
-                    { opacity: pressed ? 0.7 : 1 },
-                  ]}
-                >
-                  <MaterialIcons color={colors.text} name="person-add" size={MENU_ITEM_ICON_SIZE} />
-                  <Text style={[menuItemTextStyle, { color: colors.text }]}>
-                    Invite someone
-                  </Text>
-                </Pressable>
-
-                <Pressable
-                  onPress={() => {
-                    closeMenu();
-                    onClearList();
-                  }}
-                  style={({ pressed }) => [
-                    styles.menuItem,
-                    { opacity: pressed ? 0.7 : 1 },
-                  ]}
+                  style={({ pressed }) => [styles.menuItem, { opacity: pressed ? 0.7 : 1 }]}
                 >
                   <MaterialIcons
-                    color={colors.text}
-                    name="playlist-remove"
+                    color={DESTRUCTIVE_COLOR}
+                    name="delete-outline"
                     size={MENU_ITEM_ICON_SIZE}
                   />
-                  <Text style={[menuItemTextStyle, { color: colors.text }]}>
-                    Clear list
+                  <Text style={[menuItemTextStyle, { color: DESTRUCTIVE_COLOR }]}>
+                    Delete list
                   </Text>
                 </Pressable>
-
-                {showDeleteList ? (
-                  <Pressable
-                    onPress={() => {
-                      closeMenu();
-                      onDeleteList();
-                    }}
-                    style={({ pressed }) => [
-                      styles.menuItem,
-                      { opacity: pressed ? 0.7 : 1 },
-                    ]}
-                  >
-                    <MaterialIcons
-                      color={DESTRUCTIVE_COLOR}
-                      name="delete-outline"
-                      size={MENU_ITEM_ICON_SIZE}
-                    />
-                    <Text style={[menuItemTextStyle, { color: DESTRUCTIVE_COLOR }]}>
-                      Delete list
-                    </Text>
-                  </Pressable>
-                ) : null}
-              </Animated.View>
+              ) : null}
             </View>
-          ) : null}
-        </View>
-      </Modal>
-    </>
+          </View>
+        ) : null}
+      </View>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  anchor: {
+  layoutSlot: {
     flexShrink: 0,
+    height: BUTTON_SIZE,
+    overflow: 'visible',
+    width: BUTTON_SIZE,
+  },
+  root: {
+    height: BUTTON_SIZE,
+    overflow: 'visible',
+    position: 'absolute',
+    right: 0,
+    top: 0,
+    width: BUTTON_SIZE,
+  },
+  rootOpen: {
+    elevation: 24,
+    width: MENU_MIN_WIDTH,
+    zIndex: 1000,
   },
   button: {
     alignItems: 'center',
+    alignSelf: 'flex-end',
     borderRadius: 22,
     height: BUTTON_SIZE,
     justifyContent: 'center',
     width: BUTTON_SIZE,
   },
-  overlay: {
-    flex: 1,
-  },
-  backdrop: {
-    ...StyleSheet.absoluteFillObject,
-  },
-  menuContainer: {
+  dropdown: {
     alignItems: 'flex-end',
-    position: 'absolute',
+    marginTop: MENU_ANCHOR_GAP,
+    width: '100%',
   },
   menu: {
-    alignSelf: 'flex-start',
     borderWidth: 1,
     minWidth: MENU_MIN_WIDTH,
+    width: '100%',
   },
   menuItem: {
     alignItems: 'center',
@@ -347,9 +316,19 @@ const styles = StyleSheet.create({
     minHeight: 44,
     paddingHorizontal: MENU_ITEM_HORIZONTAL_PADDING,
   },
-  menuItemSpacer: {
-    flexGrow: 1,
-    flexShrink: 1,
-    minWidth: MENU_ITEM_GAP,
+  menuItemLabel: {
+    flex: 1,
+  },
+  toggleTrack: {
+    borderRadius: TOGGLE_HEIGHT / 2,
+    height: TOGGLE_HEIGHT,
+    justifyContent: 'center',
+    padding: 2,
+    width: TOGGLE_WIDTH,
+  },
+  toggleThumb: {
+    borderRadius: TOGGLE_THUMB_SIZE / 2,
+    height: TOGGLE_THUMB_SIZE,
+    width: TOGGLE_THUMB_SIZE,
   },
 });
