@@ -12,7 +12,7 @@ import {
 import { useAuth } from '@/contexts/AuthContext';
 import { db } from '@/lib/firebase';
 import { handleFirestoreListenerError, isFirestorePermissionError } from '@/lib/firestoreListenerErrors';
-import { usesCloudListData } from '@/lib/listIds';
+import { isLocalListId } from '@/lib/listIds';
 
 const PRESENCE_INTERVAL_MS = 15_000;
 const ACTIVE_THRESHOLD_MS = 30_000;
@@ -34,7 +34,7 @@ export function usePresence(listId: string | undefined) {
   const [activeUsers, setActiveUsers] = useState<PresenceUser[]>([]);
 
   const writePresence = useCallback(async () => {
-    if (!usesCloudListData(user, listId)) {
+    if (!user || !listId || isLocalListId(listId)) {
       return;
     }
 
@@ -55,7 +55,7 @@ export function usePresence(listId: string | undefined) {
   }, [listId, user]);
 
   useEffect(() => {
-    if (!usesCloudListData(user, listId)) {
+    if (!user || !listId || isLocalListId(listId)) {
       setActiveUsers([]);
       return;
     }

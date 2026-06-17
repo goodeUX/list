@@ -1,16 +1,9 @@
 import { router } from 'expo-router';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
-import Animated, {
-  useAnimatedStyle,
-  useSharedValue,
-  withSpring,
-} from 'react-native-reanimated';
 
 import { useTheme } from '@/contexts/ThemeContext';
 import { useListItemCounts } from '@/hooks/useListItems';
 import type { AppList } from '@/lib/types';
-
-const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
 type ListCardProps = {
   list: AppList;
@@ -19,16 +12,11 @@ type ListCardProps = {
 
 export default function ListCard({ list, countsRefreshKey = 0 }: ListCardProps) {
   const { colors, radii, spacing } = useTheme();
-  const scale = useSharedValue(1);
 
   const { doneCount, totalCount } = useListItemCounts(list.id, countsRefreshKey);
   const incompleteCount = totalCount - doneCount;
   const collaboratorCount = list.memberIds.length;
   const isShared = collaboratorCount > 1;
-
-  const animatedStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: scale.value }],
-  }));
 
   const handlePress = () => {
     router.push({
@@ -37,22 +25,11 @@ export default function ListCard({ list, countsRefreshKey = 0 }: ListCardProps) 
     });
   };
 
-  const handlePressIn = () => {
-    scale.value = withSpring(0.98, { damping: 15 });
-  };
-
-  const handlePressOut = () => {
-    scale.value = withSpring(1, { damping: 15 });
-  };
-
   return (
-    <AnimatedPressable
+    <Pressable
       onPress={handlePress}
-      onPressIn={handlePressIn}
-      onPressOut={handlePressOut}
       style={[
         styles.card,
-        animatedStyle,
         {
           backgroundColor: colors.surface,
           borderColor: colors.border,
@@ -63,14 +40,12 @@ export default function ListCard({ list, countsRefreshKey = 0 }: ListCardProps) 
     >
       <View style={styles.header}>
         <Text style={styles.emoji}>{list.emoji}</Text>
-        <View style={styles.titleBlock}>
-          <Text
-            numberOfLines={1}
-            style={[styles.name, { color: colors.text }]}
-          >
-            {list.name}
-          </Text>
-        </View>
+        <Text
+          numberOfLines={1}
+          style={[styles.name, { color: colors.text, flex: 1 }]}
+        >
+          {list.name}
+        </Text>
         <View
           style={[
             styles.itemCountBadge,
@@ -96,7 +71,7 @@ export default function ListCard({ list, countsRefreshKey = 0 }: ListCardProps) 
           {collaboratorCount} collaborators
         </Text>
       ) : null}
-    </AnimatedPressable>
+    </Pressable>
   );
 }
 
@@ -112,10 +87,6 @@ const styles = StyleSheet.create({
   emoji: {
     fontSize: 28,
     lineHeight: 32,
-  },
-  titleBlock: {
-    flex: 1,
-    gap: 2,
   },
   name: {
     fontFamily: 'NunitoSans_600SemiBold',

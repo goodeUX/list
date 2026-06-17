@@ -6,20 +6,19 @@ import {
   Alert,
   Platform,
   Pressable,
-  Share,
   StyleSheet,
   Text,
   View,
 } from 'react-native';
 import { doc, getDoc, onSnapshot } from 'firebase/firestore';
 
-import { APP_NAME } from '@/lib/appName';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTheme } from '@/contexts/ThemeContext';
 import { buttonLabelStyle, buttonLayoutStyle } from '@/lib/buttonStyles';
 import { db } from '@/lib/firebase';
 import { handleFirestoreListenerError } from '@/lib/firestoreListenerErrors';
 import { getInviteUrl } from '@/lib/inviteUrl';
+import { shareListInvite } from '@/lib/shareListInvite';
 
 type Collaborator = {
   uid: string;
@@ -109,27 +108,13 @@ export default function ShareListContent({
     }
   };
 
-  const handleShare = async () => {
-    const message = `Join my list “${listName}” on ${APP_NAME}:\n${inviteUrl}`;
-
-    try {
-      if (Platform.OS === 'ios') {
-        await Share.share({
-          message,
-          url: inviteUrl,
-          title: `Join ${listName}`,
-        });
-        return;
-      }
-
-      await Share.share({
-        message,
-        title: `Join ${listName}`,
-      });
-    } catch {
-      Alert.alert('Could not share', 'Please try again.');
-    }
+  const handleShare = () => {
+    void shareListInvite(listId, listName);
   };
+
+  if (Platform.OS !== 'web') {
+    return null;
+  }
 
   return (
     <View style={{ gap: spacing.md }}>

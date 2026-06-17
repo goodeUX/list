@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "Ta-da List",
+    "name": "Ta-da",
     "slug": "list",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -28,9 +28,7 @@
       "output": "static",
       "favicon": "./assets/images/favicon.png",
       "splash": {
-        "backgroundColor": "#DBB793",
-        "image": "./assets/images/splash-background.png",
-        "resizeMode": "cover"
+        "backgroundColor": "#DBB793"
       }
     },
     "plugins": [
@@ -40,10 +38,7 @@
         {
           "backgroundColor": "#DBB793",
           "ios": {
-            "backgroundColor": "#DBB793",
-            "image": "./assets/images/splash-background.png",
-            "resizeMode": "cover",
-            "enableFullScreenImage_legacy": true
+            "backgroundColor": "#DBB793"
           },
           "android": {
             "backgroundColor": "#DBB793",

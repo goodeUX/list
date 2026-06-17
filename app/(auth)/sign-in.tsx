@@ -1,5 +1,5 @@
+import { MaterialIcons } from '@expo/vector-icons';
 import { Link, router, useLocalSearchParams } from 'expo-router';
-import { SymbolView } from 'expo-symbols';
 import { useState } from 'react';
 import {
   ActivityIndicator,
@@ -57,7 +57,7 @@ export default function SignInScreen() {
     }
   };
 
-  const handleClose = () => {
+  const handleGoBack = () => {
     if (router.canGoBack()) {
       router.back();
       return;
@@ -67,6 +67,33 @@ export default function SignInScreen() {
 
   return (
     <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.bg }]}>
+      <View
+        style={[
+          styles.topHeader,
+          {
+            paddingHorizontal: spacing.lg,
+            paddingTop: spacing.md,
+            paddingBottom: spacing.sm,
+          },
+        ]}
+      >
+        <Pressable
+          accessibilityLabel="Go back"
+          accessibilityRole="button"
+          hitSlop={8}
+          onPress={handleGoBack}
+          style={({ pressed }) => [
+            styles.backButton,
+            {
+              backgroundColor: colors.surface,
+              opacity: pressed ? 0.7 : 1,
+            },
+          ]}
+        >
+          <MaterialIcons color={colors.accent} name="chevron-left" size={24} />
+        </Pressable>
+      </View>
+
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={styles.flex}
@@ -75,23 +102,6 @@ export default function SignInScreen() {
           contentContainerStyle={[styles.container, { padding: spacing.lg }]}
           showsVerticalScrollIndicator={false}
         >
-          <Pressable
-            accessibilityLabel="Close"
-            accessibilityRole="button"
-            hitSlop={8}
-            onPress={handleClose}
-            style={({ pressed }) => [
-              styles.closeButton,
-              { opacity: pressed ? 0.7 : 1 },
-            ]}
-          >
-            <SymbolView
-              name={{ ios: 'xmark', android: 'close', web: 'close' }}
-              size={20}
-              tintColor={colors.textSecondary}
-            />
-          </Pressable>
-
           <View style={styles.header}>
             <Text style={[styles.title, { color: colors.text }]}>
               Welcome to {APP_NAME}
@@ -102,37 +112,29 @@ export default function SignInScreen() {
           </View>
 
           <View style={styles.form}>
-            <View style={styles.field}>
-              <Text style={[styles.label, { color: colors.textSecondary }]}>
-                Email
-              </Text>
-              <ThemedTextInput
-                autoCapitalize="none"
-                autoComplete="email"
-                autoCorrect={false}
-                editable={!submitting}
-                keyboardType="email-address"
-                onChangeText={setEmail}
-                placeholder="you@example.com"
-                textContentType="emailAddress"
-                value={email}
-              />
-            </View>
+            <ThemedTextInput
+              accessibilityLabel="Email"
+              autoCapitalize="none"
+              autoComplete="email"
+              autoCorrect={false}
+              editable={!submitting}
+              keyboardType="email-address"
+              onChangeText={setEmail}
+              placeholder="you@example.com"
+              textContentType="emailAddress"
+              value={email}
+            />
 
-            <View style={styles.field}>
-              <Text style={[styles.label, { color: colors.textSecondary }]}>
-                Password
-              </Text>
-              <ThemedTextInput
-                autoComplete="password"
-                editable={!submitting}
-                onChangeText={setPassword}
-                placeholder="Your password"
-                secureTextEntry
-                textContentType="password"
-                value={password}
-              />
-            </View>
+            <ThemedTextInput
+              accessibilityLabel="Password"
+              autoComplete="password"
+              editable={!submitting}
+              onChangeText={setPassword}
+              placeholder="Your password"
+              secureTextEntry
+              textContentType="password"
+              value={password}
+            />
 
             {error ? (
               <Text style={[styles.error, { color: colors.accent }]}>
@@ -190,16 +192,22 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   container: {
-    flex: 1,
+    flexGrow: 1,
     justifyContent: 'center',
   },
-  closeButton: {
-    alignSelf: 'flex-end',
-    height: 36,
+  topHeader: {
+    alignItems: 'flex-start',
+  },
+  backButton: {
+    alignItems: 'center',
+    borderRadius: 22,
+    flexShrink: 0,
+    height: 44,
     justifyContent: 'center',
-    width: 36,
+    width: 44,
   },
   header: {
+    alignItems: 'center',
     marginBottom: 32,
   },
   title: {
@@ -207,21 +215,16 @@ const styles = StyleSheet.create({
     fontSize: 32,
     lineHeight: 40,
     marginBottom: 8,
+    textAlign: 'center',
   },
   subtitle: {
     fontFamily: 'NunitoSans_400Regular',
     fontSize: 16,
     lineHeight: 24,
+    textAlign: 'center',
   },
   form: {
     gap: 16,
-  },
-  field: {
-    gap: 6,
-  },
-  label: {
-    fontFamily: 'NunitoSans_600SemiBold',
-    fontSize: 14,
   },
   error: {
     fontFamily: 'NunitoSans_400Regular',

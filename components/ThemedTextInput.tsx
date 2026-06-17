@@ -140,7 +140,7 @@ const ThemedTextInput = forwardRef<TextInput, ThemedTextInputProps>(
       variant === 'plain' && {
         color: colors.text,
       },
-      Platform.OS === 'web' ? ({ outlineStyle: 'none' } as TextStyle) : null,
+      Platform.OS === 'web' ? ({ outlineStyle: 'none' } as unknown as TextStyle) : null,
       style,
     ];
 

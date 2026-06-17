@@ -63,10 +63,9 @@ function CompletedText({
       </Animated.Text>
       {checked && Platform.OS !== 'web' ? (
         <Animated.View
-          pointerEvents="none"
           style={[
             styles.strikethroughLine,
-            { backgroundColor: color },
+            { backgroundColor: color, pointerEvents: 'none' },
             animatedStyle,
           ]}
         />

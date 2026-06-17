@@ -1,1 +1,1 @@
-export const APP_NAME = 'Ta-da List';
+export const APP_NAME = 'Ta-da';

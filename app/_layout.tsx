@@ -138,8 +138,11 @@ export default function RootLayout() {
           <ThemeProvider>
             {showOpening ? (
               <Reanimated.View
-                pointerEvents={openingComplete ? 'none' : 'auto'}
-                style={[styles.openingLayer, openingAnimatedStyle]}
+                style={[
+                  styles.openingLayer,
+                  openingAnimatedStyle,
+                  { pointerEvents: openingComplete ? 'none' : 'auto' },
+                ]}
               >
                 <OpeningScreen
                   fontsLoaded={loaded}
@@ -202,10 +205,6 @@ function RootLayoutNav() {
             <Stack.Screen
               name="(auth)"
               options={{ presentation: 'modal', headerShown: false }}
-            />
-            <Stack.Screen
-              name="modal"
-              options={{ headerShown: true, presentation: 'modal' }}
             />
           </Stack>
         </NavigationThemeProvider>

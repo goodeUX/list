@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ElementRef } from 'react';
 import {
-  ActivityIndicator,
   BackHandler,
   KeyboardAvoidingView,
   Platform,
@@ -22,12 +21,12 @@ import Animated, {
 } from 'react-native-reanimated';
 
 import EmojiPickerButton from '@/components/EmojiPickerButton';
+import Button from '@/components/Button';
 import ThemedTextInput, {
   getBorderedInputHeight,
   getThemedInputContainerStyle,
 } from '@/components/ThemedTextInput';
 import { useTheme } from '@/contexts/ThemeContext';
-import { buttonLabelStyle, buttonLayoutStyle } from '@/lib/buttonStyles';
 import { focusTextInputNow, scheduleTextInputFocus } from '@/lib/focusTextInput';
 import { dismissKeyboard } from '@/lib/dismissKeyboard';
 import {
@@ -51,6 +50,8 @@ const MODAL_ESTIMATED_HEIGHT = 300;
 const MODAL_VERTICAL_OFFSET = 84;
 const MODAL_WIDTH_INSET = 24;
 const MODAL_EASING = Easing.out(Easing.cubic);
+
+const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
 type ListFormModalProps = {
   visible: boolean;
@@ -296,181 +297,158 @@ export default function ListFormModal({
     dismissImmediately();
   }, [dismissImmediately, submitting]);
 
+  const modalBodyStyle = useMemo(
+    () => [styles.modalBody, { gap: spacing.lg, padding: spacing.lg }],
+    [spacing.lg],
+  );
+
+  const modalContent = (
+    <>
+      <Text style={[styles.modalTitle, { color: colors.text }]}>{title}</Text>
+
+      <View style={styles.nameRow}>
+        <EmojiPickerButton
+          disabled={submitting}
+          dropdownContainerLayout={modalContentLayout}
+          onChange={setListEmoji}
+          value={listEmoji}
+        />
+        <Pressable
+          onPress={handleFocusNameInput}
+          style={[
+            styles.nameInputContainer,
+            getThemedInputContainerStyle(colors, isListNameFocused, isListNameAtLimit),
+            {
+              borderRadius: radii.item,
+              paddingRight: isListNameFocused ? 12 : 16,
+            },
+          ]}
+        >
+          <ThemedTextInput
+            editable={!submitting}
+            invalid={isListNameAtLimit}
+            onBlur={() => setIsListNameFocused(false)}
+            onChangeText={handleChangeListName}
+            onFocus={() => setIsListNameFocused(true)}
+            onSubmitEditing={() => {
+              void handleSubmit();
+            }}
+            placeholder="Groceries, packing, gifts..."
+            ref={listNameInputRef}
+            returnKeyType="done"
+            showSoftInputOnFocus
+            style={styles.nameInput}
+            value={listName}
+            variant="plain"
+          />
+          {isListNameFocused ? (
+            <Text
+              style={[
+                styles.charCounter,
+                {
+                  color:
+                    listName.length >= LIST_NAME_MAX_LENGTH
+                      ? colors.accent
+                      : colors.textSecondary,
+                },
+              ]}
+            >
+              {listName.length}/{LIST_NAME_MAX_LENGTH}
+            </Text>
+          ) : null}
+        </Pressable>
+      </View>
+
+      {error || validationError ? (
+        <Text style={[styles.error, { color: colors.accent }]}>
+          {error ?? validationError}
+        </Text>
+      ) : null}
+
+      <View style={styles.buttonGroup}>
+        <Button
+          label={submitLabel}
+          loading={submitting}
+          onPress={() => {
+            void handleSubmit();
+          }}
+          onPressIn={onSubmitPressIn}
+          variant="primary"
+        />
+
+        <Button
+          disabled={submitting}
+          label="Cancel"
+          onPress={handleClose}
+          variant="ghost"
+        />
+      </View>
+    </>
+  );
+
   return (
     <View
       accessibilityElementsHidden={!visible}
       importantForAccessibility={visible ? 'yes' : 'no-hide-descendants'}
-      pointerEvents={visible ? 'auto' : 'none'}
       style={[
-        styles.modalLayer,
+        styles.modalShell,
+        { paddingTop: modalOverlayPaddingTop, pointerEvents: visible ? 'auto' : 'none' },
         Platform.OS === 'web' && visible && modalLayerHeight != null
           ? { height: modalLayerHeight, position: 'fixed' }
           : null,
       ]}
     >
-      <View style={[styles.modalOverlay, { paddingTop: modalOverlayPaddingTop }]}>
-        <Animated.View style={[styles.modalBackdrop, modalBackdropStyle]}>
-          <Pressable
-            disabled={submitting}
-            onPress={handleClose}
-            style={StyleSheet.absoluteFill}
-          />
-        </Animated.View>
-        <Animated.View
-          ref={modalDialogRef}
-          collapsable={false}
-          onLayout={updateModalDialogLayout}
-          style={[
-            styles.modalDialog,
-            modalDialogAnimatedStyle,
-            {
-              backgroundColor: colors.surface,
-              borderColor: colors.border,
-              borderRadius: radii.card,
-              ...(Platform.OS === 'web'
-                ? { boxShadow: '0 12px 40px rgba(44, 36, 23, 0.2)' }
-                : null),
-            },
-          ]}
-        >
-          <KeyboardAvoidingView
-            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-          >
+      <AnimatedPressable
+        disabled={submitting}
+        onPress={handleClose}
+        style={[styles.modalBackdrop, modalBackdropStyle]}
+      />
+      <Animated.View
+        ref={modalDialogRef}
+        collapsable={false}
+        onLayout={updateModalDialogLayout}
+        style={[
+          styles.modalDialog,
+          modalDialogAnimatedStyle,
+          {
+            backgroundColor: colors.surface,
+            borderColor: colors.border,
+            borderRadius: radii.card,
+            ...(Platform.OS === 'web'
+              ? { boxShadow: '0 12px 40px rgba(44, 36, 23, 0.2)' }
+              : null),
+          },
+        ]}
+      >
+        {Platform.OS === 'web' ? (
+          <View style={modalBodyStyle}>{modalContent}</View>
+        ) : (
+          <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
             <ScrollView
               bounces={false}
+              clipToPadding={false}
+              contentContainerStyle={modalBodyStyle}
               keyboardDismissMode="on-drag"
               keyboardShouldPersistTaps="handled"
-              contentContainerStyle={{ gap: 16, padding: spacing.lg }}
+              style={styles.modalScroll}
             >
-              <Text style={[styles.modalTitle, { color: colors.text }]}>{title}</Text>
-
-              <View style={styles.field}>
-                <View style={styles.nameRow}>
-                  <EmojiPickerButton
-                    disabled={submitting}
-                    dropdownContainerLayout={modalContentLayout}
-                    onChange={setListEmoji}
-                    value={listEmoji}
-                  />
-                  <Pressable
-                    onPress={handleFocusNameInput}
-                    style={[
-                      styles.nameInputContainer,
-                      getThemedInputContainerStyle(
-                        colors,
-                        isListNameFocused,
-                        isListNameAtLimit,
-                      ),
-                      {
-                        borderRadius: radii.item,
-                        paddingRight: isListNameFocused ? 12 : 16,
-                      },
-                    ]}
-                  >
-                    <ThemedTextInput
-                      editable={!submitting}
-                      invalid={isListNameAtLimit}
-                      onBlur={() => setIsListNameFocused(false)}
-                      onChangeText={handleChangeListName}
-                      onFocus={() => setIsListNameFocused(true)}
-                      onSubmitEditing={() => {
-                        void handleSubmit();
-                      }}
-                      placeholder="Groceries, packing, gifts..."
-                      ref={listNameInputRef}
-                      returnKeyType="done"
-                      showSoftInputOnFocus
-                      style={styles.nameInput}
-                      value={listName}
-                      variant="plain"
-                    />
-                    {isListNameFocused ? (
-                      <Text
-                        style={[
-                          styles.charCounter,
-                          {
-                            color:
-                              listName.length >= LIST_NAME_MAX_LENGTH
-                                ? colors.accent
-                                : colors.textSecondary,
-                          },
-                        ]}
-                      >
-                        {listName.length}/{LIST_NAME_MAX_LENGTH}
-                      </Text>
-                    ) : null}
-                  </Pressable>
-                </View>
-              </View>
-
-              {error || validationError ? (
-                <Text style={[styles.error, { color: colors.accent }]}>
-                  {error ?? validationError}
-                </Text>
-              ) : null}
-
-              <View style={styles.actions}>
-                <Pressable
-                  disabled={submitting}
-                  onPress={() => {
-                    void handleSubmit();
-                  }}
-                  onPressIn={onSubmitPressIn}
-                  style={({ pressed }) => [
-                    styles.submitButton,
-                    buttonLayoutStyle,
-                    {
-                      backgroundColor: colors.accent,
-                      borderRadius: radii.item,
-                      opacity: pressed || submitting ? 0.85 : 1,
-                    },
-                  ]}
-                >
-                  {submitting ? (
-                    <ActivityIndicator color={colors.surface} />
-                  ) : (
-                    <Text style={[buttonLabelStyle(16), { color: colors.surface }]}>
-                      {submitLabel}
-                    </Text>
-                  )}
-                </Pressable>
-
-                <Pressable
-                  disabled={submitting}
-                  onPress={handleClose}
-                  style={({ pressed }) => [
-                    styles.cancelButton,
-                    buttonLayoutStyle,
-                    {
-                      opacity: pressed || submitting ? 0.7 : 1,
-                      paddingHorizontal: 24,
-                    },
-                  ]}
-                >
-                  <Text style={[styles.cancelLabel, { color: colors.textSecondary }]}>
-                    Cancel
-                  </Text>
-                </Pressable>
-              </View>
+              {modalContent}
             </ScrollView>
           </KeyboardAvoidingView>
-        </Animated.View>
-      </View>
+        )}
+      </Animated.View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  modalLayer: {
+  modalShell: {
     ...StyleSheet.absoluteFillObject,
-    zIndex: 100,
-  },
-  modalOverlay: {
     alignItems: 'center',
-    flex: 1,
     justifyContent: 'flex-start',
     paddingBottom: 24,
     paddingHorizontal: MODAL_WIDTH_INSET / 2,
+    zIndex: 100,
   },
   modalBackdrop: {
     ...StyleSheet.absoluteFillObject,
@@ -483,13 +461,16 @@ const styles = StyleSheet.create({
     width: '100%',
     zIndex: 1,
   },
+  modalBody: {
+    overflow: 'visible',
+  },
+  modalScroll: {
+    overflow: 'visible',
+  },
   modalTitle: {
     fontFamily: 'Fraunces_600SemiBold',
     fontSize: 24,
     lineHeight: 32,
-  },
-  field: {
-    gap: 6,
   },
   nameRow: {
     alignItems: 'center',
@@ -520,23 +501,9 @@ const styles = StyleSheet.create({
     fontSize: 14,
     lineHeight: 20,
   },
-  actions: {
+  buttonGroup: {
     gap: 8,
     overflow: 'visible',
-  },
-  submitButton: {
-    minHeight: 48,
-    overflow: 'visible',
-    paddingVertical: 12,
-    width: '100%',
-  },
-  cancelButton: {
-    alignSelf: 'stretch',
-    minHeight: 44,
-    overflow: 'visible',
-  },
-  cancelLabel: {
-    ...buttonLabelStyle(15),
-    alignSelf: 'center',
+    paddingHorizontal: 4,
   },
 });

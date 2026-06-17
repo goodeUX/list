@@ -28,9 +28,17 @@ export default function EmptyState({
   const { colors, radii, spacing } = useTheme();
 
   return (
-    <View style={[styles.container, { padding: spacing.lg }]} pointerEvents="box-none">
-      <View style={styles.content}>
-        <Image
+    <View
+      style={[
+        styles.container,
+        {
+          padding: spacing.lg,
+          pointerEvents: 'box-none',
+          transform: [{ translateY: EMPTY_STATE_OFFSET_Y }],
+        },
+      ]}
+    >
+      <Image
           accessibilityIgnoresInvertColors
           resizeMode="contain"
           source={listEmptyStateImage}
@@ -41,25 +49,24 @@ export default function EmptyState({
           accessibilityLabel="Create a new list"
           accessibilityRole="button"
           onPress={onCreateList}
-          style={({ pressed }) => [
-            styles.createListButton,
-            buttonLayoutStyle,
-            {
-              backgroundColor: colors.accent,
-              borderRadius: radii.item,
-              marginTop: spacing.md,
-              opacity: pressed ? 0.7 : 1,
-            },
-          ]}
-        >
-          <View style={styles.createListButtonContent}>
-            <MaterialIcons color={colors.surface} name="add" size={24} />
-            <Text style={[buttonLabelStyle(16), { color: colors.surface }]}>
-              Create a new list
-            </Text>
-          </View>
-        </Pressable>
-      </View>
+        style={({ pressed }) => [
+          styles.createListButton,
+          buttonLayoutStyle,
+          {
+            backgroundColor: colors.accent,
+            borderRadius: radii.item,
+            flexDirection: 'row',
+            gap: 8,
+            marginTop: spacing.md,
+            opacity: pressed ? 0.7 : 1,
+          },
+        ]}
+      >
+        <MaterialIcons color={colors.surface} name="add" size={24} />
+        <Text style={[buttonLabelStyle(16), { color: colors.surface }]}>
+          Create a new list
+        </Text>
+      </Pressable>
     </View>
   );
 }
@@ -69,10 +76,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     flex: 1,
     justifyContent: 'center',
-  },
-  content: {
-    alignItems: 'center',
-    transform: [{ translateY: EMPTY_STATE_OFFSET_Y }],
   },
   illustration: {
     height: 180,
@@ -86,10 +89,5 @@ const styles = StyleSheet.create({
   },
   createListButton: {
     minHeight: 54,
-  },
-  createListButtonContent: {
-    alignItems: 'center',
-    flexDirection: 'row',
-    gap: 8,
   },
 });

@@ -161,12 +161,11 @@ export default function ListsHomeScreen() {
       <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.bg }]}>
         <View
           style={[
-            styles.header,
+            styles.headerTop,
             { paddingHorizontal: spacing.lg, paddingTop: spacing.md },
           ]}
         >
-          <View style={styles.headerTop}>
-            <View style={styles.titleBlock}>
+          <View style={styles.titleBlock}>
               <Text style={[styles.title, { color: colors.text }]}>My Lists</Text>
               {!loading ? (
                 <Text style={[styles.summary, { color: colors.textSecondary }]}>
@@ -190,7 +189,6 @@ export default function ListsHomeScreen() {
             >
               <MaterialIcons color={colors.accent} name="more-horiz" size={24} />
             </Pressable>
-          </View>
         </View>
 
         {loading ? (
@@ -198,7 +196,9 @@ export default function ListsHomeScreen() {
             <ActivityIndicator color={colors.accent} size="large" />
           </View>
         ) : (
-          <Animated.View pointerEvents="box-none" style={[styles.content, listsFadeStyle]}>
+          <Animated.View
+            style={[styles.content, listsFadeStyle, { pointerEvents: 'box-none' }]}
+          >
             {lists.length === 0 ? (
               <EmptyState onCreateList={openCreateModal} />
             ) : (
@@ -225,8 +225,7 @@ export default function ListsHomeScreen() {
 
         {showCreateBar ? (
           <View
-            pointerEvents="box-none"
-            style={[styles.bottomBar, { paddingBottom: bottomBarInset }]}
+            style={[styles.bottomBar, { paddingBottom: bottomBarInset, pointerEvents: 'box-none' }]}
           >
             <View
               style={[
@@ -250,23 +249,22 @@ export default function ListsHomeScreen() {
                 accessibilityLabel="Create a new list"
                 accessibilityRole="button"
                 onPress={openCreateModal}
-                onPressIn={openCreateModal}
                 style={({ pressed }) => [
                   styles.createListButton,
                   buttonLayoutStyle,
                   {
                     backgroundColor: colors.surface,
                     borderRadius: radii.item,
+                    flexDirection: 'row',
+                    gap: 8,
                     opacity: pressed ? 0.7 : 1,
                   },
                 ]}
               >
-                <View style={styles.createListButtonContent}>
-                  <MaterialIcons color={colors.accent} name="add" size={24} />
-                  <Text style={[buttonLabelStyle(16), { color: colors.text }]}>
-                    Create a new list
-                  </Text>
-                </View>
+                <MaterialIcons color={colors.accent} name="add" size={24} />
+                <Text style={[buttonLabelStyle(16), { color: colors.text }]}>
+                  Create a new list
+                </Text>
               </Pressable>
             </View>
           </View>
@@ -295,16 +293,13 @@ const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
   },
-  header: {
-    gap: 4,
-    position: 'relative',
-    zIndex: 2,
-  },
   headerTop: {
     alignItems: 'flex-start',
     flexDirection: 'row',
     gap: 12,
     justifyContent: 'space-between',
+    position: 'relative',
+    zIndex: 2,
   },
   titleBlock: {
     flex: 1,
@@ -353,10 +348,5 @@ const styles = StyleSheet.create({
   createListButton: {
     minHeight: 54,
     width: '100%',
-  },
-  createListButtonContent: {
-    alignItems: 'center',
-    flexDirection: 'row',
-    gap: 8,
   },
 });

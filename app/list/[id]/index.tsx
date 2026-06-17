@@ -4,7 +4,6 @@ import { MaterialIcons } from '@expo/vector-icons';
 import { useCallback, useEffect, useMemo, useRef, useState, type ElementRef } from 'react';
 import {
   Alert,
-  Dimensions,
   FlatList,
   Image,
   KeyboardAvoidingView,
@@ -26,7 +25,7 @@ import Animated, {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { doc, getDocFromCache, onSnapshot } from 'firebase/firestore';
 
-import ListOptionsSheet from '@/components/ListOptionsSheet';
+import ListOptionsMenu from '@/components/ListOptionsMenu';
 import ListFormModal from '@/components/ListFormModal';
 import ListItemRow from '@/components/ListItemRow';
 import ThemedTextInput, { getThemedInputContainerStyle } from '@/components/ThemedTextInput';
@@ -50,6 +49,7 @@ import {
 } from '@/lib/itemName';
 import { deleteListById, setListMoveDoneToBottom, updateListDetails } from '@/lib/listMutations';
 import { consumePendingAddInputFocus } from '@/lib/pendingAddInputFocus';
+import { shareListInvite } from '@/lib/shareListInvite';
 import { SLIDE_IN_MS } from '@/lib/slideTransition';
 import type { ListItem } from '@/lib/types';
 
@@ -57,11 +57,9 @@ const LIST_ITEMS_FADE_MS = 500;
 const LIST_ITEMS_FADE_EASING = Easing.bezier(0, 0, 0.58, 1);
 
 const ADD_SUBMIT_BUTTON_SIZE = 40;
-const LIST_OPTIONS_MENU_GAP = 8;
 const listEmptyStateImage =
   require('../../../assets/images/listEmptyState2.png') as ImageSourcePropType;
 const ADD_INPUT_ROW_NATIVE_ID = 'list-add-input-row';
-const LIST_OPTIONS_ICON_ROTATION_MS = 200;
 
 export default function ListDetailScreen() {
   const params = useLocalSearchParams<{
@@ -96,8 +94,6 @@ export default function ListDetailScreen() {
   const [newItemName, setNewItemName] = useState('');
   const [isAddInputFocused, setIsAddInputFocused] = useState(false);
   const [listOptionsVisible, setListOptionsVisible] = useState(false);
-  const [listOptionsMenuTop, setListOptionsMenuTop] = useState(0);
-  const [listOptionsMenuRight, setListOptionsMenuRight] = useState(0);
   const [renameModalVisible, setRenameModalVisible] = useState(false);
   const [renaming, setRenaming] = useState(false);
   const [renameError, setRenameError] = useState<string | null>(null);
@@ -106,8 +102,6 @@ export default function ListDetailScreen() {
   const refocusingInput = useRef(false);
   const lastAddSubmitRef = useRef<{ name: string; at: number } | null>(null);
   const addItemInputRef = useRef<ElementRef<typeof ThemedTextInput>>(null);
-  const listOptionsButtonRef = useRef<ElementRef<typeof Pressable>>(null);
-  const listOptionsIconRotation = useSharedValue(0);
   const consumedFocusAddRef = useRef(false);
 
   useEffect(() => {
@@ -188,13 +182,6 @@ export default function ListDetailScreen() {
   }, [dismissAddInput, isAddInputFocused]);
 
   useEffect(() => {
-    listOptionsIconRotation.value = withTiming(listOptionsVisible ? 90 : 0, {
-      duration: LIST_OPTIONS_ICON_ROTATION_MS,
-      easing: Easing.inOut(Easing.ease),
-    });
-  }, [listOptionsIconRotation, listOptionsVisible]);
-
-  useEffect(() => {
     listOpacity.value = 0;
   }, [listId, listOpacity]);
 
@@ -213,10 +200,6 @@ export default function ListDetailScreen() {
       }),
     );
   }, [isSlideReady, listId, listOpacity, slideTransitionEnabled]);
-
-  const listOptionsIconStyle = useAnimatedStyle(() => ({
-    transform: [{ rotate: `${listOptionsIconRotation.value}deg` }],
-  }));
 
   const listFadeStyle = useAnimatedStyle(() => ({
     opacity: listOpacity.value,
@@ -382,6 +365,11 @@ export default function ListDetailScreen() {
       return;
     }
 
+    if (Platform.OS !== 'web') {
+      void shareListInvite(listId, displayListName);
+      return;
+    }
+
     router.push({
       pathname: '/list/[id]/share',
       params: {
@@ -475,32 +463,6 @@ export default function ListDetailScreen() {
         });
       },
     );
-  };
-
-  const handleToggleListOptions = () => {
-    blurAddInput();
-
-    if (listOptionsVisible) {
-      setListOptionsVisible(false);
-      return;
-    }
-
-    const openMenu = (top: number, right: number) => {
-      setListOptionsMenuTop(top);
-      setListOptionsMenuRight(right);
-      setListOptionsVisible(true);
-    };
-
-    const button = listOptionsButtonRef.current;
-    if (!button) {
-      openMenu(listOptionsMenuTop, listOptionsMenuRight);
-      return;
-    }
-
-    button.measureInWindow((x, y, width, height) => {
-      const windowWidth = Dimensions.get('window').width;
-      openMenu(y + height + LIST_OPTIONS_MENU_GAP, windowWidth - x - width);
-    });
   };
 
   const handleMoveDoneToBottomChange = (value: boolean) => {
@@ -787,14 +749,13 @@ export default function ListDetailScreen() {
             Platform.OS === 'web' ? ({ cursor: 'pointer' } as object) : null,
           ]}
         >
-          <Text pointerEvents="none" style={styles.emoji}>
+          <Text style={[styles.emoji, { pointerEvents: 'none' }]}>
             {listEmoji || paramEmoji}
           </Text>
-          <View pointerEvents="none" style={styles.titleTextBlock}>
+          <View style={[styles.titleTextBlock, { pointerEvents: 'none' }]}>
             <Text
               numberOfLines={2}
-              pointerEvents="none"
-              style={[styles.title, { color: colors.text }]}
+              style={[styles.title, { color: colors.text, pointerEvents: 'none' }]}
             >
               {listName || paramName || 'List'}
             </Text>
@@ -811,49 +772,34 @@ export default function ListDetailScreen() {
           </View>
         </Pressable>
 
-        <View style={styles.headerActions}>
-            <Pressable
-              ref={listOptionsButtonRef}
-              accessibilityLabel="List options"
-              accessibilityRole="button"
-              accessibilityState={{ expanded: listOptionsVisible }}
-              hitSlop={8}
-              onPress={handleToggleListOptions}
-              style={({ pressed }) => [
-                styles.shareButton,
-                {
-                  backgroundColor: listOptionsVisible
-                    ? colors.surfaceMuted
-                    : colors.surface,
-                  borderColor: listOptionsVisible ? colors.accent : 'transparent',
-                  borderWidth: listOptionsVisible ? 1.5 : 0,
-                  opacity: pressed ? 0.7 : 1,
-                },
-              ]}
-            >
-              <Animated.View style={listOptionsIconStyle}>
-                <MaterialIcons color={colors.accent} name="more-horiz" size={22} />
-              </Animated.View>
-            </Pressable>
-        </View>
+        <ListOptionsMenu
+          moveDoneToBottom={moveDoneToBottom}
+          onClearList={handleClearList}
+          onDeleteList={handleDeleteList}
+          onInvite={handleShare}
+          onMoveDoneToBottomChange={handleMoveDoneToBottomChange}
+          onOpen={blurAddInput}
+          onVisibleChange={setListOptionsVisible}
+          showDeleteList={canDeleteList}
+          visible={listOptionsVisible}
+        />
       </View>
 
-      <View
-        style={{ paddingHorizontal: spacing.lg, paddingTop: spacing.lg }}
-      >
-        <Pressable
-          nativeID={ADD_INPUT_ROW_NATIVE_ID}
-          onPress={focusAddInput}
-          style={[
-            styles.addInputRow,
-            getThemedInputContainerStyle(
-              colors,
-              isAddInputFocused,
-              newItemName.length >= ITEM_NAME_MAX_LENGTH,
-            ),
-            {
-              borderRadius: radii.item,
-              paddingRight: showSubmitButton
+      <Pressable
+        nativeID={ADD_INPUT_ROW_NATIVE_ID}
+        onPress={focusAddInput}
+        style={[
+          styles.addInputRow,
+          getThemedInputContainerStyle(
+            colors,
+            isAddInputFocused,
+            newItemName.length >= ITEM_NAME_MAX_LENGTH,
+          ),
+          {
+            borderRadius: radii.item,
+            marginHorizontal: spacing.lg,
+            marginTop: spacing.lg,
+            paddingRight: showSubmitButton
                 ? spacing.xs
                 : isAddInputFocused
                   ? 12
@@ -894,16 +840,19 @@ export default function ListDetailScreen() {
             accessibilityRole="button"
             accessibilityState={{ disabled: !canSubmitNewItem }}
             disabled={Platform.OS !== 'web' && !canSubmitNewItem}
-            onMouseDown={Platform.OS === 'web' ? handleSubmitMouseDown : undefined}
-            onPress={Platform.OS === 'web' ? undefined : handleSubmitPress}
-            onPressIn={Platform.OS === 'web' ? undefined : handleSubmitPressIn}
-            pointerEvents={showSubmitButton ? 'auto' : 'none'}
+            {...(Platform.OS === 'web'
+              ? ({ onMouseDown: handleSubmitMouseDown } as object)
+              : {
+                  onPress: handleSubmitPress,
+                  onPressIn: handleSubmitPressIn,
+                })}
             style={({ pressed }) => [
               styles.addSubmitButton,
               {
                 backgroundColor: colors.accent,
                 borderRadius: radii.checkbox,
                 opacity: showSubmitButton ? (pressed && canSubmitNewItem ? 0.85 : 1) : 0,
+                pointerEvents: showSubmitButton ? 'auto' : 'none',
                 width: showSubmitButton ? ADD_SUBMIT_BUTTON_SIZE : 0,
               },
             ]}
@@ -911,7 +860,6 @@ export default function ListDetailScreen() {
             <MaterialIcons color={colors.surface} name="check" size={22} />
           </Pressable>
         </Pressable>
-      </View>
 
       <Animated.View style={[styles.listContainer, listFadeStyle]}>
         <Pressable onPress={handleBackgroundPress} style={styles.flex}>
@@ -950,21 +898,7 @@ export default function ListDetailScreen() {
       </Animated.View>
 
       {listId ? (
-        <>
-          <ListOptionsSheet
-            menuRight={listOptionsMenuRight}
-            menuTop={listOptionsMenuTop}
-            moveDoneToBottom={moveDoneToBottom}
-            onClearList={handleClearList}
-            onClose={() => setListOptionsVisible(false)}
-            onDeleteList={handleDeleteList}
-            onInvite={handleShare}
-            onMoveDoneToBottomChange={handleMoveDoneToBottomChange}
-            showDeleteList={canDeleteList}
-            visible={listOptionsVisible}
-          />
-
-          <ListFormModal
+        <ListFormModal
             error={renameError}
             initialEmoji={listEmoji}
             initialName={listName}
@@ -977,8 +911,7 @@ export default function ListDetailScreen() {
             submitting={renaming}
             title="Rename list"
             visible={renameModalVisible}
-          />
-        </>
+        />
       ) : null}
       </KeyboardAvoidingView>
       </View>
@@ -1006,11 +939,6 @@ const styles = StyleSheet.create({
     height: 44,
     justifyContent: 'center',
     width: 44,
-  },
-  headerActions: {
-    flexDirection: 'row',
-    flexShrink: 0,
-    gap: 4,
   },
   titleBlock: {
     alignItems: 'center',

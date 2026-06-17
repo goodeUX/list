@@ -55,13 +55,13 @@ export default function JoinListScreen() {
         {error ? (
           <Text style={[styles.error, { color: colors.accent }]}>{error}</Text>
         ) : (
-          <>
-            <ActivityIndicator color={colors.accent} size="large" />
-            <Text style={[styles.message, { color: colors.textSecondary }]}>
-              Joining list...
-            </Text>
-          </>
+          <ActivityIndicator color={colors.accent} size="large" />
         )}
+        {!error ? (
+          <Text style={[styles.message, { color: colors.textSecondary }]}>
+            Joining list...
+          </Text>
+        ) : null}
       </View>
     </SafeAreaView>
   );

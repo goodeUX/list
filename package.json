@@ -43,7 +43,8 @@
     "export:web": "expo export --platform web",
     "deploy:web": "expo export --platform web && firebase deploy --only hosting",
     "build:preview": "eas build --platform android --profile preview",
-    "build:production": "eas build --platform android --profile production"
+    "build:production": "eas build --platform android --profile production",
+    "generate:icons": "node scripts/generate-android-icons.js"
   },
   "private": true
 }

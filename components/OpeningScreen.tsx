@@ -2,13 +2,13 @@ import { router } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 import {
   ActivityIndicator,
-  Dimensions,
   Image,
   KeyboardAvoidingView,
   Platform,
   Pressable,
   StyleSheet,
   Text,
+  useWindowDimensions,
   View,
   type ImageSourcePropType,
 } from 'react-native';
@@ -19,14 +19,13 @@ import ThemedTextInput from '@/components/ThemedTextInput';
 import { getAuthErrorMessage, useAuth } from '@/contexts/AuthContext';
 import { APP_NAME } from '@/lib/appName';
 import { buttonLabelStyle, buttonLayoutStyle } from '@/lib/buttonStyles';
+import { CONTENT_MAX_WIDTH } from '@/lib/slideTransition';
 import { OPENING_WELCOME_MS, SPLASH_BACKGROUND_COLOR } from '@/lib/splash';
 
 const openingDogImage =
   require('../assets/images/opening-dog.png') as ImageSourcePropType;
 
-const { height: windowHeight, width: windowWidth } = Dimensions.get('window');
 const OPENING_DOG_ASPECT_RATIO = 902 / 1024;
-const OPENING_DOG_WIDTH = windowWidth;
 const OPENING_DOG_BOTTOM_BLEED = -48;
 const OPENING_DOG_RIGHT_BLEED = -72;
 const OPENING_TEXT_COLOR = '#2C2417';
@@ -55,6 +54,8 @@ function getWelcomeName(displayName: string | null | undefined, email: string | 
 
 export default function OpeningScreen({ fontsLoaded, onComplete }: OpeningScreenProps) {
   const insets = useSafeAreaInsets();
+  const { width: windowWidth, height: windowHeight } = useWindowDimensions();
+  const layoutWidth = Math.min(windowWidth, CONTENT_MAX_WIDTH);
   const { user, loading, signIn } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -105,24 +106,34 @@ export default function OpeningScreen({ fontsLoaded, onComplete }: OpeningScreen
   const showLoading = loading || !fontsLoaded;
 
   return (
-    <View style={styles.screen}>
-      <View style={styles.dogContainer}>
-        <Image
-          accessibilityIgnoresInvertColors
-          resizeMode="contain"
-          source={openingDogImage}
-          style={styles.dogImage}
-        />
-      </View>
-
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        style={[styles.content, { paddingTop: insets.top + 48 }]}
-      >
-        <KeyboardDismissScrollView
-          contentContainerStyle={styles.scrollContent}
-          showsVerticalScrollIndicator={false}
+    <View style={[styles.screen, { height: windowHeight, width: windowWidth }]}>
+      <View style={[styles.frame, { width: layoutWidth }]}>
+        <View
+          style={[
+            styles.dogContainer,
+            {
+              bottom: OPENING_DOG_BOTTOM_BLEED,
+              right: OPENING_DOG_RIGHT_BLEED,
+              width: layoutWidth,
+            },
+          ]}
         >
+          <Image
+            accessibilityIgnoresInvertColors
+            resizeMode="contain"
+            source={openingDogImage}
+            style={styles.dogImage}
+          />
+        </View>
+
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          style={[styles.content, { paddingTop: insets.top + 48 }]}
+        >
+          <KeyboardDismissScrollView
+            contentContainerStyle={styles.scrollContent}
+            showsVerticalScrollIndicator={false}
+          >
         {showLoading ? (
           <View style={styles.loadingContainer}>
             <ActivityIndicator color={ACCENT_COLOR} size="large" />
@@ -140,37 +151,33 @@ export default function OpeningScreen({ fontsLoaded, onComplete }: OpeningScreen
           <View style={styles.loginContainer}>
             <Text style={styles.loginTitle}>Welcome to {APP_NAME}</Text>
             <Text style={styles.loginSubtitle}>
-              Sign in to sync your lists, or continue without an account.
+              Sign in to sync and share your lists, or continue without an account.
             </Text>
 
             <View style={styles.form}>
-              <View style={styles.field}>
-                <Text style={styles.label}>Email</Text>
-                <ThemedTextInput
-                  autoCapitalize="none"
-                  autoComplete="email"
-                  autoCorrect={false}
-                  editable={!submitting}
-                  keyboardType="email-address"
-                  onChangeText={setEmail}
-                  placeholder="you@example.com"
-                  textContentType="emailAddress"
-                  value={email}
-                />
-              </View>
+              <ThemedTextInput
+                accessibilityLabel="Email"
+                autoCapitalize="none"
+                autoComplete="email"
+                autoCorrect={false}
+                editable={!submitting}
+                keyboardType="email-address"
+                onChangeText={setEmail}
+                placeholder="you@example.com"
+                textContentType="emailAddress"
+                value={email}
+              />
 
-              <View style={styles.field}>
-                <Text style={styles.label}>Password</Text>
-                <ThemedTextInput
-                  autoComplete="password"
-                  editable={!submitting}
-                  onChangeText={setPassword}
-                  placeholder="Your password"
-                  secureTextEntry
-                  textContentType="password"
-                  value={password}
-                />
-              </View>
+              <ThemedTextInput
+                accessibilityLabel="Password"
+                autoComplete="password"
+                editable={!submitting}
+                onChangeText={setPassword}
+                placeholder="Your password"
+                secureTextEntry
+                textContentType="password"
+                value={password}
+              />
 
               {error ? <Text style={styles.error}>{error}</Text> : null}
 
@@ -199,7 +206,7 @@ export default function OpeningScreen({ fontsLoaded, onComplete }: OpeningScreen
                   { opacity: pressed || submitting ? 0.7 : 1 },
                 ]}
               >
-                <Text style={[buttonLabelStyle(16), { color: OPENING_TEXT_MUTED }]}>Skip login</Text>
+                <Text style={[buttonLabelStyle(16), { color: OPENING_TEXT_COLOR }]}>Skip login</Text>
               </Pressable>
             </View>
 
@@ -216,23 +223,25 @@ export default function OpeningScreen({ fontsLoaded, onComplete }: OpeningScreen
           </View>
         ) : null}
         </KeyboardDismissScrollView>
-      </KeyboardAvoidingView>
+        </KeyboardAvoidingView>
+      </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   screen: {
+    alignItems: 'center',
     backgroundColor: SPLASH_BACKGROUND_COLOR,
-    height: windowHeight,
     overflow: 'hidden',
-    width: windowWidth,
+  },
+  frame: {
+    flex: 1,
+    maxWidth: '100%',
+    overflow: 'hidden',
   },
   dogContainer: {
-    bottom: OPENING_DOG_BOTTOM_BLEED,
     position: 'absolute',
-    right: OPENING_DOG_RIGHT_BLEED,
-    width: OPENING_DOG_WIDTH,
   },
   dogImage: {
     aspectRatio: OPENING_DOG_ASPECT_RATIO,
@@ -244,6 +253,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 32,
   },
   scrollContent: {
+    alignItems: 'center',
     flexGrow: 1,
   },
   loadingContainer: {
@@ -279,6 +289,7 @@ const styles = StyleSheet.create({
     fontSize: 32,
     lineHeight: 40,
     marginBottom: 8,
+    textAlign: 'center',
   },
   loginSubtitle: {
     color: OPENING_TEXT_MUTED,
@@ -286,17 +297,10 @@ const styles = StyleSheet.create({
     fontSize: 16,
     lineHeight: 24,
     marginBottom: 24,
+    textAlign: 'center',
   },
   form: {
     gap: 16,
-  },
-  field: {
-    gap: 6,
-  },
-  label: {
-    color: OPENING_TEXT_MUTED,
-    fontFamily: 'NunitoSans_600SemiBold',
-    fontSize: 14,
   },
   error: {
     color: ACCENT_COLOR,

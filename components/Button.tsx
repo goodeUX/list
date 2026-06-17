@@ -5,7 +5,6 @@ import {
   Pressable,
   StyleSheet,
   Text,
-  View,
   type StyleProp,
   type ViewStyle,
 } from 'react-native';
@@ -16,11 +15,12 @@ import { buttonLabelStyle, buttonLayoutStyle } from '@/lib/buttonStyles';
 const BUTTON_ICON_SIZE = 20;
 const SURFACE_BUTTON_ICON_SIZE = 24;
 
-type ButtonVariant = 'primary' | 'secondary' | 'surface';
+type ButtonVariant = 'primary' | 'secondary' | 'surface' | 'ghost';
 
 type ButtonProps = {
   label: string;
   onPress: () => void;
+  onPressIn?: () => void;
   variant?: ButtonVariant;
   icon?: ComponentProps<typeof MaterialIcons>['name'];
   disabled?: boolean;
@@ -32,6 +32,7 @@ type ButtonProps = {
 export default function Button({
   label,
   onPress,
+  onPressIn,
   variant = 'secondary',
   icon,
   disabled = false,
@@ -42,10 +43,21 @@ export default function Button({
   const { colors, radii } = useTheme();
   const isPrimary = variant === 'primary';
   const isSurface = variant === 'surface';
+  const isGhost = variant === 'ghost';
   const isLarge = isPrimary || isSurface;
   const isDisabled = disabled || loading;
-  const labelColor = isPrimary ? colors.surface : colors.text;
-  const iconColor = isPrimary ? colors.surface : isSurface ? colors.accent : colors.text;
+  const labelColor = isPrimary
+    ? colors.surface
+    : isGhost
+      ? colors.textSecondary
+      : colors.text;
+  const iconColor = isPrimary
+    ? colors.surface
+    : isSurface
+      ? colors.accent
+      : isGhost
+        ? colors.textSecondary
+        : colors.text;
   const iconSize = isLarge ? SURFACE_BUTTON_ICON_SIZE : BUTTON_ICON_SIZE;
 
   return (
@@ -55,33 +67,46 @@ export default function Button({
       accessibilityState={{ disabled: isDisabled }}
       disabled={isDisabled}
       onPress={onPress}
+      onPressIn={onPressIn}
       style={({ pressed }) => [
         styles.button,
         isLarge ? styles.largeButton : null,
+        isGhost ? styles.ghostButton : null,
         buttonLayoutStyle,
+        icon && !loading ? styles.content : null,
         {
           backgroundColor: isPrimary
             ? colors.accent
             : isSurface
               ? colors.surface
               : undefined,
-          borderColor: isPrimary || isSurface ? 'transparent' : colors.border,
+          borderColor: isPrimary || isSurface || isGhost ? 'transparent' : colors.border,
           borderRadius: radii.item,
-          borderWidth: isPrimary || isSurface ? 0 : 1,
-          opacity: pressed || isDisabled ? (isLarge ? 0.7 : 0.85) : 1,
+          borderWidth: isPrimary || isSurface || isGhost ? 0 : 1,
+          opacity: pressed || isDisabled ? (isGhost ? 0.7 : isLarge ? 0.7 : 0.85) : 1,
         },
         style,
       ]}
     >
       {loading ? (
         <ActivityIndicator color={labelColor} />
+      ) : icon ? (
+        <>
+          <MaterialIcons color={iconColor} name={icon} size={iconSize} />
+          <Text
+            numberOfLines={1}
+            style={[buttonLabelStyle(16), styles.label, { color: labelColor }]}
+          >
+            {label}
+          </Text>
+        </>
       ) : (
-        <View style={styles.content}>
-          {icon ? (
-            <MaterialIcons color={iconColor} name={icon} size={iconSize} />
-          ) : null}
-          <Text style={[buttonLabelStyle(16), { color: labelColor }]}>{label}</Text>
-        </View>
+        <Text
+          numberOfLines={1}
+          style={[buttonLabelStyle(16), styles.label, { color: labelColor }]}
+        >
+          {label}
+        </Text>
       )}
     </Pressable>
   );
@@ -90,15 +115,25 @@ export default function Button({
 const styles = StyleSheet.create({
   button: {
     minHeight: 48,
+    overflow: 'visible',
     width: '100%',
   },
   largeButton: {
     minHeight: 54,
+  },
+  ghostButton: {
+    minHeight: 44,
+    overflow: 'visible',
   },
   content: {
     alignItems: 'center',
     flexDirection: 'row',
     gap: 8,
     justifyContent: 'center',
+    overflow: 'visible',
+  },
+  label: {
+    overflow: 'visible',
+    textAlign: 'center',
   },
 });

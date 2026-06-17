@@ -118,7 +118,7 @@ export function useChildSlideTransition(
         },
         (finished) => {
           'worklet';
-          runOnJS(handleExitAnimationEnd)(finished);
+          runOnJS(handleExitAnimationEnd)(finished ?? false);
         },
       );
     },

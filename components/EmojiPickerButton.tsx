@@ -1,6 +1,7 @@
 import { useMemo, useRef, useState } from 'react';
 import {
   Modal,
+  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -202,12 +203,16 @@ const styles = StyleSheet.create({
   },
   dropdown: {
     borderWidth: 1,
-    elevation: 8,
     position: 'absolute',
-    shadowColor: '#2C2417',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.12,
-    shadowRadius: 16,
+    ...(Platform.OS === 'web'
+      ? { boxShadow: '0 8px 16px rgba(44, 36, 23, 0.12)' }
+      : {
+          elevation: 8,
+          shadowColor: '#2C2417',
+          shadowOffset: { width: 0, height: 8 },
+          shadowOpacity: 0.12,
+          shadowRadius: 16,
+        }),
   },
   emojiRow: {
     flexDirection: 'row',

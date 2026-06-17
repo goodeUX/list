@@ -98,9 +98,9 @@ export default function SettingsScreen() {
           <MaterialIcons color={colors.accent} name="chevron-left" size={24} />
         </Pressable>
 
-        <View style={styles.titleBlock}>
-          <Text style={[styles.title, { color: colors.text }]}>Settings</Text>
-        </View>
+        <Text style={[styles.title, { color: colors.text, flex: 1, minWidth: 0 }]}>
+          Settings
+        </Text>
 
         <View style={styles.headerSpacer} />
       </View>
@@ -293,19 +293,17 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     width: 44,
   },
-  titleBlock: {
-    flex: 1,
-    minWidth: 0,
-  },
   headerSpacer: {
     flexShrink: 0,
     height: 44,
     width: 44,
   },
   title: {
+    flex: 1,
     fontFamily: 'Fraunces_600SemiBold',
     fontSize: 24,
     lineHeight: 30,
+    minWidth: 0,
   },
   container: {
     flexGrow: 1,
