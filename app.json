@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "Ta-da",
+    "name": "List Kitty",
     "slug": "list",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -9,7 +9,10 @@
     "userInterfaceStyle": "automatic",
     "ios": {
       "supportsTablet": true,
-      "icon": "./assets/images/icon.png"
+      "icon": {
+        "light": "./assets/images/icon.png",
+        "dark": "./assets/images/icon-dark.png"
+      }
     },
     "android": {
       "icon": "./assets/images/icon.png",

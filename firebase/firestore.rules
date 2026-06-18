@@ -10,13 +10,40 @@ service cloud.firestore {
       return isSignedIn() && request.auth.uid == uid;
     }
 
+    function memberIds(data) {
+      return data.get('memberIds', []);
+    }
+
     function isListMember(listId) {
       return isSignedIn()
-        && request.auth.uid in get(/databases/$(database)/documents/lists/$(listId)).data.memberIds;
+        && request.auth.uid in memberIds(
+          get(/databases/$(database)/documents/lists/$(listId)).data
+        );
+    }
+
+    function isJoiningList() {
+      return !(request.auth.uid in memberIds(resource.data))
+        && request.auth.uid in memberIds(request.resource.data)
+        && memberIds(request.resource.data).size()
+           == memberIds(resource.data).size() + 1
+        && request.resource.data.diff(resource.data).affectedKeys()
+           .hasOnly(['memberIds', 'updatedAt']);
+    }
+
+    function isLeavingList() {
+      return request.auth.uid in memberIds(resource.data)
+        && !(request.auth.uid in memberIds(request.resource.data))
+        && resource.data.ownerId != request.auth.uid
+        && memberIds(request.resource.data).size()
+           == memberIds(resource.data).size() - 1
+        && request.resource.data.diff(resource.data).affectedKeys()
+           .hasOnly(['memberIds', 'updatedAt']);
     }
 
     match /users/{uid} {
-      allow read, write: if isOwner(uid);
+      // Collaborators need to see each other's display name / email on shared lists.
+      allow get: if isSignedIn();
+      allow write: if isOwner(uid);
 
       match /itemHistory/{historyId} {
         allow read, write: if isOwner(uid);
@@ -24,24 +51,23 @@ service cloud.firestore {
     }
 
     match /lists/{listId} {
+      // Invite flow: signed-in users can read a list before they are members.
       allow get: if isSignedIn();
       allow list: if isSignedIn()
-        && request.auth.uid in resource.data.memberIds;
+        && request.auth.uid in memberIds(resource.data);
 
       allow create: if isSignedIn()
-        && request.auth.uid in request.resource.data.memberIds
+        && request.auth.uid in memberIds(request.resource.data)
         && request.resource.data.ownerId == request.auth.uid;
 
       allow update: if isSignedIn()
         && (
           (
-            request.auth.uid in resource.data.memberIds
-            && request.auth.uid in request.resource.data.memberIds
+            request.auth.uid in memberIds(resource.data)
+            && request.auth.uid in memberIds(request.resource.data)
           )
-          || (
-            request.auth.uid in request.resource.data.memberIds
-            && request.resource.data.memberIds.size() == resource.data.memberIds.size() + 1
-          )
+          || isJoiningList()
+          || isLeavingList()
         );
 
       allow delete: if isSignedIn()

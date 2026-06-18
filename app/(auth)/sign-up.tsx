@@ -17,21 +17,15 @@ import ThemedTextInput from '@/components/ThemedTextInput';
 import { getAuthErrorMessage, useAuth } from '@/contexts/AuthContext';
 import { useTheme } from '@/contexts/ThemeContext';
 import { APP_NAME } from '@/lib/appName';
+import { buildAuthHref, parseAuthRedirect } from '@/lib/authRedirect';
 import { buttonLabelStyle, buttonLayoutStyle } from '@/lib/buttonStyles';
 
-function navigateAfterAuth(redirect?: string) {
-  router.replace(
-    typeof redirect === 'string' && redirect.startsWith('/')
-      ? (redirect as '/')
-      : '/',
-  );
-}
+import { navigateAfterSignIn } from '@/lib/postAuthNavigation';
 
 export default function SignUpScreen() {
   const { colors, radii, spacing } = useTheme();
   const { redirect } = useLocalSearchParams<{ redirect?: string }>();
-  const resolvedRedirect =
-    typeof redirect === 'string' && redirect.startsWith('/') ? redirect : undefined;
+  const resolvedRedirect = parseAuthRedirect(redirect);
   const { signUp } = useAuth();
   const [displayName, setDisplayName] = useState('');
   const [email, setEmail] = useState('');
@@ -54,7 +48,7 @@ export default function SignUpScreen() {
     setSubmitting(true);
     try {
       await signUp(email, password, displayName);
-      navigateAfterAuth(resolvedRedirect);
+      await navigateAfterSignIn(resolvedRedirect);
     } catch (err) {
       setError(getAuthErrorMessage(err));
     } finally {
@@ -121,6 +115,7 @@ export default function SignUpScreen() {
               accessibilityLabel="Display name"
               autoComplete="name"
               editable={!submitting}
+              label="Name"
               onChangeText={setDisplayName}
               placeholder="Your name"
               textContentType="name"
@@ -134,6 +129,7 @@ export default function SignUpScreen() {
               autoCorrect={false}
               editable={!submitting}
               keyboardType="email-address"
+              label="Email"
               onChangeText={setEmail}
               placeholder="you@example.com"
               textContentType="emailAddress"
@@ -144,6 +140,7 @@ export default function SignUpScreen() {
               accessibilityLabel="Password"
               autoComplete="new-password"
               editable={!submitting}
+              label="Password"
               onChangeText={setPassword}
               placeholder="At least 6 characters"
               secureTextEntry
@@ -185,7 +182,7 @@ export default function SignUpScreen() {
             <Text style={[styles.footerText, { color: colors.textSecondary }]}>
               Already have an account?{' '}
             </Text>
-            <Link href="/(auth)/sign-in" asChild>
+            <Link href={buildAuthHref('sign-in', resolvedRedirect)} asChild>
               <Pressable disabled={submitting}>
                 <Text style={[styles.link, { color: colors.accent }]}>
                   Sign in

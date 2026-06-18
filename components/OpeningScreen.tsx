@@ -17,19 +17,22 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import KeyboardDismissScrollView from '@/components/KeyboardDismissScrollView';
 import ThemedTextInput from '@/components/ThemedTextInput';
 import { getAuthErrorMessage, useAuth } from '@/contexts/AuthContext';
+import { useTheme } from '@/contexts/ThemeContext';
 import { APP_NAME } from '@/lib/appName';
+import { buildAuthHref } from '@/lib/authRedirect';
 import { buttonLabelStyle, buttonLayoutStyle } from '@/lib/buttonStyles';
+import { getPendingInviteListId } from '@/lib/pendingInvite';
+import { navigateAfterSignIn } from '@/lib/postAuthNavigation';
 import { CONTENT_MAX_WIDTH } from '@/lib/slideTransition';
-import { OPENING_WELCOME_MS, SPLASH_BACKGROUND_COLOR } from '@/lib/splash';
+import { OPENING_WELCOME_MS } from '@/lib/splash';
 
-const openingDogImage =
-  require('../assets/images/opening-dog.png') as ImageSourcePropType;
+const openingLightImage =
+  require('../assets/images/splash-light.png') as ImageSourcePropType;
+const openingDarkImage =
+  require('../assets/images/splash-dark.png') as ImageSourcePropType;
 
-const OPENING_DOG_ASPECT_RATIO = 902 / 1024;
-const OPENING_DOG_BOTTOM_BLEED = -48;
-const OPENING_DOG_RIGHT_BLEED = -72;
-const OPENING_TEXT_COLOR = '#2C2417';
-const OPENING_TEXT_MUTED = '#6B5E4F';
+const OPENING_IMAGE_ASPECT_RATIO = 1024 / 1024;
+const OPENING_IMAGE_WIDTH_SCALE = 0.8;
 const ACCENT_COLOR = '#C4785A';
 const SURFACE_COLOR = '#FFFFFF';
 
@@ -57,6 +60,7 @@ export default function OpeningScreen({ fontsLoaded, onComplete }: OpeningScreen
   const { width: windowWidth, height: windowHeight } = useWindowDimensions();
   const layoutWidth = Math.min(windowWidth, CONTENT_MAX_WIDTH);
   const { user, loading, signIn } = useAuth();
+  const { colors, colorScheme } = useTheme();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
@@ -82,7 +86,7 @@ export default function OpeningScreen({ fontsLoaded, onComplete }: OpeningScreen
     setSubmitting(true);
     try {
       await signIn(email, password);
-      router.replace('/');
+      await navigateAfterSignIn();
       onComplete();
     } catch (err) {
       setError(getAuthErrorMessage(err));
@@ -97,23 +101,35 @@ export default function OpeningScreen({ fontsLoaded, onComplete }: OpeningScreen
 
   const handleCreateAccount = useCallback(() => {
     onComplete();
-    router.push('/(auth)/sign-up');
+    void getPendingInviteListId().then((pendingListId) => {
+      router.push(
+        buildAuthHref(
+          'sign-up',
+          pendingListId ? `/join/${pendingListId}` : undefined,
+        ),
+      );
+    });
   }, [onComplete]);
 
   const welcomeName = getWelcomeName(user?.displayName, user?.email);
   const showWelcome = !loading && !!user;
   const showLogin = !loading && !user;
   const showLoading = loading || !fontsLoaded;
+  const openingImage = colorScheme === 'dark' ? openingDarkImage : openingLightImage;
 
   return (
-    <View style={[styles.screen, { height: windowHeight, width: windowWidth }]}>
+    <View
+      style={[
+        styles.screen,
+        { backgroundColor: colors.bg, height: windowHeight, width: windowWidth },
+      ]}
+    >
       <View style={[styles.frame, { width: layoutWidth }]}>
         <View
           style={[
-            styles.dogContainer,
+            styles.imageContainer,
             {
-              bottom: OPENING_DOG_BOTTOM_BLEED,
-              right: OPENING_DOG_RIGHT_BLEED,
+              bottom: 0,
               width: layoutWidth,
             },
           ]}
@@ -121,8 +137,8 @@ export default function OpeningScreen({ fontsLoaded, onComplete }: OpeningScreen
           <Image
             accessibilityIgnoresInvertColors
             resizeMode="contain"
-            source={openingDogImage}
-            style={styles.dogImage}
+            source={openingImage}
+            style={[styles.openingImage, { width: layoutWidth * OPENING_IMAGE_WIDTH_SCALE }]}
           />
         </View>
 
@@ -142,15 +158,15 @@ export default function OpeningScreen({ fontsLoaded, onComplete }: OpeningScreen
 
         {showWelcome ? (
           <View style={styles.welcomeContainer}>
-            <Text style={styles.welcomeBack}>Welcome back,</Text>
-            <Text style={styles.welcomeName}>{welcomeName}</Text>
+            <Text style={[styles.welcomeBack, { color: colors.text }]}>Welcome back,</Text>
+            <Text style={[styles.welcomeName, { color: colors.text }]}>{welcomeName}</Text>
           </View>
         ) : null}
 
         {showLogin ? (
           <View style={styles.loginContainer}>
-            <Text style={styles.loginTitle}>Welcome to {APP_NAME}</Text>
-            <Text style={styles.loginSubtitle}>
+            <Text style={[styles.loginTitle, { color: colors.text }]}>Welcome to {APP_NAME}</Text>
+            <Text style={[styles.loginSubtitle, { color: colors.textSecondary }]}>
               Sign in to sync and share your lists, or continue without an account.
             </Text>
 
@@ -162,6 +178,8 @@ export default function OpeningScreen({ fontsLoaded, onComplete }: OpeningScreen
                 autoCorrect={false}
                 editable={!submitting}
                 keyboardType="email-address"
+                label="Email"
+                labelBackgroundColor={colors.bg}
                 onChangeText={setEmail}
                 placeholder="you@example.com"
                 textContentType="emailAddress"
@@ -172,6 +190,8 @@ export default function OpeningScreen({ fontsLoaded, onComplete }: OpeningScreen
                 accessibilityLabel="Password"
                 autoComplete="password"
                 editable={!submitting}
+                label="Password"
+                labelBackgroundColor={colors.bg}
                 onChangeText={setPassword}
                 placeholder="Your password"
                 secureTextEntry
@@ -206,18 +226,18 @@ export default function OpeningScreen({ fontsLoaded, onComplete }: OpeningScreen
                   { opacity: pressed || submitting ? 0.7 : 1 },
                 ]}
               >
-                <Text style={[buttonLabelStyle(16), { color: OPENING_TEXT_COLOR }]}>Skip login</Text>
+                <Text style={[buttonLabelStyle(16), { color: colors.text }]}>Skip Sign-in</Text>
               </Pressable>
             </View>
 
             <View style={styles.footer}>
-              <Text style={styles.footerText}>New to {APP_NAME}? </Text>
+              <Text style={[styles.footerText, { color: colors.textSecondary }]}>New to {APP_NAME}? </Text>
               <Pressable
                 accessibilityRole="link"
                 disabled={submitting}
                 onPress={handleCreateAccount}
               >
-                <Text style={styles.footerLink}>Create an account</Text>
+                <Text style={[styles.footerLink, { color: colors.accent }]}>Create an account</Text>
               </Pressable>
             </View>
           </View>
@@ -232,7 +252,6 @@ export default function OpeningScreen({ fontsLoaded, onComplete }: OpeningScreen
 const styles = StyleSheet.create({
   screen: {
     alignItems: 'center',
-    backgroundColor: SPLASH_BACKGROUND_COLOR,
     overflow: 'hidden',
   },
   frame: {
@@ -240,11 +259,13 @@ const styles = StyleSheet.create({
     maxWidth: '100%',
     overflow: 'hidden',
   },
-  dogContainer: {
+  imageContainer: {
+    alignItems: 'center',
+    left: 0,
     position: 'absolute',
   },
-  dogImage: {
-    aspectRatio: OPENING_DOG_ASPECT_RATIO,
+  openingImage: {
+    aspectRatio: OPENING_IMAGE_ASPECT_RATIO,
     height: undefined,
     width: '100%',
   },
@@ -265,14 +286,12 @@ const styles = StyleSheet.create({
     paddingTop: 40,
   },
   welcomeBack: {
-    color: OPENING_TEXT_COLOR,
     fontFamily: 'Fraunces_400Regular',
     fontSize: 28,
     lineHeight: 36,
     textAlign: 'center',
   },
   welcomeName: {
-    color: OPENING_TEXT_COLOR,
     fontFamily: 'Fraunces_600SemiBold',
     fontSize: 52,
     lineHeight: 60,
@@ -284,7 +303,6 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   loginTitle: {
-    color: OPENING_TEXT_COLOR,
     fontFamily: 'Fraunces_600SemiBold',
     fontSize: 32,
     lineHeight: 40,
@@ -292,7 +310,6 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   loginSubtitle: {
-    color: OPENING_TEXT_MUTED,
     fontFamily: 'NunitoSans_400Regular',
     fontSize: 16,
     lineHeight: 24,
@@ -324,12 +341,10 @@ const styles = StyleSheet.create({
     marginTop: 24,
   },
   footerText: {
-    color: OPENING_TEXT_MUTED,
     fontFamily: 'NunitoSans_400Regular',
     fontSize: 15,
   },
   footerLink: {
-    color: ACCENT_COLOR,
     fontFamily: 'NunitoSans_600SemiBold',
     fontSize: 15,
   },

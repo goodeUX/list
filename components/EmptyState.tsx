@@ -11,8 +11,10 @@ import { MaterialIcons } from '@expo/vector-icons';
 import { useTheme } from '@/contexts/ThemeContext';
 import { buttonLabelStyle, buttonLayoutStyle } from '@/lib/buttonStyles';
 
-const listEmptyStateImage =
-  require('../assets/images/listEmptyState.png') as ImageSourcePropType;
+const lightEmptyStateImage =
+  require('../assets/images/empty-state-light.png') as ImageSourcePropType;
+const darkEmptyStateImage =
+  require('../assets/images/empty-state-dark.png') as ImageSourcePropType;
 
 const EMPTY_STATE_OFFSET_Y = -100;
 
@@ -22,10 +24,12 @@ type EmptyStateProps = {
 };
 
 export default function EmptyState({
-  title = 'No lists yet',
+  title = 'Nothing to see here',
   onCreateList,
 }: EmptyStateProps) {
-  const { colors, radii, spacing } = useTheme();
+  const { colors, colorScheme, radii, spacing } = useTheme();
+  const emptyStateImage =
+    colorScheme === 'dark' ? darkEmptyStateImage : lightEmptyStateImage;
 
   return (
     <View
@@ -41,7 +45,7 @@ export default function EmptyState({
       <Image
           accessibilityIgnoresInvertColors
           resizeMode="contain"
-          source={listEmptyStateImage}
+          source={emptyStateImage}
           style={[styles.illustration, { marginBottom: spacing.xl }]}
         />
         <Text style={[styles.title, { color: colors.text }]}>{title}</Text>

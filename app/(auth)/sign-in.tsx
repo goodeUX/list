@@ -17,21 +17,15 @@ import ThemedTextInput from '@/components/ThemedTextInput';
 import { getAuthErrorMessage, useAuth } from '@/contexts/AuthContext';
 import { useTheme } from '@/contexts/ThemeContext';
 import { APP_NAME } from '@/lib/appName';
+import { buildAuthHref, parseAuthRedirect } from '@/lib/authRedirect';
 import { buttonLabelStyle, buttonLayoutStyle } from '@/lib/buttonStyles';
 
-function navigateAfterAuth(redirect?: string) {
-  router.replace(
-    typeof redirect === 'string' && redirect.startsWith('/')
-      ? (redirect as '/')
-      : '/',
-  );
-}
+import { navigateAfterSignIn } from '@/lib/postAuthNavigation';
 
 export default function SignInScreen() {
   const { colors, radii, spacing } = useTheme();
   const { redirect } = useLocalSearchParams<{ redirect?: string }>();
-  const resolvedRedirect =
-    typeof redirect === 'string' && redirect.startsWith('/') ? redirect : undefined;
+  const resolvedRedirect = parseAuthRedirect(redirect);
   const { signIn } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -49,7 +43,7 @@ export default function SignInScreen() {
     setSubmitting(true);
     try {
       await signIn(email, password);
-      navigateAfterAuth(resolvedRedirect);
+      await navigateAfterSignIn(resolvedRedirect);
     } catch (err) {
       setError(getAuthErrorMessage(err));
     } finally {
@@ -119,6 +113,7 @@ export default function SignInScreen() {
               autoCorrect={false}
               editable={!submitting}
               keyboardType="email-address"
+              label="Email"
               onChangeText={setEmail}
               placeholder="you@example.com"
               textContentType="emailAddress"
@@ -129,6 +124,7 @@ export default function SignInScreen() {
               accessibilityLabel="Password"
               autoComplete="password"
               editable={!submitting}
+              label="Password"
               onChangeText={setPassword}
               placeholder="Your password"
               secureTextEntry
@@ -170,7 +166,7 @@ export default function SignInScreen() {
             <Text style={[styles.footerText, { color: colors.textSecondary }]}>
               New to {APP_NAME}?{' '}
             </Text>
-            <Link href="/(auth)/sign-up" asChild>
+            <Link href={buildAuthHref('sign-up', resolvedRedirect)} asChild>
               <Pressable disabled={submitting}>
                 <Text style={[styles.link, { color: colors.accent }]}>
                   Create an account

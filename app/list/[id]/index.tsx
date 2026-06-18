@@ -33,7 +33,6 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useItemHistory } from '@/hooks/useItemHistory';
 import { useListItems } from '@/hooks/useListItems';
-import { usePresence } from '@/hooks/usePresence';
 import { useChildSlideTransition } from '@/hooks/useSlideTransition';
 import { db } from '@/lib/firebase';
 import { handleFirestoreListenerError } from '@/lib/firestoreListenerErrors';
@@ -47,9 +46,8 @@ import {
   ITEM_NAME_MAX_LENGTH,
   limitItemNameLength,
 } from '@/lib/itemName';
-import { deleteListById, setListMoveDoneToBottom, updateListDetails } from '@/lib/listMutations';
+import { deleteListById, leaveListById, setListMoveDoneToBottom, updateListDetails } from '@/lib/listMutations';
 import { consumePendingAddInputFocus } from '@/lib/pendingAddInputFocus';
-import { shareListInvite } from '@/lib/shareListInvite';
 import { SLIDE_IN_MS } from '@/lib/slideTransition';
 import type { ListItem } from '@/lib/types';
 
@@ -57,8 +55,10 @@ const LIST_ITEMS_FADE_MS = 500;
 const LIST_ITEMS_FADE_EASING = Easing.bezier(0, 0, 0.58, 1);
 
 const ADD_SUBMIT_BUTTON_SIZE = 40;
-const listEmptyStateImage =
-  require('../../../assets/images/listEmptyState2.png') as ImageSourcePropType;
+const lightListEmptyStateImage =
+  require('../../../assets/images/bowl-red.png') as ImageSourcePropType;
+const darkListEmptyStateImage =
+  require('../../../assets/images/bowl-blue.png') as ImageSourcePropType;
 const ADD_INPUT_ROW_NATIVE_ID = 'list-add-input-row';
 
 export default function ListDetailScreen() {
@@ -74,7 +74,7 @@ export default function ListDetailScreen() {
   const shouldFocusAddInput = params.focusAdd === '1';
   const cachedList = listId ? getCachedLocalList(listId) : null;
   const { user } = useAuth();
-  const { colors, radii, spacing } = useTheme();
+  const { colors, colorScheme, radii, spacing } = useTheme();
   const insets = useSafeAreaInsets();
   const [listName, setListName] = useState(paramName || cachedList?.name || '');
   const [listEmoji, setListEmoji] = useState(paramEmoji || cachedList?.emoji || '📋');
@@ -90,7 +90,6 @@ export default function ListDetailScreen() {
     useChildSlideTransition({ ready: isSlideReady });
   const listOpacity = useSharedValue(0);
   const { recordItemUsage } = useItemHistory();
-  const { activeUsers } = usePresence(usesCloudListData(user, listId) ? listId : undefined);
   const [newItemName, setNewItemName] = useState('');
   const [isAddInputFocused, setIsAddInputFocused] = useState(false);
   const [listOptionsVisible, setListOptionsVisible] = useState(false);
@@ -344,29 +343,17 @@ export default function ListDetailScreen() {
     return unsubscribe;
   }, [listId, user]);
 
-  const presenceLabel = useMemo(() => {
-    if (activeUsers.length === 0) {
-      return null;
-    }
-    if (activeUsers.length === 1) {
-      return `${activeUsers[0].displayName} is editing`;
-    }
-    return `${activeUsers.length} people editing`;
-  }, [activeUsers]);
-
   const displayListName = listName || paramName || 'List';
 
   const handleShare = () => {
     if (!user) {
-      router.push('/(auth)/sign-in');
+      router.push({
+        pathname: '/(auth)/sign-in',
+        params: listId ? { redirect: `/list/${listId}/share` } : {},
+      });
       return;
     }
     if (!listId) {
-      return;
-    }
-
-    if (Platform.OS !== 'web') {
-      void shareListInvite(listId, displayListName);
       return;
     }
 
@@ -380,6 +367,12 @@ export default function ListDetailScreen() {
   };
 
   const canDeleteList = !user || listOwnerId === 'local' || user.uid === listOwnerId;
+  const canLeaveList =
+    Boolean(user) &&
+    Boolean(listId) &&
+    usesCloudListData(user, listId) &&
+    listOwnerId !== 'local' &&
+    user.uid !== listOwnerId;
 
   const confirmDestructiveAction = (
     title: string,
@@ -441,6 +434,25 @@ export default function ListDetailScreen() {
       () => {
         void clearAllItems().catch(() => {
           Alert.alert('Could not clear list', 'Please try again.');
+        });
+      },
+    );
+  };
+
+  const handleLeaveList = () => {
+    if (!listId || !user) {
+      return;
+    }
+
+    confirmDestructiveAction(
+      'Leave list',
+      `Remove “${displayListName}” from your lists? The list will stay available for other collaborators.`,
+      'Leave',
+      () => {
+        const idToLeave = listId;
+        goBack();
+        void leaveListById(idToLeave, user).catch(() => {
+          Alert.alert('Could not leave list', 'Please try again.');
         });
       },
     );
@@ -551,6 +563,7 @@ export default function ListDetailScreen() {
 
   const canSubmitNewItem = Boolean(newItemName.trim());
   const showSubmitButton = isAddInputFocused && newItemName.length > 0;
+  const lockListItems = Platform.OS !== 'web' && isAddInputFocused;
 
   const handleInputFocus = () => {
     setIsAddInputFocused(true);
@@ -578,6 +591,7 @@ export default function ListDetailScreen() {
   const renderStaticListItem = useCallback(
     ({ item }: { item: ListItem }) => (
       <ListItemRow
+        disabled={lockListItems}
         item={item}
         onPress={() => {
           blurAddInput();
@@ -595,7 +609,7 @@ export default function ListDetailScreen() {
         }}
       />
     ),
-    [blurAddInput, listId, toggleItem],
+    [blurAddInput, listId, lockListItems, toggleItem],
   );
   const listSections = useMemo(() => {
     if (!moveDoneToBottom) {
@@ -676,7 +690,7 @@ export default function ListDetailScreen() {
       <Image
         accessibilityIgnoresInvertColors
         resizeMode="contain"
-        source={listEmptyStateImage}
+        source={colorScheme === 'dark' ? darkListEmptyStateImage : lightListEmptyStateImage}
         style={styles.emptyListImage}
       />
       <Text style={[styles.emptyText, { color: colors.textSecondary }]}>
@@ -727,6 +741,11 @@ export default function ListDetailScreen() {
           accessibilityRole="button"
           hitSlop={8}
           onPress={() => {
+            if (listOptionsVisible) {
+              setListOptionsVisible(false);
+              return;
+            }
+
             blurAddInput();
             goBack();
           }}
@@ -744,7 +763,14 @@ export default function ListDetailScreen() {
         <Pressable
           accessibilityLabel="Rename list"
           accessibilityRole="button"
-          onPress={handleRenameList}
+          onPress={() => {
+            if (listOptionsVisible) {
+              setListOptionsVisible(false);
+              return;
+            }
+
+            handleRenameList();
+          }}
           style={({ pressed }) => [
             styles.titleBlock,
             { opacity: pressed ? 0.7 : 1 },
@@ -761,16 +787,6 @@ export default function ListDetailScreen() {
             >
               {listName || paramName || 'List'}
             </Text>
-            {presenceLabel ? (
-              <View style={styles.presenceRow}>
-                <View
-                  style={[styles.presenceDot, { backgroundColor: colors.success }]}
-                />
-                <Text style={[styles.presenceText, { color: colors.textSecondary }]}>
-                  {presenceLabel}
-                </Text>
-              </View>
-            ) : null}
           </View>
         </Pressable>
 
@@ -779,13 +795,24 @@ export default function ListDetailScreen() {
           onClearList={handleClearList}
           onDeleteList={handleDeleteList}
           onInvite={handleShare}
+          onLeaveList={handleLeaveList}
           onMoveDoneToBottomChange={handleMoveDoneToBottomChange}
           onOpen={blurAddInput}
           onVisibleChange={setListOptionsVisible}
           showDeleteList={canDeleteList}
+          showLeaveList={canLeaveList}
           visible={listOptionsVisible}
         />
       </View>
+
+      {listOptionsVisible ? (
+        <Pressable
+          accessibilityLabel="Close list options"
+          accessibilityRole="button"
+          onPress={() => setListOptionsVisible(false)}
+          style={styles.menuBackdrop}
+        />
+      ) : null}
 
       <Pressable
         nativeID={ADD_INPUT_ROW_NATIVE_ID}
@@ -941,6 +968,11 @@ const styles = StyleSheet.create({
     overflow: 'visible',
     zIndex: 10,
   },
+  menuBackdrop: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'transparent',
+    zIndex: 5,
+  },
   shareButton: {
     alignItems: 'center',
     borderRadius: 22,
@@ -968,21 +1000,6 @@ const styles = StyleSheet.create({
     fontFamily: 'Fraunces_600SemiBold',
     fontSize: 24,
     lineHeight: 30,
-  },
-  presenceRow: {
-    alignItems: 'center',
-    flexDirection: 'row',
-    gap: 6,
-  },
-  presenceDot: {
-    borderRadius: 4,
-    height: 8,
-    width: 8,
-  },
-  presenceText: {
-    fontFamily: 'NunitoSans_400Regular',
-    fontSize: 13,
-    lineHeight: 18,
   },
   charCounter: {
     flexShrink: 0,

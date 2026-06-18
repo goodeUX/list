@@ -1,6 +1,6 @@
 import * as Clipboard from 'expo-clipboard';
 import * as Linking from 'expo-linking';
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -10,20 +10,13 @@ import {
   Text,
   View,
 } from 'react-native';
-import { doc, getDoc, onSnapshot } from 'firebase/firestore';
 
 import { useAuth } from '@/contexts/AuthContext';
 import { useTheme } from '@/contexts/ThemeContext';
+import { useListCollaborators } from '@/hooks/useListCollaborators';
 import { buttonLabelStyle, buttonLayoutStyle } from '@/lib/buttonStyles';
-import { db } from '@/lib/firebase';
-import { handleFirestoreListenerError } from '@/lib/firestoreListenerErrors';
 import { getInviteUrl } from '@/lib/inviteUrl';
 import { shareListInvite } from '@/lib/shareListInvite';
-
-type Collaborator = {
-  uid: string;
-  displayName: string;
-};
 
 type ShareListContentProps = {
   listId: string;
@@ -36,60 +29,9 @@ export default function ShareListContent({
 }: ShareListContentProps) {
   const { colors, radii, spacing } = useTheme();
   const { user } = useAuth();
-  const [memberIds, setMemberIds] = useState<string[]>([]);
-  const [collaborators, setCollaborators] = useState<Collaborator[]>([]);
-  const [loadingMembers, setLoadingMembers] = useState(true);
+  const { collaborators, loading: loadingMembers } = useListCollaborators(listId);
 
   const inviteUrl = useMemo(() => getInviteUrl(listId), [listId]);
-
-  useEffect(() => {
-    if (!listId) {
-      return;
-    }
-
-    const unsubscribe = onSnapshot(
-      doc(db, 'lists', listId),
-      (snapshot) => {
-        if (!snapshot.exists()) {
-          setMemberIds([]);
-          return;
-        }
-        setMemberIds((snapshot.data().memberIds as string[]) ?? []);
-      },
-      handleFirestoreListenerError,
-    );
-
-    return unsubscribe;
-  }, [listId]);
-
-  useEffect(() => {
-    let active = true;
-    setLoadingMembers(true);
-
-    const loadCollaborators = async () => {
-      const results = await Promise.all(
-        memberIds.map(async (uid) => {
-          const snapshot = await getDoc(doc(db, 'users', uid));
-          const data = snapshot.data();
-          return {
-            uid,
-            displayName: (data?.displayName as string) || (data?.email as string) || 'Member',
-          };
-        }),
-      );
-
-      if (active) {
-        setCollaborators(results);
-        setLoadingMembers(false);
-      }
-    };
-
-    void loadCollaborators();
-
-    return () => {
-      active = false;
-    };
-  }, [memberIds]);
 
   const handleCopyLink = async () => {
     try {
@@ -112,54 +54,52 @@ export default function ShareListContent({
     void shareListInvite(listId, listName);
   };
 
-  if (Platform.OS !== 'web') {
-    return null;
-  }
-
   return (
     <View style={{ gap: spacing.md }}>
       <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
         Invite someone to collaborate on “{listName}”
       </Text>
 
-      <View style={{ gap: spacing.xs }}>
-        <Text style={[styles.sectionLabel, { color: colors.textSecondary }]}>
-          Invite link
-        </Text>
-        <Pressable
-          accessibilityRole="link"
-          onPress={handleOpenLink}
-          style={({ pressed }) => [
-            styles.linkBox,
-            {
-              backgroundColor: colors.surface,
-              borderColor: colors.border,
-              borderRadius: radii.item,
-              opacity: pressed ? 0.85 : 1,
-            },
-          ]}
-        >
-          <Text selectable style={[styles.linkText, { color: colors.accent }]}>
-            {inviteUrl}
+      {Platform.OS === 'web' ? (
+        <View style={{ gap: spacing.xs }}>
+          <Text style={[styles.sectionLabel, { color: colors.textSecondary }]}>
+            Invite link
           </Text>
-        </Pressable>
-        <Pressable
-          onPress={handleCopyLink}
-          style={({ pressed }) => [
-            styles.secondaryButton,
-            buttonLayoutStyle,
-            {
-              backgroundColor: colors.surfaceMuted,
-              borderRadius: radii.item,
-              opacity: pressed ? 0.85 : 1,
-            },
-          ]}
-        >
-          <Text style={[buttonLabelStyle(15), { color: colors.text }]}>
-            Copy link
-          </Text>
-        </Pressable>
-      </View>
+          <Pressable
+            accessibilityRole="link"
+            onPress={handleOpenLink}
+            style={({ pressed }) => [
+              styles.linkBox,
+              {
+                backgroundColor: colors.surface,
+                borderColor: colors.border,
+                borderRadius: radii.item,
+                opacity: pressed ? 0.85 : 1,
+              },
+            ]}
+          >
+            <Text selectable style={[styles.linkText, { color: colors.accent }]}>
+              {inviteUrl}
+            </Text>
+          </Pressable>
+          <Pressable
+            onPress={handleCopyLink}
+            style={({ pressed }) => [
+              styles.secondaryButton,
+              buttonLayoutStyle,
+              {
+                backgroundColor: colors.surfaceMuted,
+                borderRadius: radii.item,
+                opacity: pressed ? 0.85 : 1,
+              },
+            ]}
+          >
+            <Text style={[buttonLabelStyle(15), { color: colors.text }]}>
+              Copy link
+            </Text>
+          </Pressable>
+        </View>
+      ) : null}
 
       <Pressable
         onPress={handleShare}
@@ -174,7 +114,7 @@ export default function ShareListContent({
         ]}
       >
         <Text style={[buttonLabelStyle(15), { color: colors.surface }]}>
-          Invite someone
+          {Platform.OS === 'web' ? 'Invite someone' : 'Share invite link'}
         </Text>
       </Pressable>
 
@@ -185,30 +125,46 @@ export default function ShareListContent({
         {loadingMembers ? (
           <ActivityIndicator color={colors.accent} />
         ) : (
-          collaborators.map((collaborator) => (
-            <View key={collaborator.uid} style={styles.collaboratorRow}>
-              <View
-                style={[
-                  styles.avatar,
-                  { backgroundColor: colors.accentSoft },
-                ]}
-              >
-                <Text style={[styles.avatarText, { color: colors.text }]}>
-                  {collaborator.displayName.charAt(0).toUpperCase()}
-                </Text>
+          collaborators.map((collaborator) => {
+            const showEmail =
+              collaborator.email &&
+              collaborator.email.toLowerCase() !==
+                collaborator.displayName.toLowerCase();
+
+            return (
+              <View key={collaborator.uid} style={styles.collaboratorRow}>
+                <View
+                  style={[
+                    styles.avatar,
+                    { backgroundColor: colors.accentSoft },
+                  ]}
+                >
+                  <Text style={[styles.avatarText, { color: colors.text }]}>
+                    {collaborator.displayName.charAt(0).toUpperCase()}
+                  </Text>
+                </View>
+                <View style={styles.collaboratorDetails}>
+                  <Text style={[styles.collaboratorName, { color: colors.text }]}>
+                    {collaborator.displayName}
+                    {collaborator.uid === user?.uid ? ' (you)' : ''}
+                  </Text>
+                  {showEmail ? (
+                    <Text
+                      style={[styles.collaboratorEmail, { color: colors.textSecondary }]}
+                    >
+                      {collaborator.email}
+                    </Text>
+                  ) : null}
+                </View>
+                <View
+                  style={[
+                    styles.onlineDot,
+                    { backgroundColor: colors.success },
+                  ]}
+                />
               </View>
-              <Text style={[styles.collaboratorName, { color: colors.text }]}>
-                {collaborator.displayName}
-                {collaborator.uid === user?.uid ? ' (you)' : ''}
-              </Text>
-              <View
-                style={[
-                  styles.onlineDot,
-                  { backgroundColor: colors.success },
-                ]}
-              />
-            </View>
-          ))
+            );
+          })
         )}
       </View>
     </View>
@@ -260,11 +216,19 @@ const styles = StyleSheet.create({
     fontFamily: 'NunitoSans_600SemiBold',
     fontSize: 14,
   },
-  collaboratorName: {
+  collaboratorDetails: {
     flex: 1,
+    gap: 2,
+  },
+  collaboratorName: {
     fontFamily: 'NunitoSans_400Regular',
     fontSize: 15,
     lineHeight: 20,
+  },
+  collaboratorEmail: {
+    fontFamily: 'NunitoSans_400Regular',
+    fontSize: 13,
+    lineHeight: 18,
   },
   onlineDot: {
     borderRadius: 4,

@@ -1,8 +1,10 @@
 import type { User } from 'firebase/auth';
 import {
+  arrayRemove,
   collection,
   deleteDoc,
   doc,
+  getDoc,
   getDocs,
   serverTimestamp,
   updateDoc,
@@ -37,6 +39,39 @@ export async function deleteListById(
     itemsSnapshot.docs.map((itemDoc) => deleteDoc(itemDoc.ref)),
   );
   await deleteDoc(doc(db, 'lists', listId));
+}
+
+export async function leaveListById(
+  listId: string,
+  user: User | null,
+): Promise<void> {
+  if (!listId || !user || !usesCloudListData(user, listId)) {
+    return;
+  }
+
+  const listRef = doc(db, 'lists', listId);
+  const snapshot = await getDoc(listRef);
+
+  if (!snapshot.exists()) {
+    throw new Error('List not found');
+  }
+
+  const data = snapshot.data();
+  const ownerId = (data.ownerId as string) ?? '';
+  const memberIds = (data.memberIds as string[]) ?? [];
+
+  if (ownerId === user.uid) {
+    throw new Error('List owner cannot leave');
+  }
+
+  if (!memberIds.includes(user.uid)) {
+    return;
+  }
+
+  await updateDoc(listRef, {
+    memberIds: arrayRemove(user.uid),
+    updatedAt: serverTimestamp(),
+  });
 }
 
 export async function clearListItemsById(

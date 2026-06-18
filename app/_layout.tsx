@@ -8,6 +8,7 @@ import {
   NunitoSans_600SemiBold,
   NunitoSans_700Bold,
 } from '@expo-google-fonts/nunito-sans';
+import { MaterialIcons } from '@expo/vector-icons';
 import { useFonts } from 'expo-font';
 import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
@@ -33,6 +34,8 @@ import WebShell from '@/components/WebShell';
 import OpeningScreen from '@/components/OpeningScreen';
 import { AuthProvider } from '@/contexts/AuthContext';
 import { ThemeProvider, useTheme } from '@/contexts/ThemeContext';
+import { useShouldSkipOpening } from '@/hooks/useShouldSkipOpening';
+import { useResumePendingInvite } from '@/hooks/useResumePendingInvite';
 import {
   OPENING_DISPLAY_MS,
   OPENING_ZOOM_MS,
@@ -51,6 +54,7 @@ export const unstable_settings = {
 const OPENING_ZOOM_FROM = 0.9;
 
 export default function RootLayout() {
+  const skipOpening = useShouldSkipOpening();
   const [loaded, error] = useFonts({
     Fraunces_400Regular,
     Fraunces_600SemiBold,
@@ -59,10 +63,11 @@ export default function RootLayout() {
     NunitoSans_600SemiBold,
     NunitoSans_700Bold,
     MaterialSymbolsOutlined: require('../assets/fonts/MaterialSymbolsOutlined.ttf'),
+    ...MaterialIcons.font,
   });
-  const [openingComplete, setOpeningComplete] = useState(false);
-  const [showOpening, setShowOpening] = useState(true);
-  const [minDisplayElapsed, setMinDisplayElapsed] = useState(false);
+  const [openingComplete, setOpeningComplete] = useState(skipOpening);
+  const [showOpening, setShowOpening] = useState(!skipOpening);
+  const [minDisplayElapsed, setMinDisplayElapsed] = useState(skipOpening);
   const hasStartedTransition = useRef(false);
   const mainScale = useSharedValue(OPENING_ZOOM_FROM);
   const mainOpacity = useSharedValue(0);
@@ -98,9 +103,23 @@ export default function RootLayout() {
   }, []);
 
   useEffect(() => {
+    if (!skipOpening) {
+      return;
+    }
+
+    setShowOpening(false);
+    setOpeningComplete(true);
+    setMinDisplayElapsed(true);
+  }, [skipOpening]);
+
+  useEffect(() => {
+    if (skipOpening) {
+      return;
+    }
+
     const timer = setTimeout(() => setMinDisplayElapsed(true), OPENING_DISPLAY_MS);
     return () => clearTimeout(timer);
-  }, []);
+  }, [skipOpening]);
 
   useEffect(() => {
     if (!openingReady || hasStartedTransition.current) {
@@ -162,6 +181,7 @@ export default function RootLayout() {
 
 function RootLayoutNav() {
   const { colorScheme, colors } = useTheme();
+  useResumePendingInvite();
 
   const navigationTheme = useMemo(() => {
     const base = colorScheme === 'dark' ? DarkTheme : DefaultTheme;

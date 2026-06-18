@@ -1,7 +1,15 @@
 import { router } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
 import type { ComponentProps } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import {
+  Image,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+  type ImageSourcePropType,
+} from 'react-native';
 import Animated from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -14,6 +22,10 @@ import type { ThemePreference } from '@/lib/theme';
 import { buttonLabelStyle, buttonLayoutStyle } from '@/lib/buttonStyles';
 
 const THEME_OPTION_ICON_SIZE = 18;
+const introLightImage =
+  require('../../assets/images/intro-light.png') as ImageSourcePropType;
+const introDarkImage =
+  require('../../assets/images/intro-dark.png') as ImageSourcePropType;
 
 const THEME_OPTIONS: {
   value: ThemePreference;
@@ -26,7 +38,7 @@ const THEME_OPTIONS: {
 ];
 
 export default function SettingsScreen() {
-  const { colors, radii, spacing, preference, setPreference } = useTheme();
+  const { colors, colorScheme, radii, spacing, preference, setPreference } = useTheme();
   const { user, signOut } = useAuth();
   const insets = useSafeAreaInsets();
   const { animatedStyle, goBack, isEnabled: slideTransitionEnabled } =
@@ -51,6 +63,7 @@ export default function SettingsScreen() {
 
   const accountLabel = user?.displayName || user?.email || '';
   const accountInitial = accountLabel.trim().charAt(0).toUpperCase() || '?';
+  const introImage = colorScheme === 'dark' ? introDarkImage : introLightImage;
 
   return (
     <Animated.View
@@ -250,6 +263,15 @@ export default function SettingsScreen() {
             </View>
           )}
         </View>
+
+        <View style={styles.introImageWrap}>
+          <Image
+            accessibilityIgnoresInvertColors
+            resizeMode="contain"
+            source={introImage}
+            style={styles.introImage}
+          />
+        </View>
       </ScrollView>
 
       {user ? (
@@ -366,6 +388,16 @@ const styles = StyleSheet.create({
     width: 40,
   },
   accountActions: {},
+  introImageWrap: {
+    alignItems: 'center',
+    flexGrow: 1,
+    justifyContent: 'center',
+    minHeight: 260,
+  },
+  introImage: {
+    height: 240,
+    width: 240,
+  },
   bottomBar: {
     borderTopWidth: StyleSheet.hairlineWidth,
   },

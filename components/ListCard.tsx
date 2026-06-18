@@ -1,3 +1,4 @@
+import { MaterialIcons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
@@ -15,8 +16,7 @@ export default function ListCard({ list, countsRefreshKey = 0 }: ListCardProps) 
 
   const { doneCount, totalCount } = useListItemCounts(list.id, countsRefreshKey);
   const incompleteCount = totalCount - doneCount;
-  const collaboratorCount = list.memberIds.length;
-  const isShared = collaboratorCount > 1;
+  const isShared = list.memberIds.length > 1;
 
   const handlePress = () => {
     router.push({
@@ -46,31 +46,27 @@ export default function ListCard({ list, countsRefreshKey = 0 }: ListCardProps) 
         >
           {list.name}
         </Text>
-        <View
-          style={[
-            styles.itemCountBadge,
-            {
-              backgroundColor: colors.surfaceMuted,
-              borderRadius: radii.checkbox,
-            },
-          ]}
-        >
-          <Text style={[styles.itemCount, { color: colors.textSecondary }]}>
-            {incompleteCount}
-          </Text>
+        <View style={styles.trailingMeta}>
+          {isShared ? (
+            <View accessibilityLabel="Shared list" style={styles.groupIcon}>
+              <MaterialIcons color={colors.textSecondary} name="group" size={16} />
+            </View>
+          ) : null}
+          <View
+            style={[
+              styles.itemCountBadge,
+              {
+                backgroundColor: colors.surfaceMuted,
+                borderRadius: radii.checkbox,
+              },
+            ]}
+          >
+            <Text style={[styles.itemCount, { color: colors.textSecondary }]}>
+              {incompleteCount}
+            </Text>
+          </View>
         </View>
       </View>
-
-      {isShared ? (
-        <Text
-          style={[
-            styles.collaborators,
-            { color: colors.textSecondary, marginTop: spacing.sm },
-          ]}
-        >
-          {collaboratorCount} collaborators
-        </Text>
-      ) : null}
     </Pressable>
   );
 }
@@ -93,6 +89,15 @@ const styles = StyleSheet.create({
     fontSize: 17,
     lineHeight: 22,
   },
+  trailingMeta: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: 6,
+  },
+  groupIcon: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   itemCountBadge: {
     alignItems: 'center',
     height: 26,
@@ -104,10 +109,5 @@ const styles = StyleSheet.create({
     fontSize: 13,
     lineHeight: 16,
     textAlign: 'center',
-  },
-  collaborators: {
-    fontFamily: 'NunitoSans_400Regular',
-    fontSize: 12,
-    lineHeight: 16,
   },
 });

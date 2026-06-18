@@ -1,6 +1,6 @@
 import * as Linking from 'expo-linking';
 
-function getAppWebOrigin(): string | null {
+export function getAppWebOrigin(): string | null {
   const configured = process.env.EXPO_PUBLIC_APP_WEB_URL?.trim().replace(/\/$/, '');
   if (configured) {
     return configured;

@@ -2,7 +2,9 @@ import { forwardRef, useCallback, useLayoutEffect, useRef, useState } from 'reac
 import {
   Platform,
   StyleSheet,
+  Text,
   TextInput,
+  View,
   type StyleProp,
   type TextInputProps,
   type TextStyle,
@@ -29,6 +31,8 @@ export function getBorderedInputHeight(
 
 export type ThemedTextInputProps = TextInputProps & {
   invalid?: boolean;
+  label?: string;
+  labelBackgroundColor?: string;
   variant?: 'bordered' | 'plain';
 };
 
@@ -81,10 +85,13 @@ const ThemedTextInput = forwardRef<TextInput, ThemedTextInputProps>(
     {
       autoFocus = false,
       invalid = false,
+      label,
+      labelBackgroundColor,
       variant = 'bordered',
       style,
       onFocus,
       onBlur,
+      placeholder,
       placeholderTextColor,
       ...props
     },
@@ -127,6 +134,14 @@ const ThemedTextInput = forwardRef<TextInput, ThemedTextInputProps>(
 
     const borderColor = getThemedInputBorderColor(colors, focused, invalid);
     const backgroundColor = getThemedInputBackgroundColor(colors, focused);
+    const hasValue =
+      props.value != null
+        ? String(props.value).length > 0
+        : props.defaultValue != null
+          ? String(props.defaultValue).length > 0
+          : false;
+    const isLabelFloating = focused || hasValue;
+    const labelColor = isLabelFloating ? colors.text : colors.textSecondary;
 
     const themedStyle: StyleProp<TextStyle> = [
       styles.base,
@@ -144,13 +159,14 @@ const ThemedTextInput = forwardRef<TextInput, ThemedTextInputProps>(
       style,
     ];
 
-    return (
+    const input = (
       <TextInput
         ref={setInputRef}
         autoFocus={autoFocus}
         cursorColor={colors.accent}
         onBlur={handleBlur}
         onFocus={handleFocus}
+        placeholder={label ? undefined : placeholder}
         placeholderTextColor={placeholderTextColor ?? colors.textSecondary}
         selectionColor={colors.accentSoft}
         showSoftInputOnFocus
@@ -158,6 +174,38 @@ const ThemedTextInput = forwardRef<TextInput, ThemedTextInputProps>(
         underlineColorAndroid="transparent"
         {...props}
       />
+    );
+
+    if (!label || variant !== 'bordered') {
+      return input;
+    }
+
+    return (
+      <View style={styles.floatingLabelContainer}>
+        <View
+          pointerEvents="none"
+          style={[
+            styles.floatingLabel,
+            isLabelFloating ? styles.floatingLabelRaised : styles.floatingLabelResting,
+            {
+              backgroundColor: isLabelFloating
+                ? (labelBackgroundColor ?? colors.bg)
+                : 'transparent',
+            },
+          ]}
+        >
+          <Text
+            style={[
+              styles.floatingLabelText,
+              isLabelFloating ? styles.floatingLabelTextRaised : styles.floatingLabelTextResting,
+              { color: labelColor },
+            ]}
+          >
+            {label}
+          </Text>
+        </View>
+        {input}
+      </View>
     );
   },
 );
@@ -173,6 +221,32 @@ const styles = StyleSheet.create({
     borderWidth: BORDERED_INPUT_BORDER_WIDTH,
     paddingHorizontal: 16,
     paddingVertical: BORDERED_INPUT_PADDING_VERTICAL,
+  },
+  floatingLabelContainer: {
+    overflow: 'visible',
+  },
+  floatingLabel: {
+    left: 12,
+    paddingHorizontal: 4,
+    position: 'absolute',
+    zIndex: 1,
+  },
+  floatingLabelRaised: {
+    top: -8,
+  },
+  floatingLabelResting: {
+    top: BORDERED_INPUT_PADDING_VERTICAL + BORDERED_INPUT_BORDER_WIDTH,
+  },
+  floatingLabelText: {
+    fontFamily: 'NunitoSans_400Regular',
+  },
+  floatingLabelTextRaised: {
+    fontSize: 12,
+    lineHeight: 16,
+  },
+  floatingLabelTextResting: {
+    fontSize: 16,
+    lineHeight: BORDERED_INPUT_LINE_HEIGHT,
   },
 });
 

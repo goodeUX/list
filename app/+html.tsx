@@ -12,6 +12,12 @@ export default function Root({ children }: { children: ReactNode }) {
         <meta charSet="utf-8" />
         <meta httpEquiv="X-UA-Compatible" content="IE=edge" />
         <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
+        {process.env.EXPO_PUBLIC_IOS_APP_STORE_ID ? (
+          <meta
+            name="apple-itunes-app"
+            content={`app-id=${process.env.EXPO_PUBLIC_IOS_APP_STORE_ID}`}
+          />
+        ) : null}
 
         {/*
           Disable body scrolling on web. This makes ScrollView components work closer to how they do on native.

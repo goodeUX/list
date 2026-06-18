@@ -3,9 +3,15 @@ import { useEffect, useState } from 'react';
 import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import JoinInviteLanding from '@/components/JoinInviteLanding';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTheme } from '@/contexts/ThemeContext';
+import { shouldShowInviteAppLanding } from '@/lib/inviteLanding';
 import { joinList } from '@/lib/joinList';
+import {
+  clearPendingInviteListId,
+  setPendingInviteListId,
+} from '@/lib/pendingInvite';
 
 export default function JoinListScreen() {
   const { listId } = useLocalSearchParams<{ listId: string }>();
@@ -14,9 +20,18 @@ export default function JoinListScreen() {
   const { colors, spacing } = useTheme();
   const [error, setError] = useState<string | null>(null);
   const [joining, setJoining] = useState(false);
+  const [showAppLanding] = useState(() => shouldShowInviteAppLanding());
 
   useEffect(() => {
-    if (authLoading || joining) {
+    if (!resolvedListId) {
+      return;
+    }
+
+    void setPendingInviteListId(resolvedListId);
+  }, [resolvedListId]);
+
+  useEffect(() => {
+    if (authLoading || joining || showAppLanding) {
       return;
     }
 
@@ -37,7 +52,8 @@ export default function JoinListScreen() {
     setError(null);
 
     joinList(resolvedListId, user.uid)
-      .then(() => {
+      .then(async () => {
+        await clearPendingInviteListId();
         router.replace({
           pathname: '/list/[id]',
           params: { id: resolvedListId },
@@ -47,7 +63,15 @@ export default function JoinListScreen() {
         setError('Could not join this list. It may not exist or you may not have access.');
         setJoining(false);
       });
-  }, [authLoading, joining, resolvedListId, user]);
+  }, [authLoading, joining, resolvedListId, showAppLanding, user]);
+
+  if (showAppLanding && resolvedListId) {
+    return (
+      <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.bg }]}>
+        <JoinInviteLanding listId={resolvedListId} />
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.bg }]}>

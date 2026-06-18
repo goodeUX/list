@@ -75,12 +75,14 @@ function CompletedText({
 }
 
 type ListItemRowProps = {
+  disabled?: boolean;
   item: ListItem;
   onToggle: () => void;
   onPress: () => void;
 };
 
 export default function ListItemRow({
+  disabled = false,
   item,
   onToggle,
   onPress,
@@ -104,6 +106,10 @@ export default function ListItemRow({
   }, [item.checked, textOpacity]);
 
   const handleToggle = () => {
+    if (disabled) {
+      return;
+    }
+
     if (!item.checked) {
       playToggleHaptic();
     }
@@ -115,6 +121,8 @@ export default function ListItemRow({
 
   return (
     <Pressable
+      accessibilityState={{ disabled }}
+      disabled={disabled}
       onPress={onPress}
       style={({ pressed }) => [
         styles.row,
@@ -127,7 +135,8 @@ export default function ListItemRow({
       <AnimatedPressable
         accessibilityLabel={item.checked ? 'Mark incomplete' : 'Mark complete'}
         accessibilityRole="checkbox"
-        accessibilityState={{ checked: item.checked }}
+        accessibilityState={{ checked: item.checked, disabled }}
+        disabled={disabled}
         onPress={handleToggle}
         style={[styles.checkboxHitArea, checkboxStyle]}
       >

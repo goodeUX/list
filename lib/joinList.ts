@@ -1,4 +1,4 @@
-import { arrayUnion, doc, getDoc, updateDoc } from 'firebase/firestore';
+import { arrayUnion, doc, getDoc, serverTimestamp, updateDoc } from 'firebase/firestore';
 
 import { db } from '@/lib/firebase';
 
@@ -17,5 +17,6 @@ export async function joinList(listId: string, userId: string): Promise<void> {
 
   await updateDoc(listRef, {
     memberIds: arrayUnion(userId),
+    updatedAt: serverTimestamp(),
   });
 }

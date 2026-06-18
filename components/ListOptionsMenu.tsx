@@ -45,10 +45,12 @@ type ListOptionsMenuProps = {
   visible: boolean;
   onVisibleChange: (visible: boolean) => void;
   showDeleteList: boolean;
+  showLeaveList: boolean;
   moveDoneToBottom: boolean;
   onMoveDoneToBottomChange: (value: boolean) => void;
   onInvite: () => void;
   onClearList: () => void;
+  onLeaveList: () => void;
   onDeleteList: () => void;
   onOpen?: () => void;
 };
@@ -79,10 +81,12 @@ export default function ListOptionsMenu({
   visible,
   onVisibleChange,
   showDeleteList,
+  showLeaveList,
   moveDoneToBottom,
   onMoveDoneToBottomChange,
   onInvite,
   onClearList,
+  onLeaveList,
   onDeleteList,
   onOpen,
 }: ListOptionsMenuProps) {
@@ -129,24 +133,6 @@ export default function ListOptionsMenu({
     });
 
     return () => subscription.remove();
-  }, [closeMenu, visible]);
-
-  useEffect(() => {
-    if (!visible || Platform.OS !== 'web') {
-      return;
-    }
-
-    const handlePointerDown = (event: PointerEvent) => {
-      const menuAnchor = document.getElementById(MENU_NATIVE_ID);
-      if (menuAnchor?.contains(event.target as Node)) {
-        return;
-      }
-
-      closeMenu();
-    };
-
-    document.addEventListener('pointerdown', handlePointerDown);
-    return () => document.removeEventListener('pointerdown', handlePointerDown);
   }, [closeMenu, visible]);
 
   const iconStyle = useAnimatedStyle(() => ({
@@ -244,6 +230,25 @@ export default function ListOptionsMenu({
                 />
                 <Text style={[menuItemTextStyle, { color: colors.text }]}>Clear list</Text>
               </Pressable>
+
+              {showLeaveList ? (
+                <Pressable
+                  onPress={() => {
+                    closeMenu();
+                    onLeaveList();
+                  }}
+                  style={({ pressed }) => [styles.menuItem, { opacity: pressed ? 0.7 : 1 }]}
+                >
+                  <MaterialIcons
+                    color={DESTRUCTIVE_COLOR}
+                    name="logout"
+                    size={MENU_ITEM_ICON_SIZE}
+                  />
+                  <Text style={[menuItemTextStyle, { color: DESTRUCTIVE_COLOR }]}>
+                    Leave list
+                  </Text>
+                </Pressable>
+              ) : null}
 
               {showDeleteList ? (
                 <Pressable
