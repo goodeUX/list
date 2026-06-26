@@ -1,5 +1,5 @@
 import { SymbolView } from 'expo-symbols';
-import { useEffect } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { MaterialIcons } from '@expo/vector-icons';
 import { Platform, Pressable, StyleSheet, View, type TextStyle } from 'react-native';
 import Animated, {
@@ -79,6 +79,9 @@ type ListItemRowProps = {
   item: ListItem;
   onToggle: () => void;
   onPress: () => void;
+  onLongPress?: () => void;
+  isActive?: boolean;
+  dragHandle?: ReactNode;
 };
 
 export default function ListItemRow({
@@ -86,10 +89,14 @@ export default function ListItemRow({
   item,
   onToggle,
   onPress,
+  onLongPress,
+  isActive = false,
+  dragHandle,
 }: ListItemRowProps) {
   const { colors, radii, spacing } = useTheme();
   const checkScale = useSharedValue(1);
   const textOpacity = useSharedValue(item.checked ? COMPLETED_OPACITY : 1);
+  const [hovered, setHovered] = useState(false);
 
   const checkboxStyle = useAnimatedStyle(() => ({
     transform: [{ scale: checkScale.value }],
@@ -122,14 +129,25 @@ export default function ListItemRow({
   return (
     <Pressable
       accessibilityState={{ disabled }}
+      delayLongPress={250}
       disabled={disabled}
+      onHoverIn={() => setHovered(true)}
+      onHoverOut={() => setHovered(false)}
+      onLongPress={onLongPress}
       onPress={onPress}
       style={({ pressed }) => [
         styles.row,
         {
-          opacity: pressed ? 0.72 : 1,
+          opacity: pressed && !isActive ? 0.72 : 1,
           paddingVertical: spacing.sm,
         },
+        isActive
+          ? {
+              backgroundColor: colors.surface,
+              borderRadius: radii.item,
+              paddingHorizontal: spacing.sm,
+            }
+          : null,
       ]}
     >
       <AnimatedPressable
@@ -165,7 +183,7 @@ export default function ListItemRow({
           animatedStyle={completedTextStyle}
           checked={item.checked}
           color={colors.text}
-          numberOfLines={2}
+          numberOfLines={1}
           style={styles.name}
         >
           {formatItemNameForDisplay(item.name)}
@@ -223,6 +241,23 @@ export default function ListItemRow({
           </View>
         ) : null}
       </View>
+
+      {dragHandle ? (
+        <View
+          style={[
+            styles.dragHandle,
+            {
+              opacity: hovered || isActive ? 1 : 0,
+              pointerEvents: hovered || isActive ? 'auto' : 'none',
+            },
+            Platform.OS === 'web'
+              ? ({ transitionDuration: '120ms', transitionProperty: 'opacity' } as object)
+              : null,
+          ]}
+        >
+          {dragHandle}
+        </View>
+      ) : null}
     </Pressable>
   );
 }
@@ -249,6 +284,11 @@ const styles = StyleSheet.create({
   content: {
     flex: 1,
     gap: 4,
+  },
+  dragHandle: {
+    alignItems: 'center',
+    flexShrink: 0,
+    justifyContent: 'center',
   },
   completedTextWrap: {
     alignSelf: 'flex-start',

@@ -4,12 +4,10 @@ import { MaterialIcons } from '@expo/vector-icons';
 import { useCallback, useEffect, useMemo, useRef, useState, type ElementRef } from 'react';
 import {
   Alert,
-  FlatList,
   Image,
   KeyboardAvoidingView,
   Platform,
   Pressable,
-  SectionList,
   StyleSheet,
   Text,
   View,
@@ -27,12 +25,12 @@ import { doc, getDocFromCache, onSnapshot } from 'firebase/firestore';
 
 import ListOptionsMenu from '@/components/ListOptionsMenu';
 import ListFormModal from '@/components/ListFormModal';
-import ListItemRow from '@/components/ListItemRow';
+import ReorderableItemList from '@/components/ReorderableItemList';
 import ThemedTextInput, { getThemedInputContainerStyle } from '@/components/ThemedTextInput';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useItemHistory } from '@/hooks/useItemHistory';
-import { useListItems } from '@/hooks/useListItems';
+import { isOptimisticListItem, useListItems } from '@/hooks/useListItems';
 import { useChildSlideTransition } from '@/hooks/useSlideTransition';
 import { db } from '@/lib/firebase';
 import { handleFirestoreListenerError } from '@/lib/firestoreListenerErrors';
@@ -82,8 +80,16 @@ export default function ListDetailScreen() {
   const [moveDoneToBottom, setMoveDoneToBottom] = useState(
     cachedList?.moveDoneToBottom ?? false,
   );
-  const { items, loading, addItem, toggleItem, clearAllItems, groupDoneItemsAtBottom } =
-    useListItems(listId, { moveDoneToBottom });
+  const {
+    items,
+    loading,
+    addItem,
+    toggleItem,
+    clearAllItems,
+    reorderItems,
+    applyItemLayout,
+    groupDoneItemsAtBottom,
+  } = useListItems(listId, { moveDoneToBottom });
   const hasTitle = Boolean(paramName || listName);
   const isSlideReady = hasTitle && !loading;
   const { animatedStyle, goBack, isEnabled: slideTransitionEnabled } =
@@ -588,77 +594,55 @@ export default function ListDetailScreen() {
     }, 0);
   };
 
-  const renderStaticListItem = useCallback(
-    ({ item }: { item: ListItem }) => (
-      <ListItemRow
-        disabled={lockListItems}
-        item={item}
-        onPress={() => {
-          blurAddInput();
-          if (!listId) {
-            return;
-          }
-          router.push({
-            pathname: '/list/[id]/item/[itemId]',
-            params: { id: listId, itemId: item.id },
-          });
-        }}
-        onToggle={() => {
-          blurAddInput();
-          void toggleItem(item.id);
-        }}
-      />
-    ),
-    [blurAddInput, listId, lockListItems, toggleItem],
+  const handlePressItem = useCallback(
+    (item: ListItem) => {
+      blurAddInput();
+      if (!listId) {
+        return;
+      }
+      router.push({
+        pathname: '/list/[id]/item/[itemId]',
+        params: { id: listId, itemId: item.id },
+      });
+    },
+    [blurAddInput, listId],
   );
-  const listSections = useMemo(() => {
-    if (!moveDoneToBottom) {
-      return null;
-    }
 
-    const todos = items.filter((item) => !item.checked);
-    const dones = items.filter((item) => item.checked);
+  const handleToggleItem = useCallback(
+    (id: string) => {
+      blurAddInput();
+      void toggleItem(id);
+    },
+    [blurAddInput, toggleItem],
+  );
 
-    return [
-      { title: 'To do', data: todos },
-      { title: 'Done', data: dones },
-    ];
-  }, [items, moveDoneToBottom]);
+  const handleReorder = useCallback(
+    async (orderedItems: ListItem[]) => {
+      try {
+        await reorderItems(orderedItems);
+      } catch (error) {
+        Alert.alert('Could not reorder items', 'Please try again.');
+        throw error;
+      }
+    },
+    [reorderItems],
+  );
 
-  const renderSectionHeader = useCallback(
-    ({ section }: { section: { title: string; data: ListItem[] } }) => (
-      <View
-        style={[
-          styles.sectionHeaderRow,
-          {
-            marginTop: section.title === 'Done' ? spacing.md : 0,
-          },
-        ]}
-      >
-        <Text
-          style={[
-            styles.sectionHeader,
-            { color: colors.textSecondary },
-          ]}
-        >
-          {section.title}
-        </Text>
-        <View
-          style={[
-            styles.sectionCountBadge,
-            {
-              backgroundColor: colors.surfaceMuted,
-              borderRadius: radii.checkbox,
-            },
-          ]}
-        >
-          <Text style={[styles.sectionCount, { color: colors.textSecondary }]}>
-            {section.data.length}
-          </Text>
-        </View>
-      </View>
-    ),
-    [colors.surfaceMuted, colors.textSecondary, radii.checkbox, spacing.md],
+  const handleReorderWithChecked = useCallback(
+    async (orderedItems: ListItem[]) => {
+      try {
+        await applyItemLayout(orderedItems);
+      } catch (error) {
+        Alert.alert('Could not reorder items', 'Please try again.');
+        throw error;
+      }
+    },
+    [applyItemLayout],
+  );
+
+  const isItemDraggable = useCallback(
+    (item: ListItem) => !isOptimisticListItem(item),
+    [],
   );
 
   const listContentStyle = useMemo(
@@ -671,18 +655,6 @@ export default function ListDetailScreen() {
       },
     ],
     [spacing.lg, spacing.xl],
-  );
-
-  const itemSeparator = useCallback(
-    () => (
-      <View
-        style={[
-          styles.itemSeparator,
-          { backgroundColor: colors.border },
-        ]}
-      />
-    ),
-    [colors.border],
   );
 
   const emptyList = (
@@ -892,37 +864,18 @@ export default function ListDetailScreen() {
 
       <Animated.View style={[styles.listContainer, listFadeStyle]}>
         <Pressable onPress={handleBackgroundPress} style={styles.flex}>
-        {moveDoneToBottom && listSections ? (
-          <SectionList
+          <ReorderableItemList
             contentContainerStyle={listContentStyle}
-            ItemSeparatorComponent={itemSeparator}
-            keyExtractor={(item) => item.id}
-            keyboardDismissMode="on-drag"
-            keyboardShouldPersistTaps="handled"
+            disabled={lockListItems}
+            isItemDraggable={isItemDraggable}
+            items={items}
             ListEmptyComponent={emptyList}
-            renderItem={renderStaticListItem}
-            renderSectionHeader={renderSectionHeader}
-            removeClippedSubviews={false}
-            sections={listSections}
-            showsVerticalScrollIndicator={false}
-            stickySectionHeadersEnabled={false}
-            style={styles.flex}
+            moveDoneToBottom={moveDoneToBottom}
+            onPressItem={handlePressItem}
+            onReorder={handleReorder}
+            onReorderWithChecked={handleReorderWithChecked}
+            onToggleItem={handleToggleItem}
           />
-        ) : (
-          <FlatList
-            contentContainerStyle={listContentStyle}
-            data={items}
-            ItemSeparatorComponent={itemSeparator}
-            keyExtractor={(item) => item.id}
-            keyboardDismissMode="on-drag"
-            keyboardShouldPersistTaps="handled"
-            ListEmptyComponent={emptyList}
-            renderItem={renderStaticListItem}
-            removeClippedSubviews={false}
-            showsVerticalScrollIndicator={false}
-            style={styles.flex}
-          />
-        )}
         </Pressable>
       </Animated.View>
 
@@ -1033,35 +986,6 @@ const styles = StyleSheet.create({
   },
   listContent: {
     flexGrow: 1,
-  },
-  itemSeparator: {
-    height: StyleSheet.hairlineWidth,
-  },
-  sectionHeaderRow: {
-    alignItems: 'center',
-    flexDirection: 'row',
-    gap: 8,
-    marginBottom: 8,
-  },
-  sectionHeader: {
-    fontFamily: 'NunitoSans_600SemiBold',
-    fontSize: 13,
-    letterSpacing: 0.4,
-    lineHeight: 18,
-    textTransform: 'uppercase',
-  },
-  sectionCountBadge: {
-    alignItems: 'center',
-    height: 20,
-    justifyContent: 'center',
-    minWidth: 20,
-    paddingHorizontal: 6,
-  },
-  sectionCount: {
-    fontFamily: 'NunitoSans_600SemiBold',
-    fontSize: 12,
-    lineHeight: 14,
-    textAlign: 'center',
   },
   emptyList: {
     alignItems: 'center',
