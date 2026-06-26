@@ -1,6 +1,6 @@
 import { Platform } from 'react-native';
 
-export const ANDROID_PACKAGE = 'com.geo_goo.list';
+export const ANDROID_PACKAGE = 'com.goode_company.listkitty';
 
 export function getPlayStoreUrl(listId?: string): string {
   const base = `https://play.google.com/store/apps/details?id=${ANDROID_PACKAGE}`;

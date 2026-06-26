@@ -51,7 +51,7 @@ const host = getWebHost();
 const iosTeamId = process.env.EXPO_PUBLIC_IOS_TEAM_ID?.trim();
 const iosBundleId = process.env.EXPO_PUBLIC_IOS_BUNDLE_ID?.trim() || 'com.geo_goo.list';
 const androidPackage =
-  process.env.EXPO_PUBLIC_ANDROID_PACKAGE?.trim() || 'com.geo_goo.list';
+  process.env.EXPO_PUBLIC_ANDROID_PACKAGE?.trim() || 'com.goode_company.listkitty';
 const androidSha256 = process.env.EXPO_PUBLIC_ANDROID_SHA256_CERT?.trim();
 
 const outputDir = path.join(__dirname, '..', 'public', '.well-known');
