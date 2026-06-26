@@ -11,6 +11,7 @@ import {
   serverTimestamp,
   Timestamp,
   updateDoc,
+  writeBatch,
 } from 'firebase/firestore';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useIsFocused } from '@react-navigation/native';
@@ -455,26 +456,30 @@ export function useListItems(
         return;
       }
 
-      const sequential = withSequentialOrder(orderedItems);
+      const sequential = withSequentialOrder(getPersistedItems(orderedItems));
 
       if (!usesCloudListData(user, listId)) {
         await syncLocalItems(listId, sequential);
         return;
       }
 
-      await Promise.all(
-        sequential.map((entry) =>
-          updateDoc(doc(db, 'lists', listId, 'items', entry.id), {
-            checked: entry.checked,
-            order: entry.order,
-            updatedAt: serverTimestamp(),
-          }),
-        ),
-      );
-
-      await updateDoc(doc(db, 'lists', listId), {
+      // One atomic batch instead of N individual updateDoc calls: a single
+      // commit (and a single snapshot) rather than a synchronous burst of
+      // writes that would stall the optimistic re-render. Optimistic UI is
+      // handled by the caller (ReorderableItemList) so the list never waits on
+      // this round-trip.
+      const batch = writeBatch(db);
+      sequential.forEach((entry) => {
+        batch.update(doc(db, 'lists', listId, 'items', entry.id), {
+          checked: entry.checked,
+          order: entry.order,
+          updatedAt: serverTimestamp(),
+        });
+      });
+      batch.update(doc(db, 'lists', listId), {
         updatedAt: serverTimestamp(),
       });
+      await batch.commit();
     },
     [listId, user],
   );
@@ -594,7 +599,7 @@ export function useListItems(
         return;
       }
 
-      const nextItems = withSequentialOrder(orderedItems);
+      const nextItems = withSequentialOrder(getPersistedItems(orderedItems));
 
       const hasChanges = nextItems.some(
         (item) => items.find((entry) => entry.id === item.id)?.order !== item.order,
@@ -609,6 +614,15 @@ export function useListItems(
         order: index,
       }));
 
+      const changedIds = new Set(
+        nextOrder
+          .filter(
+            (entry) =>
+              items.find((item) => item.id === entry.id)?.order !== entry.order,
+          )
+          .map((entry) => entry.id),
+      );
+
       if (!usesCloudListData(user, listId)) {
         await reorderLocalItems(
           listId,
@@ -617,23 +631,21 @@ export function useListItems(
         return;
       }
 
-      await Promise.all(
-        nextOrder
-          .filter(
-            (entry) =>
-              items.find((item) => item.id === entry.id)?.order !== entry.order,
-          )
-          .map((entry) =>
-            updateDoc(doc(db, 'lists', listId, 'items', entry.id), {
-              order: entry.order,
-              updatedAt: serverTimestamp(),
-            }),
-          ),
-      );
-
-      await updateDoc(doc(db, 'lists', listId), {
+      // One atomic batch; optimistic UI is handled by the caller so the list
+      // never waits on this round-trip.
+      const batch = writeBatch(db);
+      nextOrder
+        .filter((entry) => changedIds.has(entry.id))
+        .forEach((entry) => {
+          batch.update(doc(db, 'lists', listId, 'items', entry.id), {
+            order: entry.order,
+            updatedAt: serverTimestamp(),
+          });
+        });
+      batch.update(doc(db, 'lists', listId), {
         updatedAt: serverTimestamp(),
       });
+      await batch.commit();
     },
     [items, listId, user],
   );
@@ -656,6 +668,7 @@ export function useListItems(
     deleteItem,
     clearAllItems,
     reorderItems,
+    applyItemLayout,
     groupDoneItemsAtBottom,
   };
 }

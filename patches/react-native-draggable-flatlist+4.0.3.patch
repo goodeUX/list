@@ -1,0 +1,48 @@
+diff --git a/node_modules/react-native-draggable-flatlist/lib/module/components/CellRendererComponent.js b/node_modules/react-native-draggable-flatlist/lib/module/components/CellRendererComponent.js
+index 7e32214..3166e3f 100644
+--- a/node_modules/react-native-draggable-flatlist/lib/module/components/CellRendererComponent.js
++++ b/node_modules/react-native-draggable-flatlist/lib/module/components/CellRendererComponent.js
+@@ -47,15 +47,9 @@ function CellRendererComponent(props) {
+   });
+   const isActive = activeKey === key;
+   const animStyle = useAnimatedStyle(() => {
+-    // When activeKey becomes null at the end of a drag and the list reorders,
+-    // the animated style may apply before the next paint, causing a flicker.
+-    // Solution is to hold over the last animated value until the next onLayout.
+-    // (Not required in web)
+-    if (translate.value && !isWeb) {
+-      heldTanslate.value = translate.value;
+-    }
+-
+-    const t = activeKey ? translate.value : heldTanslate.value;
++    // PATCHED: disable the native "held translate" hack that left dropped cells
++    // stuck at their drag offset (overlapping). Use the live translate everywhere.
++    const t = translate.value;
+     return {
+       transform: [horizontalAnim.value ? {
+         translateX: t
+diff --git a/node_modules/react-native-draggable-flatlist/src/components/CellRendererComponent.tsx b/node_modules/react-native-draggable-flatlist/src/components/CellRendererComponent.tsx
+index e4e861a..50b747c 100644
+--- a/node_modules/react-native-draggable-flatlist/src/components/CellRendererComponent.tsx
++++ b/node_modules/react-native-draggable-flatlist/src/components/CellRendererComponent.tsx
+@@ -56,14 +56,12 @@ function CellRendererComponent<T>(props: Props<T>) {
+   const isActive = activeKey === key;
+ 
+   const animStyle = useAnimatedStyle(() => {
+-    // When activeKey becomes null at the end of a drag and the list reorders,
+-    // the animated style may apply before the next paint, causing a flicker.
+-    // Solution is to hold over the last animated value until the next onLayout.
+-    // (Not required in web)
+-    if (translate.value && !isWeb) {
+-      heldTanslate.value = translate.value;
+-    }
+-    const t = activeKey ? translate.value : heldTanslate.value;
++    // PATCHED: the original "held translate" hack (hold the last translate until
++    // onLayout fires) left dropped cells stuck at their drag offset on native
++    // whenever onLayout didn't fire for a position-only change — causing rows to
++    // overlap. Use the live translate everywhere (like web) so cells reset to 0
++    // immediately after a drop.
++    const t = translate.value;
+     return {
+       transform: [horizontalAnim.value ? { translateX: t } : { translateY: t }],
+     };
