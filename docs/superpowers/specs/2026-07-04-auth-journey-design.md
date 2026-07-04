@@ -153,7 +153,7 @@ existing friendly-message pattern.
 | `components/OpeningScreen.tsx` | Replace inline form with `AuthJourney` (mode from `authLocalState`) + `BiometricGate` branch. Cat image, zoom transition, timing, skip: untouched. |
 | `app/(auth)/sign-in.tsx`, `sign-up.tsx` | Thin wrappers: back button + `AuthJourney` + scaled cat art. Keep `redirect` param handling (`buildAuthHref`, `navigateAfterSignIn`). |
 | `app/settings/index.tsx` | New Security section (App Lock toggle + enrollment hint states). |
-| `app/settings/edit-account.tsx` | Detect providers via `user.providerData`: social-only accounts hide email/password fields, show "Signed in with Google/Apple" note, keep name editing. |
+| `app/settings/edit-account.tsx` | Detect providers via `user.providerData`: social-only accounts get a read-only email field with a "Your email is managed by your Google/Apple account" note (shown-locked chosen over hidden during execution — more informative), password section hidden, name editing kept. |
 | `app.json` | Plugins: `@react-native-google-signin/google-signin`, `expo-apple-authentication`, `expo-local-authentication` (with iOS `faceIDPermission` string). `ios.usesAppleSignIn: true`. |
 
 ### Data flow (Google example)
@@ -223,7 +223,7 @@ Manual:
 | Web | No social buttons, no Security section; email-first flow works |
 | iOS (EAS build) | Apple sign-in first-run name capture; Face ID gate |
 | Invite deep link | Still bypasses opening screen |
-| Edit account as social user | No password/email fields; "Signed in with Google" note |
+| Edit account as social user | No password section; email read-only + dimmed with "managed by your Google account" note; name editable |
 
 ## Out of scope
 
