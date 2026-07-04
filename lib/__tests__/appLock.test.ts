@@ -86,3 +86,11 @@ test('bypasses and auto-disables when authentication impossible', async () => {
   expect(await shouldBypassAppLock()).toBe(true);
   expect(await isAppLockEnabled()).toBe(false);
 });
+
+test('fails open when the enrollment probe throws', async () => {
+  await setAppLockEnabled(true);
+  mocked.getEnrolledLevelAsync.mockRejectedValue(new Error('no native module'));
+
+  expect(await shouldBypassAppLock()).toBe(true);
+  expect(await isAppLockEnabled()).toBe(true);
+});

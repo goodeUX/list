@@ -45,7 +45,14 @@ export async function shouldBypassAppLock(): Promise<boolean> {
     return true;
   }
 
-  const level = await LocalAuthentication.getEnrolledLevelAsync();
+  let level: LocalAuthentication.SecurityLevel;
+  try {
+    level = await LocalAuthentication.getEnrolledLevelAsync();
+  } catch {
+    // Probe unavailable — fail open for this launch, keep the preference.
+    return true;
+  }
+
   if (level === LocalAuthentication.SecurityLevel.NONE) {
     await setAppLockEnabled(false);
     return true;
