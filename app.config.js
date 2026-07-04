@@ -49,5 +49,13 @@ module.exports = () => {
     };
   }
 
+  const googleIosUrlScheme = process.env.GOOGLE_IOS_URL_SCHEME?.trim();
+  expo.plugins = [
+    ...(expo.plugins ?? []),
+    googleIosUrlScheme
+      ? ['@react-native-google-signin/google-signin', { iosUrlScheme: googleIosUrlScheme }]
+      : '@react-native-google-signin/google-signin',
+  ];
+
   return { expo };
 };
