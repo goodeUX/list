@@ -1,13 +1,17 @@
 import {
   createUserWithEmailAndPassword,
   EmailAuthProvider,
+  getAdditionalUserInfo,
   onAuthStateChanged,
   reauthenticateWithCredential,
+  sendPasswordResetEmail,
+  signInWithCredential,
   signInWithEmailAndPassword,
   signOut as firebaseSignOut,
   updateEmail,
   updatePassword,
   updateProfile,
+  type AuthCredential,
   type User,
 } from 'firebase/auth';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -24,7 +28,9 @@ import {
 
 import { auth, db } from '@/lib/firebase';
 export { getAuthErrorMessage } from '@/lib/authErrors';
+import { recordSignIn } from '@/lib/authLocalState';
 import { migrateLocalDataToCloud } from '@/lib/migrateLocalToCloud';
+import { getAppleCredential, getGoogleCredential } from '@/lib/socialAuth';
 import type { ThemePreference } from '@/lib/theme';
 
 const THEME_PREFERENCE_KEY = 'themePreference';
@@ -42,11 +48,16 @@ async function getLocalThemePreference(): Promise<ThemePreference> {
   return parseThemePreference(stored) ?? 'system';
 }
 
+type SocialSignInResult = 'success' | 'cancelled';
+
 type AuthContextValue = {
   user: User | null;
   loading: boolean;
   signIn: (email: string, password: string) => Promise<void>;
   signUp: (email: string, password: string, displayName: string) => Promise<void>;
+  signInWithGoogle: () => Promise<SocialSignInResult>;
+  signInWithApple: () => Promise<SocialSignInResult>;
+  resetPassword: (email: string) => Promise<void>;
   signOut: () => Promise<void>;
   updateAccount: (input: {
     displayName: string;
@@ -88,6 +99,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } catch (error) {
       console.error('Failed to migrate local data after sign in', error);
     }
+
+    await recordSignIn(credential.user.displayName, credential.user.email ?? email.trim());
   }, []);
 
   const signUp = useCallback(
@@ -109,9 +122,75 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         themePreference,
       });
       await migrateLocalDataToCloud(credential.user.uid);
+      await recordSignIn(trimmedName, trimmedEmail);
     },
     [],
   );
+
+  const completeCredentialSignIn = useCallback(
+    async (credential: AuthCredential, fallbackName?: string) => {
+      const userCredential = await signInWithCredential(auth, credential);
+      const { user: signedInUser } = userCredential;
+      const isNewUser = getAdditionalUserInfo(userCredential)?.isNewUser ?? false;
+
+      if (!signedInUser.displayName && fallbackName) {
+        await updateProfile(signedInUser, { displayName: fallbackName });
+      }
+
+      const displayName = signedInUser.displayName ?? fallbackName ?? '';
+      const email = signedInUser.email ?? '';
+
+      await setDoc(
+        doc(db, 'users', signedInUser.uid),
+        {
+          uid: signedInUser.uid,
+          displayName,
+          email,
+          ...(isNewUser ? { themePreference: await getLocalThemePreference() } : {}),
+        },
+        { merge: true },
+      );
+
+      try {
+        await migrateLocalDataToCloud(signedInUser.uid);
+      } catch (error) {
+        console.error('Failed to migrate local data after social sign in', error);
+      }
+
+      await recordSignIn(displayName, email);
+    },
+    [],
+  );
+
+  const signInWithGoogle = useCallback(async (): Promise<SocialSignInResult> => {
+    const result = await getGoogleCredential();
+    if (result === 'cancelled') {
+      return 'cancelled';
+    }
+    if (result === 'unavailable') {
+      throw { code: 'auth/provider-unavailable' };
+    }
+
+    await completeCredentialSignIn(result.credential, result.fullName);
+    return 'success';
+  }, [completeCredentialSignIn]);
+
+  const signInWithApple = useCallback(async (): Promise<SocialSignInResult> => {
+    const result = await getAppleCredential();
+    if (result === 'cancelled') {
+      return 'cancelled';
+    }
+    if (result === 'unavailable') {
+      throw { code: 'auth/provider-unavailable' };
+    }
+
+    await completeCredentialSignIn(result.credential, result.fullName);
+    return 'success';
+  }, [completeCredentialSignIn]);
+
+  const resetPassword = useCallback(async (email: string) => {
+    await sendPasswordResetEmail(auth, email.trim());
+  }, []);
 
   const signOut = useCallback(async () => {
     await firebaseSignOut(auth);
@@ -187,8 +266,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   );
 
   const value = useMemo(
-    () => ({ user, loading, signIn, signUp, signOut, updateAccount }),
-    [user, loading, signIn, signUp, signOut, updateAccount],
+    () => ({
+      user,
+      loading,
+      signIn,
+      signUp,
+      signInWithGoogle,
+      signInWithApple,
+      resetPassword,
+      signOut,
+      updateAccount,
+    }),
+    [
+      user,
+      loading,
+      signIn,
+      signUp,
+      signInWithGoogle,
+      signInWithApple,
+      resetPassword,
+      signOut,
+      updateAccount,
+    ],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
