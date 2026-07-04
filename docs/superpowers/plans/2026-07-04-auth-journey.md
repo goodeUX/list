@@ -1110,10 +1110,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     flexDirection: 'row',
     gap: 10,
-    justifyContent: 'center',
   },
 });
 ```
+
+(The row needs no `justifyContent` — the parent Pressable's `buttonLayoutStyle` already centers content.)
 
 - [ ] **Step 3: Verify + commit**
 
