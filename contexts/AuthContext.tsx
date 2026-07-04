@@ -23,6 +23,7 @@ import {
 } from 'react';
 
 import { auth, db } from '@/lib/firebase';
+export { getAuthErrorMessage } from '@/lib/authErrors';
 import { migrateLocalDataToCloud } from '@/lib/migrateLocalToCloud';
 import type { ThemePreference } from '@/lib/theme';
 
@@ -56,35 +57,6 @@ type AuthContextValue = {
 };
 
 const AuthContext = createContext<AuthContextValue | null>(null);
-
-export function getAuthErrorMessage(error: unknown): string {
-  const code = (error as { code?: string }).code;
-
-  switch (code) {
-    case 'auth/invalid-email':
-      return 'Please enter a valid email address.';
-    case 'auth/user-disabled':
-      return 'This account has been disabled.';
-    case 'auth/user-not-found':
-    case 'auth/wrong-password':
-    case 'auth/invalid-credential':
-      return 'Incorrect email or password.';
-    case 'auth/email-already-in-use':
-      return 'An account with this email already exists.';
-    case 'auth/weak-password':
-      return 'Password should be at least 6 characters.';
-    case 'auth/too-many-requests':
-      return 'Too many attempts. Please try again later.';
-    case 'auth/requires-recent-login':
-      return 'Please sign in again and try updating your account.';
-    case 'auth/missing-display-name':
-      return 'Please enter your name.';
-    case 'auth/missing-current-password':
-      return 'Enter your current password to change email or password.';
-    default:
-      return 'Something went wrong. Please try again.';
-  }
-}
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
