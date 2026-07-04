@@ -45,7 +45,9 @@ export async function getLastAccountHint(): Promise<AccountHint | null> {
 
   try {
     const parsed = JSON.parse(raw) as AccountHint;
-    return typeof parsed === 'object' && parsed !== null ? parsed : null;
+    return typeof parsed === 'object' && parsed !== null && !Array.isArray(parsed)
+      ? parsed
+      : null;
   } catch {
     return null;
   }

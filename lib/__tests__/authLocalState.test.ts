@@ -46,3 +46,23 @@ test('recordSignIn stores the hint and marks usage', async () => {
 test('hint is null when never signed in', async () => {
   expect(await getLastAccountHint()).toBeNull();
 });
+
+test('malformed hint JSON yields null', async () => {
+  await AsyncStorage.setItem('auth.lastAccountHint', '{not json');
+  expect(await getLastAccountHint()).toBeNull();
+});
+
+test('array hint JSON yields null', async () => {
+  await AsyncStorage.setItem('auth.lastAccountHint', '["not","a","hint"]');
+  expect(await getLastAccountHint()).toBeNull();
+});
+
+test('recordSignIn drops blank fields', async () => {
+  await recordSignIn('  ', 'geoff@example.com');
+  expect(await getLastAccountHint()).toEqual({ email: 'geoff@example.com' });
+});
+
+test('unreadable local store falls back to sign-up', async () => {
+  getLocalLists.mockRejectedValue(new Error('boom'));
+  expect(await getJourneyDefault()).toBe('sign-up');
+});
