@@ -13,7 +13,7 @@ export type SocialCredentialResult =
   | 'cancelled'
   | 'unavailable';
 
-const webClientId = process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID ?? '';
+const webClientId = (process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID ?? '').trim();
 let googleConfigured = false;
 
 function ensureGoogleConfigured(): void {
@@ -68,6 +68,7 @@ export async function getGoogleCredential(): Promise<SocialCredentialResult> {
       if (error.code === statusCodes.PLAY_SERVICES_NOT_AVAILABLE) {
         throw { code: 'auth/play-services-unavailable' };
       }
+      console.warn('[socialAuth] Google sign-in failed with code', error.code);
     }
     throw error;
   }
