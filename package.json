@@ -35,8 +35,11 @@
     "react-native-worklets": "0.5.1"
   },
   "devDependencies": {
+    "@types/jest": "^30.0.0",
     "@types/react": "~19.1.10",
     "babel-preset-expo": "~54.0.11",
+    "jest": "~29.7.0",
+    "jest-expo": "~54.0.0",
     "patch-package": "^8.0.1",
     "typescript": "~5.9.2"
   },
@@ -50,7 +53,17 @@
     "deploy:web": "node scripts/generate-well-known.js && expo export --platform web && node scripts/copy-web-font-assets.js && firebase deploy --only hosting",
     "build:preview": "eas build --platform android --profile preview",
     "build:production": "eas build --platform android --profile production",
-    "generate:icons": "node scripts/generate-android-icons.js"
+    "generate:icons": "node scripts/generate-android-icons.js",
+    "test": "jest"
   },
-  "private": true
+  "private": true,
+  "jest": {
+    "preset": "jest-expo",
+    "setupFilesAfterEnv": [
+      "<rootDir>/jest/setup.ts"
+    ],
+    "moduleNameMapper": {
+      "^@/(.*)$": "<rootDir>/$1"
+    }
+  }
 }
