@@ -10,6 +10,16 @@
 
 **Testing policy for this plan:** The repo had no test infra; Task 2 adds jest-expo. Pure-logic modules (`authErrors`, `authLocalState`, `appLock`) are TDD. Native-SDK adapters and UI components are verified by `npx tsc --noEmit` plus the manual QA matrix in the spec — do not write unit tests that mock everything they touch.
 
+**Deviations applied during execution (review-driven; the code is authoritative where it differs from embedded snippets):**
+- Task 2: jest AsyncStorage mock wired via `setupFilesAfterEnv` + `jest/setup.ts` (the original `setupFiles` approach never registers the mock); `@types/jest` pinned `~29.5` to match the jest 29 runtime.
+- Task 3: `getAuthErrorMessage` hardened against nullish input (`?.code`); extra tests.
+- Task 4: `getLastAccountHint` rejects arrays; extra edge-case tests.
+- Task 5: added `shouldBypassAppLock()` (lockout-safety: `getEnrolledLevelAsync` — `SecurityLevel.NONE` → auto-disable + bypass; probe errors fail open without disabling); `authenticateForAppLock` never rejects. Task 11 consumes `shouldBypassAppLock`, not `isAppLockEnabled`.
+- Task 6: `webClientId` trimmed; unmapped Google sign-in codes are console.warn'd before rethrow.
+- Task 7: `recordSignIn` (all 3 sites) and the Apple first-run `updateProfile` are guarded so best-effort writes can't fail a successful sign-in; `resetPassword` swallows `auth/user-not-found` (enumeration safety).
+- Task 8: `SocialAuthButtons` adds `accessibilityState` (busy/disabled) + `width: '100%'`; row style needs no justifyContent.
+- Task 9: `AuthJourney` adds a `[mode]`-change effect resetting step/name/password/error/resetSent (external mode changes); error/reset texts carry `accessibilityLiveRegion`/`accessibilityRole="alert"`; `handleSubmitDetails` clears `resetSent`.
+
 **Conventions (read once):**
 - Path alias `@/` = repo root (see existing imports).
 - Fonts: titles `Fraunces_600SemiBold`, body `NunitoSans_400Regular`, button/links `NunitoSans_600SemiBold`.
