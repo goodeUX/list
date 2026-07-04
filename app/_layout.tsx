@@ -8,7 +8,7 @@ import {
   NunitoSans_600SemiBold,
   NunitoSans_700Bold,
 } from '@expo-google-fonts/nunito-sans';
-import { MaterialIcons } from '@expo/vector-icons';
+import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 import { useFonts } from 'expo-font';
 import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
@@ -64,6 +64,7 @@ export default function RootLayout() {
     NunitoSans_700Bold,
     MaterialSymbolsOutlined: require('../assets/fonts/MaterialSymbolsOutlined.ttf'),
     ...MaterialIcons.font,
+    ...Ionicons.font,
   });
   const [openingComplete, setOpeningComplete] = useState(skipOpening);
   const [showOpening, setShowOpening] = useState(!skipOpening);
