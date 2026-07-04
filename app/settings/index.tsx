@@ -6,6 +6,7 @@ import {
   Pressable,
   ScrollView,
   StyleSheet,
+  Switch,
   Text,
   View,
   type ImageSourcePropType,
@@ -17,6 +18,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import Button from '@/components/Button';
 import MaterialSymbol from '@/components/MaterialSymbol';
 import { useTheme } from '@/contexts/ThemeContext';
+import { useAppLock } from '@/hooks/useAppLock';
 import { useChildSlideTransition } from '@/hooks/useSlideTransition';
 import type { ThemePreference } from '@/lib/theme';
 import { buttonLabelStyle, buttonLayoutStyle } from '@/lib/buttonStyles';
@@ -40,9 +42,15 @@ const THEME_OPTIONS: {
 export default function SettingsScreen() {
   const { colors, colorScheme, radii, spacing, preference, setPreference } = useTheme();
   const { user, signOut } = useAuth();
+  const appLock = useAppLock();
+  const showSecurity = Boolean(user) && appLock.capability !== 'unsupported';
   const insets = useSafeAreaInsets();
   const { animatedStyle, goBack, isEnabled: slideTransitionEnabled } =
     useChildSlideTransition();
+
+  const handleAppLockToggle = async (next: boolean) => {
+    await appLock.setEnabled(next);
+  };
 
   const handleSignOut = async () => {
     await signOut();
@@ -169,6 +177,52 @@ export default function SettingsScreen() {
             })}
           </View>
         </View>
+
+        {showSecurity ? (
+          <View
+            style={[
+              styles.section,
+              {
+                backgroundColor: colors.surface,
+                borderColor: colors.border,
+                borderRadius: radii.card,
+                padding: spacing.md,
+              },
+            ]}
+          >
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>Security</Text>
+
+            {appLock.capability === 'ready' ? (
+              <View style={[styles.appLockRow, { marginTop: spacing.sm }]}>
+                <View style={styles.appLockLabels}>
+                  <Text style={[styles.appLockTitle, { color: colors.text }]}>
+                    App lock
+                  </Text>
+                  <Text style={[styles.appLockSubtitle, { color: colors.textSecondary }]}>
+                    Require fingerprint / Face ID to open List Kitty
+                  </Text>
+                </View>
+                <Switch
+                  accessibilityLabel="App lock"
+                  disabled={appLock.loading}
+                  onValueChange={(next) => void handleAppLockToggle(next)}
+                  thumbColor={appLock.enabled ? colors.accent : colors.surface}
+                  trackColor={{ false: colors.border, true: colors.accentSoft }}
+                  value={appLock.enabled}
+                />
+              </View>
+            ) : (
+              <Text
+                style={[
+                  styles.appLockSubtitle,
+                  { color: colors.textSecondary, marginTop: spacing.sm },
+                ]}
+              >
+                Set up fingerprint or face unlock in your device settings to use App lock.
+              </Text>
+            )}
+          </View>
+        ) : null}
 
         <View
           style={[
@@ -388,6 +442,27 @@ const styles = StyleSheet.create({
     width: 40,
   },
   accountActions: {},
+  appLockRow: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: 12,
+    justifyContent: 'space-between',
+  },
+  appLockLabels: {
+    flex: 1,
+    gap: 2,
+    minWidth: 0,
+  },
+  appLockTitle: {
+    fontFamily: 'NunitoSans_600SemiBold',
+    fontSize: 16,
+    lineHeight: 22,
+  },
+  appLockSubtitle: {
+    fontFamily: 'NunitoSans_400Regular',
+    fontSize: 13,
+    lineHeight: 18,
+  },
   introImageWrap: {
     alignItems: 'center',
     flexGrow: 1,
