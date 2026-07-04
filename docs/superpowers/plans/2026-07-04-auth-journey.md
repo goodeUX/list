@@ -1778,7 +1778,7 @@ import BiometricGate from '@/components/auth/BiometricGate';
 import KeyboardDismissScrollView from '@/components/KeyboardDismissScrollView';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTheme } from '@/contexts/ThemeContext';
-import { isAppLockEnabled } from '@/lib/appLock';
+import { shouldBypassAppLock } from '@/lib/appLock';
 import {
   getJourneyDefault,
   recordAppUsed,
@@ -1837,9 +1837,9 @@ export default function OpeningScreen({ fontsLoaded, onComplete }: OpeningScreen
         setJourneyMode(mode);
       }
     });
-    void isAppLockEnabled().then((enabled) => {
+    void shouldBypassAppLock().then((bypass) => {
       if (active) {
-        setLockRequired(enabled);
+        setLockRequired(!bypass);
       }
     });
 
