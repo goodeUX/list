@@ -39,6 +39,7 @@ export default function SocialAuthButtons({
       <Pressable
         accessibilityLabel="Continue with Google"
         accessibilityRole="button"
+        accessibilityState={{ disabled, busy: googleBusy }}
         disabled={disabled}
         onPress={onGooglePress}
         style={buttonStyle}
@@ -59,6 +60,7 @@ export default function SocialAuthButtons({
         <Pressable
           accessibilityLabel="Continue with Apple"
           accessibilityRole="button"
+          accessibilityState={{ disabled, busy: appleBusy }}
           disabled={disabled}
           onPress={onApplePress}
           style={buttonStyle}
@@ -86,6 +88,7 @@ const styles = StyleSheet.create({
   button: {
     borderWidth: 1,
     minHeight: 52,
+    width: '100%',
   },
   row: {
     alignItems: 'center',
