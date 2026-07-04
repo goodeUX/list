@@ -1,5 +1,5 @@
 export function getAuthErrorMessage(error: unknown): string {
-  const code = (error as { code?: string }).code;
+  const code = (error as { code?: string } | null | undefined)?.code;
 
   switch (code) {
     case 'auth/invalid-email':

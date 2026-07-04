@@ -21,10 +21,16 @@ test('maps new social auth codes', () => {
   expect(getAuthErrorMessage({ code: 'auth/network-request-failed' })).toBe(
     'No connection. Check your internet and try again.',
   );
+  expect(getAuthErrorMessage({ code: 'auth/provider-unavailable' })).toBe(
+    "That sign-in method isn't available on this device.",
+  );
 });
 
 test('falls back to a generic message', () => {
   expect(getAuthErrorMessage(new Error('boom'))).toBe(
+    'Something went wrong. Please try again.',
+  );
+  expect(getAuthErrorMessage(undefined)).toBe(
     'Something went wrong. Please try again.',
   );
 });
