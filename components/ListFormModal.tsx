@@ -394,7 +394,7 @@ export default function ListFormModal({
         styles.modalShell,
         { paddingTop: modalOverlayPaddingTop, pointerEvents: visible ? 'auto' : 'none' },
         Platform.OS === 'web' && visible && modalLayerHeight != null
-          ? { height: modalLayerHeight, position: 'fixed' }
+          ? ({ height: modalLayerHeight, position: 'fixed' } as object)
           : null,
       ]}
     >
@@ -426,7 +426,7 @@ export default function ListFormModal({
           <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
             <ScrollView
               bounces={false}
-              clipToPadding={false}
+              {...({ clipToPadding: false } as object)}
               contentContainerStyle={modalBodyStyle}
               keyboardDismissMode="on-drag"
               keyboardShouldPersistTaps="handled"

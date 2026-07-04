@@ -249,11 +249,11 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     zIndex: 3,
     ...(Platform.OS === 'web'
-      ? {
+      ? ({
           height: '100%',
           position: 'fixed',
           width: '100%',
-        }
+        } as object)
       : null),
   },
 });
