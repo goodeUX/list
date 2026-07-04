@@ -218,6 +218,7 @@ Manual:
 | Forgot password | Enumeration-safe confirmation; email arrives; reset works |
 | App Lock enable | Biometric confirm required before toggle persists |
 | App Lock relaunch | Gate shows; unlock enters app; cancel stays; sign-out works |
+| App Lock ON + signed out → fresh sign-in | Auto-enters with NO biometric re-prompt (journey sign-in satisfies the gate) |
 | Biometric unenrolled device | Hint row instead of toggle |
 | Web | No social buttons, no Security section; email-first flow works |
 | iOS (EAS build) | Apple sign-in first-run name capture; Face ID gate |
