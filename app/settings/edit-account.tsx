@@ -58,6 +58,13 @@ export default function EditAccountScreen() {
   const hasPasswordProvider = user.providerData.some(
     (provider) => provider.providerId === 'password',
   );
+  const socialProviderLabel = user.providerData.some(
+    (provider) => provider.providerId === 'google.com',
+  )
+    ? 'Google'
+    : user.providerData.some((provider) => provider.providerId === 'apple.com')
+      ? 'Apple'
+      : null;
 
   const handleSave = async () => {
     setError(null);
@@ -89,7 +96,7 @@ export default function EditAccountScreen() {
       }
     }
 
-    if (emailChanging && !passwordChanging && !currentPassword) {
+    if (hasPasswordProvider && emailChanging && !passwordChanging && !currentPassword) {
       setError('Enter your current password below to save your new email.');
       return;
     }
@@ -98,7 +105,7 @@ export default function EditAccountScreen() {
     try {
       await updateAccount({
         displayName,
-        email,
+        email: hasPasswordProvider ? email : (user.email ?? email),
         currentPassword: needsCurrentPassword ? currentPassword : undefined,
         newPassword: passwordChanging ? newPassword : undefined,
       });
@@ -190,14 +197,18 @@ export default function EditAccountScreen() {
                 autoCapitalize="none"
                 autoComplete="email"
                 autoCorrect={false}
-                editable={!submitting}
+                editable={!submitting && hasPasswordProvider}
                 keyboardType="email-address"
                 onChangeText={setEmail}
                 placeholder="you@example.com"
                 textContentType="emailAddress"
                 value={email}
               />
-              {emailChanging ? (
+              {!hasPasswordProvider && socialProviderLabel ? (
+                <Text style={[styles.helper, { color: colors.textSecondary }]}>
+                  Your email is managed by your {socialProviderLabel} account.
+                </Text>
+              ) : emailChanging ? (
                 <Text style={[styles.helper, { color: colors.textSecondary }]}>
                   Saving a new email requires your current password below.
                 </Text>
