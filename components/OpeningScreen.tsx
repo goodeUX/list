@@ -87,6 +87,7 @@ export default function OpeningScreen({ fontsLoaded, onComplete }: OpeningScreen
     };
   }, []);
 
+  // Gate applies to persisted sessions only; a fresh journey sign-in sets unlocked.
   const gateActive = Boolean(user) && lockRequired === true && !unlocked;
 
   useEffect(() => {
@@ -114,7 +115,10 @@ export default function OpeningScreen({ fontsLoaded, onComplete }: OpeningScreen
   }, [onComplete]);
 
   const handleAuthenticated = useCallback(async () => {
+    // A journey sign-in is itself an authentication — satisfies the gate for this mount.
+    setUnlocked(true);
     await navigateAfterSignIn();
+    // Parent onComplete is idempotent; the welcome timer may also fire it.
     onComplete();
   }, [onComplete]);
 
@@ -183,10 +187,10 @@ export default function OpeningScreen({ fontsLoaded, onComplete }: OpeningScreen
               </View>
             ) : null}
 
-            {showJourney ? (
+            {showJourney && journeyMode ? (
               <AuthJourney
                 labelBackgroundColor={colors.bg}
-                mode={journeyMode ?? 'sign-up'}
+                mode={journeyMode}
                 onAuthenticated={handleAuthenticated}
                 onSkip={handleSkip}
                 onSwitchMode={setJourneyMode}
