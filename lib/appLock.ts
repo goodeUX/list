@@ -35,12 +35,37 @@ export async function getAppLockCapability(): Promise<AppLockCapability> {
   return 'ready';
 }
 
-export async function authenticateForAppLock(): Promise<boolean> {
-  const result = await LocalAuthentication.authenticateAsync({
-    promptMessage: 'Unlock List Kitty',
-    cancelLabel: 'Cancel',
-    disableDeviceFallback: false,
-  });
+/**
+ * True when the gate must be skipped: lock disabled, or the lock can no longer
+ * be satisfied (nothing enrolled and no device credential) — in which case the
+ * lock is switched off so the user is never locked out.
+ */
+export async function shouldBypassAppLock(): Promise<boolean> {
+  if (!(await isAppLockEnabled())) {
+    return true;
+  }
 
-  return result.success;
+  const level = await LocalAuthentication.getEnrolledLevelAsync();
+  if (level === LocalAuthentication.SecurityLevel.NONE) {
+    await setAppLockEnabled(false);
+    return true;
+  }
+
+  return false;
+}
+
+export async function authenticateForAppLock(): Promise<boolean> {
+  try {
+    const result = await LocalAuthentication.authenticateAsync({
+      promptMessage: 'Unlock List Kitty',
+      cancelLabel: 'Cancel',
+      disableDeviceFallback: false,
+    });
+
+    return result.success;
+  } catch {
+    // Treat prompt failures (e.g. missing native module) as a failed unlock
+    // rather than crashing the gate.
+    return false;
+  }
 }
