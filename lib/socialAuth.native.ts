@@ -1,12 +1,9 @@
-import {
-  GoogleSignin,
-  isErrorWithCode,
-  statusCodes,
-} from '@react-native-google-signin/google-signin';
 import * as AppleAuthentication from 'expo-apple-authentication';
 import * as Crypto from 'expo-crypto';
 import { GoogleAuthProvider, OAuthProvider, type AuthCredential } from 'firebase/auth';
 import { Platform } from 'react-native';
+
+type GoogleSignInModule = typeof import('@react-native-google-signin/google-signin');
 
 export type SocialCredentialResult =
   | { credential: AuthCredential; fullName?: string }
@@ -14,17 +11,37 @@ export type SocialCredentialResult =
   | 'unavailable';
 
 const webClientId = (process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID ?? '').trim();
+
+// The Google sign-in package registers a native module (RNGoogleSignin) at import
+// time, so a top-level import crashes the whole app on any build that lacks it —
+// Expo Go, or a dev client built before the dependency was added. Require it
+// lazily and defensively so its absence degrades to "unavailable" instead of
+// taking the entire module graph (and the app) down on startup.
+let googleModule: GoogleSignInModule | null | undefined;
+
+function getGoogleModule(): GoogleSignInModule | null {
+  if (googleModule === undefined) {
+    try {
+      googleModule = require('@react-native-google-signin/google-signin') as GoogleSignInModule;
+    } catch {
+      googleModule = null;
+    }
+  }
+
+  return googleModule;
+}
+
 let googleConfigured = false;
 
-function ensureGoogleConfigured(): void {
+function ensureGoogleConfigured(mod: GoogleSignInModule): void {
   if (!googleConfigured) {
-    GoogleSignin.configure({ webClientId });
+    mod.GoogleSignin.configure({ webClientId });
     googleConfigured = true;
   }
 }
 
 export function isGoogleSignInAvailable(): boolean {
-  return webClientId.length > 0;
+  return webClientId.length > 0 && getGoogleModule() !== null;
 }
 
 export async function isAppleSignInAvailable(): Promise<boolean> {
@@ -40,11 +57,13 @@ export async function isAppleSignInAvailable(): Promise<boolean> {
 }
 
 export async function getGoogleCredential(): Promise<SocialCredentialResult> {
-  if (!isGoogleSignInAvailable()) {
+  const mod = getGoogleModule();
+  if (webClientId.length === 0 || !mod) {
     return 'unavailable';
   }
 
-  ensureGoogleConfigured();
+  const { GoogleSignin, isErrorWithCode, statusCodes } = mod;
+  ensureGoogleConfigured(mod);
 
   try {
     await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
