@@ -15,7 +15,10 @@ export default function BiometricGate({ onUnlocked, onSignedOut }: BiometricGate
   const { colors, radii } = useTheme();
   const { user, signOut } = useAuth();
   const [checking, setChecking] = useState(false);
+  const [signingOut, setSigningOut] = useState(false);
   const attemptedRef = useRef(false);
+
+  const busy = checking || signingOut;
 
   const welcomeName =
     user?.displayName?.trim() || user?.email?.trim()?.split('@')[0] || 'there';
@@ -38,10 +41,18 @@ export default function BiometricGate({ onUnlocked, onSignedOut }: BiometricGate
     }
   }, [attemptUnlock]);
 
-  const handleSignOut = async () => {
-    await signOut();
-    onSignedOut();
-  };
+  const handleSignOut = useCallback(async () => {
+    setSigningOut(true);
+    try {
+      await signOut();
+      onSignedOut();
+    } catch (error) {
+      // Session still active — stay on the gate.
+      console.error('Sign out from gate failed', error);
+    } finally {
+      setSigningOut(false);
+    }
+  }, [onSignedOut, signOut]);
 
   return (
     <View style={styles.container}>
@@ -50,8 +61,8 @@ export default function BiometricGate({ onUnlocked, onSignedOut }: BiometricGate
 
       <Pressable
         accessibilityRole="button"
-        accessibilityState={{ disabled: checking, busy: checking }}
-        disabled={checking}
+        accessibilityState={{ disabled: busy, busy: checking }}
+        disabled={busy}
         onPress={() => void attemptUnlock()}
         style={({ pressed }) => [
           styles.unlockButton,
@@ -59,7 +70,7 @@ export default function BiometricGate({ onUnlocked, onSignedOut }: BiometricGate
           {
             backgroundColor: colors.accent,
             borderRadius: radii.item,
-            opacity: pressed || checking ? 0.85 : 1,
+            opacity: pressed || busy ? 0.85 : 1,
           },
         ]}
       >
@@ -68,10 +79,13 @@ export default function BiometricGate({ onUnlocked, onSignedOut }: BiometricGate
 
       <Pressable
         accessibilityRole="button"
-        accessibilityState={{ disabled: checking }}
-        disabled={checking}
+        accessibilityState={{ disabled: busy, busy: signingOut }}
+        disabled={busy}
         onPress={() => void handleSignOut()}
-        style={styles.signOutButton}
+        style={({ pressed }) => [
+          styles.signOutButton,
+          { opacity: pressed || busy ? 0.7 : 1 },
+        ]}
       >
         <Text style={[styles.signOutText, { color: colors.textSecondary }]}>
           Not you? Sign out
@@ -112,7 +126,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   signOutText: {
-    fontFamily: 'NunitoSans_400Regular',
+    fontFamily: 'NunitoSans_600SemiBold',
     fontSize: 15,
     lineHeight: 22,
     textAlign: 'center',
