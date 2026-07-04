@@ -1,6 +1,6 @@
 import { router } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
-import type { ComponentProps } from 'react';
+import { useState, type ComponentProps } from 'react';
 import {
   Image,
   Pressable,
@@ -48,8 +48,15 @@ export default function SettingsScreen() {
   const { animatedStyle, goBack, isEnabled: slideTransitionEnabled } =
     useChildSlideTransition();
 
+  const [appLockBusy, setAppLockBusy] = useState(false);
+
   const handleAppLockToggle = async (next: boolean) => {
-    await appLock.setEnabled(next);
+    setAppLockBusy(true);
+    try {
+      await appLock.setEnabled(next);
+    } finally {
+      setAppLockBusy(false);
+    }
   };
 
   const handleSignOut = async () => {
@@ -204,9 +211,9 @@ export default function SettingsScreen() {
                 </View>
                 <Switch
                   accessibilityLabel="App lock"
-                  disabled={appLock.loading}
+                  disabled={appLock.loading || appLockBusy}
                   onValueChange={(next) => void handleAppLockToggle(next)}
-                  thumbColor={appLock.enabled ? colors.accent : colors.surface}
+                  thumbColor={appLock.enabled ? colors.accent : colors.textSecondary}
                   trackColor={{ false: colors.border, true: colors.accentSoft }}
                   value={appLock.enabled}
                 />

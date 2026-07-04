@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 import {
   authenticateForAppLock,
@@ -34,16 +34,25 @@ export function useAppLock() {
     };
   }, []);
 
+  const inFlightRef = useRef(false);
+
   /** Enabling requires a successful biometric check. Returns the applied state. */
   const setEnabled = useCallback(async (next: boolean): Promise<boolean> => {
-    if (next && !(await authenticateForAppLock())) {
-      return false;
+    if (inFlightRef.current) {
+      return enabled;
     }
-
-    await setAppLockEnabled(next);
-    setEnabledState(next);
-    return next;
-  }, []);
+    inFlightRef.current = true;
+    try {
+      if (next && !(await authenticateForAppLock())) {
+        return false;
+      }
+      await setAppLockEnabled(next);
+      setEnabledState(next);
+      return next;
+    } finally {
+      inFlightRef.current = false;
+    }
+  }, [enabled]);
 
   return { capability, enabled, loading, setEnabled };
 }
