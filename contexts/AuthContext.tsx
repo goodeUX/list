@@ -100,7 +100,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       console.error('Failed to migrate local data after sign in', error);
     }
 
-    await recordSignIn(credential.user.displayName, credential.user.email ?? email.trim());
+    try {
+      await recordSignIn(credential.user.displayName, credential.user.email ?? email.trim());
+    } catch (error) {
+      console.error('Failed to record sign-in hint', error);
+    }
   }, []);
 
   const signUp = useCallback(
@@ -122,7 +126,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         themePreference,
       });
       await migrateLocalDataToCloud(credential.user.uid);
-      await recordSignIn(trimmedName, trimmedEmail);
+      try {
+        await recordSignIn(trimmedName, trimmedEmail);
+      } catch (error) {
+        console.error('Failed to record sign-in hint', error);
+      }
     },
     [],
   );
@@ -134,7 +142,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const isNewUser = getAdditionalUserInfo(userCredential)?.isNewUser ?? false;
 
       if (!signedInUser.displayName && fallbackName) {
-        await updateProfile(signedInUser, { displayName: fallbackName });
+        try {
+          await updateProfile(signedInUser, { displayName: fallbackName });
+        } catch (error) {
+          console.error('Failed to set display name from provider', error);
+        }
       }
 
       const displayName = signedInUser.displayName ?? fallbackName ?? '';
@@ -157,7 +169,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         console.error('Failed to migrate local data after social sign in', error);
       }
 
-      await recordSignIn(displayName, email);
+      try {
+        await recordSignIn(displayName, email);
+      } catch (error) {
+        console.error('Failed to record sign-in hint', error);
+      }
     },
     [],
   );
