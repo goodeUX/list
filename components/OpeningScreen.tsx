@@ -87,7 +87,15 @@ export default function OpeningScreen({ fontsLoaded, onComplete }: OpeningScreen
     };
   }, []);
 
-  // Gate applies to persisted sessions only; a fresh journey sign-in sets unlocked.
+  // No persisted session at mount → any sign-in during this mount is a fresh
+  // authentication; the gate protects persisted sessions only.
+  useEffect(() => {
+    if (!loading && !user) {
+      setUnlocked(true);
+    }
+  }, [loading, user]);
+
+  // Gate applies to persisted sessions found at mount; unlocked latches when the mount resolves signed-out.
   const gateActive = Boolean(user) && lockRequired === true && !unlocked;
 
   useEffect(() => {
