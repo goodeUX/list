@@ -1,7 +1,7 @@
 import * as AppleAuthentication from 'expo-apple-authentication';
 import * as Crypto from 'expo-crypto';
 import { GoogleAuthProvider, OAuthProvider, type AuthCredential } from 'firebase/auth';
-import { Platform } from 'react-native';
+import { NativeModules, Platform, TurboModuleRegistry } from 'react-native';
 
 type GoogleSignInModule = typeof import('@react-native-google-signin/google-signin');
 
@@ -12,17 +12,23 @@ export type SocialCredentialResult =
 
 const webClientId = (process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID ?? '').trim();
 
-// The Google sign-in package registers a native module (RNGoogleSignin) at import
-// time, so a top-level import crashes the whole app on any build that lacks it —
-// Expo Go, or a dev client built before the dependency was added. Require it
-// lazily and defensively so its absence degrades to "unavailable" instead of
-// taking the entire module graph (and the app) down on startup.
+// The Google sign-in package calls TurboModuleRegistry.getEnforcing('RNGoogleSignin')
+// at import time, which throws hard when the native module isn't in the binary —
+// Expo Go, or a dev client built before the dependency was added. In Metro's dev
+// loader that throw escapes a surrounding try/catch and reaches React's render, so
+// we must never even import the package unless the native module is actually
+// present. Probe with the non-throwing get()/NativeModules lookup first.
 let googleModule: GoogleSignInModule | null | undefined;
 
 function getGoogleModule(): GoogleSignInModule | null {
   if (googleModule === undefined) {
     try {
-      googleModule = require('@react-native-google-signin/google-signin') as GoogleSignInModule;
+      const hasNativeModule =
+        TurboModuleRegistry.get('RNGoogleSignin') != null ||
+        (NativeModules as Record<string, unknown>).RNGoogleSignin != null;
+      googleModule = hasNativeModule
+        ? (require('@react-native-google-signin/google-signin') as GoogleSignInModule)
+        : null;
     } catch {
       googleModule = null;
     }
