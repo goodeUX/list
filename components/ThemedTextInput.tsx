@@ -100,6 +100,7 @@ const ThemedTextInput = forwardRef<TextInput, ThemedTextInputProps>(
     const { colors, radii } = useTheme();
     const [focused, setFocused] = useState(false);
     const innerRef = useRef<TextInput | null>(null);
+    const isDisabled = props.editable === false;
 
     const setInputRef = useCallback(
       (node: TextInput | null) => {
@@ -142,6 +143,7 @@ const ThemedTextInput = forwardRef<TextInput, ThemedTextInputProps>(
           : false;
     const isLabelFloating = focused || hasValue;
     const labelColor = isLabelFloating ? colors.text : colors.textSecondary;
+    const hasFloatingLabel = Boolean(label) && variant === 'bordered';
 
     const themedStyle: StyleProp<TextStyle> = [
       styles.base,
@@ -157,11 +159,13 @@ const ThemedTextInput = forwardRef<TextInput, ThemedTextInputProps>(
       },
       Platform.OS === 'web' ? ({ outlineStyle: 'none' } as unknown as TextStyle) : null,
       style,
+      isDisabled && !hasFloatingLabel ? styles.disabled : null,
     ];
 
     const input = (
       <TextInput
         ref={setInputRef}
+        accessibilityState={{ disabled: isDisabled }}
         autoFocus={autoFocus}
         cursorColor={colors.accent}
         onBlur={handleBlur}
@@ -176,12 +180,14 @@ const ThemedTextInput = forwardRef<TextInput, ThemedTextInputProps>(
       />
     );
 
-    if (!label || variant !== 'bordered') {
+    if (!hasFloatingLabel) {
       return input;
     }
 
     return (
-      <View style={styles.floatingLabelContainer}>
+      <View
+        style={[styles.floatingLabelContainer, isDisabled ? styles.disabled : null]}
+      >
         <View
           pointerEvents="none"
           style={[
@@ -221,6 +227,9 @@ const styles = StyleSheet.create({
     borderWidth: BORDERED_INPUT_BORDER_WIDTH,
     paddingHorizontal: 16,
     paddingVertical: BORDERED_INPUT_PADDING_VERTICAL,
+  },
+  disabled: {
+    opacity: 0.6,
   },
   floatingLabelContainer: {
     overflow: 'visible',
