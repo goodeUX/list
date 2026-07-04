@@ -205,7 +205,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [completeCredentialSignIn]);
 
   const resetPassword = useCallback(async (email: string) => {
-    await sendPasswordResetEmail(auth, email.trim());
+    try {
+      await sendPasswordResetEmail(auth, email.trim());
+    } catch (error) {
+      // Never reveal whether an account exists for this email.
+      if ((error as { code?: string })?.code === 'auth/user-not-found') {
+        return;
+      }
+      throw error;
+    }
   }, []);
 
   const signOut = useCallback(async () => {

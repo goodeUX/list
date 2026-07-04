@@ -91,6 +91,14 @@ export default function AuthJourney({
     };
   }, []);
 
+  useEffect(() => {
+    setStep('email');
+    setName('');
+    setPassword('');
+    setError(null);
+    setResetSent(false);
+  }, [mode]);
+
   const title = isSignUp
     ? `Join ${APP_NAME}`
     : welcomeName
@@ -120,6 +128,7 @@ export default function AuthJourney({
 
   const handleSubmitDetails = async () => {
     setError(null);
+    setResetSent(false);
 
     if (isSignUp && !name.trim()) {
       setError('Please enter your name.');
@@ -211,7 +220,13 @@ export default function AuthJourney({
           />
 
           {error ? (
-            <Text style={[styles.error, { color: colors.accent }]}>{error}</Text>
+            <Text
+              accessibilityLiveRegion="polite"
+              accessibilityRole="alert"
+              style={[styles.error, { color: colors.accent }]}
+            >
+              {error}
+            </Text>
           ) : null}
 
           <Pressable
@@ -300,10 +315,19 @@ export default function AuthJourney({
           />
 
           {error ? (
-            <Text style={[styles.error, { color: colors.accent }]}>{error}</Text>
+            <Text
+              accessibilityLiveRegion="polite"
+              accessibilityRole="alert"
+              style={[styles.error, { color: colors.accent }]}
+            >
+              {error}
+            </Text>
           ) : null}
           {resetSent ? (
-            <Text style={[styles.resetNote, { color: colors.textSecondary }]}>
+            <Text
+              accessibilityLiveRegion="polite"
+              style={[styles.resetNote, { color: colors.textSecondary }]}
+            >
               If an account exists for {email.trim()}, a reset link is on its way.
             </Text>
           ) : null}
