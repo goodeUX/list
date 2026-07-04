@@ -133,6 +133,7 @@ git commit -m "Add social auth and biometric dependencies with config plugins"
 
 **Files:**
 - Modify: `package.json`
+- Create: `jest/setup.ts`
 - Create: `lib/__tests__/smoke.test.ts`
 
 - [ ] **Step 1: Install jest-expo**
@@ -145,19 +146,29 @@ npm install --save-dev jest-expo@~54.0.0 jest@~29.7.0 @types/jest
 - [ ] **Step 2: Add test script + jest config to `package.json`**
 
 Add to `"scripts"`: `"test": "jest"`.
-Add a top-level `"jest"` key (the `moduleNameMapper` makes the repo's `@/` path alias resolve under jest):
+Add a top-level `"jest"` key (the `moduleNameMapper` makes the repo's `@/` path alias resolve under jest; the setup file registers the AsyncStorage mock — merely listing the bundled mock module in `setupFiles` does NOT register it, because that file only exports a mock object and never calls `jest.mock`):
 
 ```json
   "jest": {
     "preset": "jest-expo",
-    "setupFiles": [
-      "@react-native-async-storage/async-storage/jest/async-storage-mock"
+    "setupFilesAfterEnv": [
+      "<rootDir>/jest/setup.ts"
     ],
     "moduleNameMapper": {
       "^@/(.*)$": "<rootDir>/$1"
     }
   }
 ```
+
+- [ ] **Step 2b: Create `jest/setup.ts`**
+
+```ts
+jest.mock('@react-native-async-storage/async-storage', () =>
+  require('@react-native-async-storage/async-storage/jest/async-storage-mock'),
+);
+```
+
+(`jest.mock` needs the `jest` global, which exists in `setupFilesAfterEnv` — not in plain `setupFiles`.)
 
 - [ ] **Step 3: Write a smoke test**
 
@@ -180,7 +191,7 @@ Expected: 1 passed. (If jest-expo complains about `transformIgnorePatterns`, add
 - [ ] **Step 5: Commit**
 
 ```bash
-git add package.json package-lock.json lib/__tests__/smoke.test.ts
+git add package.json package-lock.json jest/setup.ts lib/__tests__/smoke.test.ts
 git commit -m "Add jest-expo test infrastructure"
 ```
 
