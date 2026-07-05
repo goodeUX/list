@@ -61,8 +61,8 @@ export default function PaywallScreen() {
     if (plan === 'premium' && busy === null) {
       finish();
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [plan]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- finish is intentionally omitted
+  }, [plan, busy]);
 
   useEffect(() => {
     let active = true;
