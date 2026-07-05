@@ -89,6 +89,15 @@ export default function ListsHomeScreen() {
     };
   }, []);
 
+  // The upgrade prompt only makes sense for a signed-in user. If they sign
+  // out while it's open (e.g. from Settings pushed above this screen), reset
+  // it so it can't overlap the signed-out onboarding/limit modal.
+  useEffect(() => {
+    if (!user) {
+      setUpgradePromptVisible(false);
+    }
+  }, [user]);
+
   // First-visit onboarding is derived, not fired imperatively: it shows only
   // while the user is signed out, and vanishes the instant they sign in (e.g.
   // from the opening screen) rather than flashing over a signed-in session.
