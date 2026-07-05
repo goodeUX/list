@@ -3,6 +3,8 @@ import { MaterialIcons } from '@expo/vector-icons';
 import { useState, type ComponentProps } from 'react';
 import {
   Image,
+  Linking,
+  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -17,14 +19,21 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '@/contexts/AuthContext';
 import Button from '@/components/Button';
 import MaterialSymbol from '@/components/MaterialSymbol';
+import { usePlan } from '@/contexts/PlanContext';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useAppLock } from '@/hooks/useAppLock';
 import { useChildSlideTransition } from '@/hooks/useSlideTransition';
+import { showAppAlert } from '@/lib/appAlert';
 import type { ThemePreference } from '@/lib/theme';
 import { buildPlanChooserHref } from '@/lib/authRedirect';
 import { buttonLabelStyle, buttonLayoutStyle } from '@/lib/buttonStyles';
+import { restorePremiumPurchases } from '@/lib/purchases';
 
 const THEME_OPTION_ICON_SIZE = 18;
+const STORE_SUBSCRIPTIONS_URL =
+  Platform.OS === 'ios'
+    ? 'https://apps.apple.com/account/subscriptions'
+    : 'https://play.google.com/store/account/subscriptions';
 const introLightImage =
   require('../../assets/images/intro-light.png') as ImageSourcePropType;
 const introDarkImage =
@@ -48,8 +57,10 @@ export default function SettingsScreen() {
   const insets = useSafeAreaInsets();
   const { animatedStyle, goBack, isEnabled: slideTransitionEnabled } =
     useChildSlideTransition();
+  const { plan, planSource, purchasesAvailable, entitlement } = usePlan();
 
   const [appLockBusy, setAppLockBusy] = useState(false);
+  const [restoring, setRestoring] = useState(false);
 
   const handleAppLockToggle = async (next: boolean) => {
     setAppLockBusy(true);
@@ -59,6 +70,34 @@ export default function SettingsScreen() {
       setAppLockBusy(false);
     }
   };
+
+  const handleManageSubscription = () => {
+    // RevenueCat's managementURL when known; otherwise the store's generic
+    // subscriptions page. Cancelling/downgrading is store-managed — access
+    // continues until the paid period ends.
+    void Linking.openURL(entitlement.managementURL ?? STORE_SUBSCRIPTIONS_URL);
+  };
+
+  const handleRestore = async () => {
+    setRestoring(true);
+    try {
+      const restored = await restorePremiumPurchases();
+      showAppAlert(
+        restored ? 'Premium restored' : 'Nothing to restore',
+        restored
+          ? 'Your Premium subscription is active on this device.'
+          : 'No previous Premium purchase was found for this store account.',
+      );
+    } catch {
+      showAppAlert('Restore failed', 'Please try again.');
+    } finally {
+      setRestoring(false);
+    }
+  };
+
+  const renewalDate = entitlement.expirationDate
+    ? new Date(entitlement.expirationDate).toLocaleDateString()
+    : null;
 
   const handleSignOut = async () => {
     await signOut();
@@ -321,6 +360,83 @@ export default function SettingsScreen() {
           )}
         </View>
 
+        {user ? (
+          <View
+            style={[
+              styles.section,
+              {
+                backgroundColor: colors.surface,
+                borderColor: colors.border,
+                borderRadius: radii.card,
+                padding: spacing.md,
+              },
+            ]}
+          >
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>Plan</Text>
+
+            <View style={[styles.planRow, { marginTop: spacing.sm }]}>
+              <View
+                style={[
+                  styles.planBadge,
+                  {
+                    backgroundColor: plan === 'premium' ? colors.accentSoft : colors.surfaceMuted,
+                    borderRadius: radii.checkbox,
+                  },
+                ]}
+              >
+                <Text style={[styles.planBadgeText, { color: colors.text }]}>
+                  {plan === 'premium' ? 'Premium' : 'Free'}
+                </Text>
+              </View>
+              <Text style={[styles.planDetail, { color: colors.textSecondary, flex: 1 }]}>
+                {plan === 'premium'
+                  ? planSource === 'comp'
+                    ? 'Complimentary — enjoy!'
+                    : renewalDate
+                      ? entitlement.willRenew
+                        ? `Renews ${renewalDate}`
+                        : `Ends ${renewalDate}`
+                      : 'Active subscription'
+                  : 'Up to 2 lists'}
+              </Text>
+            </View>
+
+            <View style={{ gap: spacing.sm, marginTop: spacing.sm }}>
+              {plan === 'free' && purchasesAvailable ? (
+                <Button
+                  label="Upgrade to Premium"
+                  onPress={() =>
+                    router.push({ pathname: '/(auth)/paywall', params: { from: 'settings' } })
+                  }
+                  variant="primary"
+                />
+              ) : null}
+              {plan === 'free' && !purchasesAvailable ? (
+                <Text style={[styles.planDetail, { color: colors.textSecondary }]}>
+                  Upgrade from the List Kitty app on your phone to unlock
+                  unlimited lists.
+                </Text>
+              ) : null}
+              {plan === 'premium' && planSource === 'store' ? (
+                <Button
+                  label="Manage subscription"
+                  onPress={handleManageSubscription}
+                  variant="surface"
+                />
+              ) : null}
+              {purchasesAvailable ? (
+                <Button
+                  disabled={restoring}
+                  label="Restore purchases"
+                  loading={restoring}
+                  onPress={() => void handleRestore()}
+                  variant="ghost"
+                />
+              ) : null}
+            </View>
+          </View>
+        ) : null}
+
         <View style={styles.introImageWrap}>
           <Image
             accessibilityIgnoresInvertColors
@@ -462,6 +578,24 @@ const styles = StyleSheet.create({
     lineHeight: 22,
   },
   appLockSubtitle: {
+    fontFamily: 'NunitoSans_400Regular',
+    fontSize: 13,
+    lineHeight: 18,
+  },
+  planRow: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: 10,
+  },
+  planBadge: {
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+  },
+  planBadgeText: {
+    fontFamily: 'NunitoSans_600SemiBold',
+    fontSize: 14,
+  },
+  planDetail: {
     fontFamily: 'NunitoSans_400Regular',
     fontSize: 13,
     lineHeight: 18,
