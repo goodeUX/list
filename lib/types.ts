@@ -42,4 +42,8 @@ export interface AppUser {
   displayName: string;
   email: string;
   themePreference: 'system' | 'light' | 'dark';
+  /** Display-only mirror of the store entitlement (see PlanContext). */
+  premium?: boolean;
+  /** Over-cap pick: which lists stay editable on the free plan. */
+  activeListIds?: string[];
 }

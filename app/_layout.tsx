@@ -34,6 +34,7 @@ import AppAlertHost from '@/components/AppAlertHost';
 import WebShell from '@/components/WebShell';
 import OpeningScreen from '@/components/OpeningScreen';
 import { AuthProvider } from '@/contexts/AuthContext';
+import { PlanProvider } from '@/contexts/PlanContext';
 import { ThemeProvider, useTheme } from '@/contexts/ThemeContext';
 import { useShouldSkipOpening } from '@/hooks/useShouldSkipOpening';
 import { useResumePendingInvite } from '@/hooks/useResumePendingInvite';
@@ -156,26 +157,28 @@ export default function RootLayout() {
     <View style={styles.root}>
       <SafeAreaProvider>
         <AuthProvider>
-          <ThemeProvider>
-            {showOpening ? (
-              <Reanimated.View
-                style={[
-                  styles.openingLayer,
-                  openingAnimatedStyle,
-                  { pointerEvents: openingComplete ? 'none' : 'auto' },
-                ]}
-              >
-                <OpeningScreen
-                  fontsLoaded={loaded}
-                  onComplete={handleOpeningComplete}
-                />
+          <PlanProvider>
+            <ThemeProvider>
+              {showOpening ? (
+                <Reanimated.View
+                  style={[
+                    styles.openingLayer,
+                    openingAnimatedStyle,
+                    { pointerEvents: openingComplete ? 'none' : 'auto' },
+                  ]}
+                >
+                  <OpeningScreen
+                    fontsLoaded={loaded}
+                    onComplete={handleOpeningComplete}
+                  />
+                </Reanimated.View>
+              ) : null}
+              <Reanimated.View style={[styles.mainLayer, mainAnimatedStyle]}>
+                <RootLayoutNav />
               </Reanimated.View>
-            ) : null}
-            <Reanimated.View style={[styles.mainLayer, mainAnimatedStyle]}>
-              <RootLayoutNav />
-            </Reanimated.View>
-            <AppAlertHost />
-          </ThemeProvider>
+              <AppAlertHost />
+            </ThemeProvider>
+          </PlanProvider>
         </AuthProvider>
       </SafeAreaProvider>
     </View>
