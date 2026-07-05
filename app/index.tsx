@@ -410,6 +410,8 @@ export default function ListsHomeScreen() {
         visible={upgradePromptVisible}
       />
 
+      {/* The upgrade prompt is a direct response to a tap, so it wins over
+          the ambient chooser; the chooser re-appears once it's dismissed. */}
       <ChooseEditableListsModal
         initialSelection={activeListIds}
         lists={lists}
@@ -418,7 +420,7 @@ export default function ListsHomeScreen() {
           setPickDismissed(false);
         }}
         onDismiss={() => setPickDismissed(true)}
-        visible={needsPick && !pickDismissed}
+        visible={needsPick && !pickDismissed && !upgradePromptVisible}
       />
     </View>
   );
