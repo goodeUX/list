@@ -30,6 +30,7 @@ import Reanimated, {
   withTiming,
 } from 'react-native-reanimated';
 
+import AppAlertHost from '@/components/AppAlertHost';
 import WebShell from '@/components/WebShell';
 import OpeningScreen from '@/components/OpeningScreen';
 import { AuthProvider } from '@/contexts/AuthContext';
@@ -173,6 +174,7 @@ export default function RootLayout() {
             <Reanimated.View style={[styles.mainLayer, mainAnimatedStyle]}>
               <RootLayoutNav />
             </Reanimated.View>
+            <AppAlertHost />
           </ThemeProvider>
         </AuthProvider>
       </SafeAreaProvider>

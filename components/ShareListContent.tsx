@@ -3,7 +3,6 @@ import * as Linking from 'expo-linking';
 import { useMemo } from 'react';
 import {
   ActivityIndicator,
-  Alert,
   Platform,
   Pressable,
   StyleSheet,
@@ -13,6 +12,7 @@ import {
 
 import { useAuth } from '@/contexts/AuthContext';
 import { useTheme } from '@/contexts/ThemeContext';
+import { showAppAlert } from '@/lib/appAlert';
 import { useListCollaborators } from '@/hooks/useListCollaborators';
 import { buttonLabelStyle, buttonLayoutStyle } from '@/lib/buttonStyles';
 import { getInviteUrl } from '@/lib/inviteUrl';
@@ -36,9 +36,9 @@ export default function ShareListContent({
   const handleCopyLink = async () => {
     try {
       await Clipboard.setStringAsync(inviteUrl);
-      Alert.alert('Link copied', 'Invite link copied to clipboard.');
+      showAppAlert('Link copied', 'Invite link copied to clipboard.');
     } catch {
-      Alert.alert('Could not copy', 'Please try again.');
+      showAppAlert('Could not copy', 'Please try again.');
     }
   };
 
@@ -46,7 +46,7 @@ export default function ShareListContent({
     try {
       await Linking.openURL(inviteUrl);
     } catch {
-      Alert.alert('Could not open link', 'Please try again.');
+      showAppAlert('Could not open link', 'Please try again.');
     }
   };
 

@@ -4,7 +4,6 @@ import * as WebBrowser from 'expo-web-browser';
 import { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
-  Alert,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -18,6 +17,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import ThemedTextInput from '@/components/ThemedTextInput';
 import { useTheme } from '@/contexts/ThemeContext';
+import { showAppAlert } from '@/lib/appAlert';
 import { buttonLabelStyle, buttonLayoutStyle } from '@/lib/buttonStyles';
 import { useChildSlideTransition } from '@/hooks/useSlideTransition';
 import { useListItems } from '@/hooks/useListItems';
@@ -67,7 +67,7 @@ export default function ItemDetailScreen() {
 
     const trimmedName = normalizeItemName(name);
     if (!trimmedName) {
-      Alert.alert('Name required', 'Please enter an item name.');
+      showAppAlert('Name required', 'Please enter an item name.');
       return;
     }
 
@@ -87,7 +87,7 @@ export default function ItemDetailScreen() {
       });
       goBack();
     } catch {
-      Alert.alert('Could not save', 'Please try again.');
+      showAppAlert('Could not save', 'Please try again.');
     } finally {
       setSaving(false);
     }
@@ -110,14 +110,7 @@ export default function ItemDetailScreen() {
       void deleteItem(item.id).then(() => goBack());
     };
 
-    if (Platform.OS === 'web') {
-      if (window.confirm(`Remove "${item.name}" from this list?`)) {
-        runDelete();
-      }
-      return;
-    }
-
-    Alert.alert('Delete item', `Remove "${item.name}" from this list?`, [
+    showAppAlert('Delete item', `Remove "${item.name}" from this list?`, [
       { text: 'Cancel', style: 'cancel' },
       {
         text: 'Delete',

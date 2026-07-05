@@ -1,6 +1,7 @@
-import { Alert, Platform, Share } from 'react-native';
+import { Platform, Share } from 'react-native';
 
 import { APP_NAME } from '@/lib/appName';
+import { showAppAlert } from '@/lib/appAlert';
 import { getInviteUrl } from '@/lib/inviteUrl';
 
 export async function shareListInvite(listId: string, listName: string): Promise<void> {
@@ -22,6 +23,6 @@ export async function shareListInvite(listId: string, listName: string): Promise
       title: `Join ${listName}`,
     });
   } catch {
-    Alert.alert('Could not share', 'Please try again.');
+    showAppAlert('Could not share', 'Please try again.');
   }
 }

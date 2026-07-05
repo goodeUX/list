@@ -16,7 +16,7 @@ import { buttonLabelStyle, buttonLayoutStyle } from '@/lib/buttonStyles';
 const BUTTON_ICON_SIZE = 20;
 const SURFACE_BUTTON_ICON_SIZE = 24;
 
-type ButtonVariant = 'primary' | 'secondary' | 'surface' | 'ghost';
+type ButtonVariant = 'primary' | 'secondary' | 'surface' | 'ghost' | 'destructive';
 
 type ButtonProps = {
   label: string;
@@ -45,14 +45,16 @@ export default function Button({
   const isPrimary = variant === 'primary';
   const isSurface = variant === 'surface';
   const isGhost = variant === 'ghost';
-  const isLarge = isPrimary || isSurface;
+  const isDestructive = variant === 'destructive';
+  const isFilled = isPrimary || isDestructive;
+  const isLarge = isPrimary || isSurface || isDestructive;
   const isDisabled = disabled || loading;
-  const labelColor = isPrimary
+  const labelColor = isFilled
     ? colors.surface
     : isGhost
       ? colors.textSecondary
       : colors.text;
-  const iconColor = isPrimary
+  const iconColor = isFilled
     ? colors.surface
     : isSurface
       ? colors.accent
@@ -78,12 +80,15 @@ export default function Button({
         {
           backgroundColor: isPrimary
             ? colors.accent
-            : isSurface
-              ? colors.surface
-              : undefined,
-          borderColor: isPrimary || isSurface || isGhost ? 'transparent' : colors.border,
+            : isDestructive
+              ? colors.danger
+              : isSurface
+                ? colors.surface
+                : undefined,
+          borderColor:
+            isFilled || isSurface || isGhost ? 'transparent' : colors.border,
           borderRadius: radii.item,
-          borderWidth: isPrimary || isSurface || isGhost ? 0 : 1,
+          borderWidth: isFilled || isSurface || isGhost ? 0 : 1,
           opacity: pressed || isDisabled ? (isGhost ? 0.7 : isLarge ? 0.7 : 0.85) : 1,
         },
         style,

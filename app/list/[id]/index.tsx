@@ -3,7 +3,6 @@ import { useFocusEffect } from '@react-navigation/native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useCallback, useEffect, useMemo, useRef, useState, type ElementRef } from 'react';
 import {
-  Alert,
   Image,
   KeyboardAvoidingView,
   Platform,
@@ -32,6 +31,7 @@ import { useTheme } from '@/contexts/ThemeContext';
 import { useItemHistory } from '@/hooks/useItemHistory';
 import { isOptimisticListItem, useListItems } from '@/hooks/useListItems';
 import { useChildSlideTransition } from '@/hooks/useSlideTransition';
+import { showAppAlert } from '@/lib/appAlert';
 import { db } from '@/lib/firebase';
 import { handleFirestoreListenerError } from '@/lib/firestoreListenerErrors';
 import { getLocalList, getCachedLocalList, subscribeLocalData } from '@/lib/localStore';
@@ -386,14 +386,7 @@ export default function ListDetailScreen() {
     confirmLabel: string,
     onConfirm: () => void,
   ) => {
-    if (Platform.OS === 'web') {
-      if (window.confirm(message)) {
-        onConfirm();
-      }
-      return;
-    }
-
-    Alert.alert(title, message, [
+    showAppAlert(title, message, [
       { text: 'Cancel', style: 'cancel' },
       {
         text: confirmLabel,
@@ -439,7 +432,7 @@ export default function ListDetailScreen() {
       'Clear',
       () => {
         void clearAllItems().catch(() => {
-          Alert.alert('Could not clear list', 'Please try again.');
+          showAppAlert('Could not clear list', 'Please try again.');
         });
       },
     );
@@ -458,7 +451,7 @@ export default function ListDetailScreen() {
         const idToLeave = listId;
         goBack();
         void leaveListById(idToLeave, user).catch(() => {
-          Alert.alert('Could not leave list', 'Please try again.');
+          showAppAlert('Could not leave list', 'Please try again.');
         });
       },
     );
@@ -477,7 +470,7 @@ export default function ListDetailScreen() {
         const idToDelete = listId;
         goBack();
         void deleteListById(idToDelete, user).catch(() => {
-          Alert.alert('Could not delete list', 'Please try again.');
+          showAppAlert('Could not delete list', 'Please try again.');
         });
       },
     );
@@ -497,7 +490,7 @@ export default function ListDetailScreen() {
       })
       .catch(() => {
         setMoveDoneToBottom((current) => !value);
-        Alert.alert('Could not update list', 'Please try again.');
+        showAppAlert('Could not update list', 'Please try again.');
       });
   };
 
@@ -537,7 +530,7 @@ export default function ListDetailScreen() {
         .catch(() => {
           newItemNameRef.current = nameToAdd;
           setNewItemName(nameToAdd);
-          Alert.alert('Could not add item', 'Please try again.');
+          showAppAlert('Could not add item', 'Please try again.');
         });
     },
     [addItem, listId, recordItemUsage, refocusAddInput],
@@ -621,7 +614,7 @@ export default function ListDetailScreen() {
       try {
         await reorderItems(orderedItems);
       } catch (error) {
-        Alert.alert('Could not reorder items', 'Please try again.');
+        showAppAlert('Could not reorder items', 'Please try again.');
         throw error;
       }
     },
@@ -633,7 +626,7 @@ export default function ListDetailScreen() {
       try {
         await applyItemLayout(orderedItems);
       } catch (error) {
-        Alert.alert('Could not reorder items', 'Please try again.');
+        showAppAlert('Could not reorder items', 'Please try again.');
         throw error;
       }
     },
