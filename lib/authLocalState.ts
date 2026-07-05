@@ -4,6 +4,7 @@ import { getLocalLists } from '@/lib/localStore';
 
 const HAS_USED_KEY = 'auth.hasUsedBefore';
 const ACCOUNT_HINT_KEY = 'auth.lastAccountHint';
+const LISTS_INTRO_SEEN_KEY = 'onboarding.listsIntroSeen';
 
 export type AuthJourneyMode = 'sign-in' | 'sign-up';
 
@@ -51,6 +52,16 @@ export async function getLastAccountHint(): Promise<AccountHint | null> {
   } catch {
     return null;
   }
+}
+
+/** Whether the signed-out user has already seen the My Lists sign-in intro. */
+export async function hasSeenListsIntro(): Promise<boolean> {
+  return (await AsyncStorage.getItem(LISTS_INTRO_SEEN_KEY)) === '1';
+}
+
+/** Records that the My Lists sign-in intro has been shown, so it never repeats. */
+export async function markListsIntroSeen(): Promise<void> {
+  await AsyncStorage.setItem(LISTS_INTRO_SEEN_KEY, '1');
 }
 
 /** Signup for brand-new users; login for anyone with prior usage on this device. */

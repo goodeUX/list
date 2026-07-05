@@ -23,8 +23,17 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import EmptyState from '@/components/EmptyState';
 import ListCard from '@/components/ListCard';
 import ListFormModal from '@/components/ListFormModal';
+import SignInBenefitsModal from '@/components/SignInBenefitsModal';
+import { useAuth } from '@/contexts/AuthContext';
 import { useTheme } from '@/contexts/ThemeContext';
+import { APP_NAME } from '@/lib/appName';
+import { buildAuthHref } from '@/lib/authRedirect';
+import {
+  hasSeenListsIntro,
+  markListsIntroSeen,
+} from '@/lib/authLocalState';
 import { buttonLabelStyle, buttonLayoutStyle } from '@/lib/buttonStyles';
+import { FREE_LIST_LIMIT, isAtFreeListLimit } from '@/lib/listLimits';
 import { useLists } from '@/hooks/useLists';
 import {
   acquireKeyboardSession,
@@ -54,12 +63,37 @@ function formatSummary(listCount: number, sharedCount: number): string {
 export default function ListsHomeScreen() {
   const { colors, colorScheme, radii, spacing } = useTheme();
   const safeAreaInsets = useSafeAreaInsets();
+  const { user } = useAuth();
   const { lists, loading, createList } = useLists();
   const listsOpacity = useSharedValue(0);
   const [modalVisible, setModalVisible] = useState(false);
   const [creating, setCreating] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [countsRefreshKey, setCountsRefreshKey] = useState(0);
+  const [introSeen, setIntroSeen] = useState<boolean | null>(null);
+  const [limitPromptVisible, setLimitPromptVisible] = useState(false);
+
+  useEffect(() => {
+    let active = true;
+    void hasSeenListsIntro().then((seen) => {
+      if (active) {
+        setIntroSeen(seen);
+      }
+    });
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  // First-visit onboarding is derived, not fired imperatively: it shows only
+  // while the user is signed out, and vanishes the instant they sign in (e.g.
+  // from the opening screen) rather than flashing over a signed-in session.
+  const onboardingVisible = introSeen === false && !user && !loading;
+  const activePrompt: 'limit' | 'onboarding' | null = limitPromptVisible
+    ? 'limit'
+    : onboardingVisible
+      ? 'onboarding'
+      : null;
 
   useFocusEffect(
     useCallback(() => {
@@ -96,9 +130,31 @@ export default function ListsHomeScreen() {
   }));
 
   const openCreateModal = useCallback(() => {
+    // Single enforcement point for the free-tier cap: signed-out users are held
+    // at the limit and shown the sign-in prompt instead of the create form.
+    if (!user && isAtFreeListLimit(lists.length)) {
+      setLimitPromptVisible(true);
+      return;
+    }
+
     setError(null);
     setModalVisible(true);
-  }, []);
+  }, [lists.length, user]);
+
+  const dismissPrompt = useCallback(() => {
+    if (limitPromptVisible) {
+      setLimitPromptVisible(false);
+      return;
+    }
+
+    setIntroSeen(true);
+    void markListsIntroSeen();
+  }, [limitPromptVisible]);
+
+  const handlePromptSignIn = useCallback(() => {
+    dismissPrompt();
+    router.push(buildAuthHref('sign-up'));
+  }, [dismissPrompt]);
 
   const closeCreateModal = useCallback(() => {
     setModalVisible(false);
@@ -281,6 +337,20 @@ export default function ListsHomeScreen() {
         submitting={creating}
         title="New list"
         visible={modalVisible}
+      />
+
+      <SignInBenefitsModal
+        onDismiss={dismissPrompt}
+        onSignIn={handlePromptSignIn}
+        subtitle={
+          activePrompt === 'limit'
+            ? `You've reached the ${FREE_LIST_LIMIT}-list limit for local use. Log in or sign up to unlock:`
+            : 'Log in or sign up to unlock more:'
+        }
+        title={
+          activePrompt === 'limit' ? 'Create more lists' : `Get more from ${APP_NAME}`
+        }
+        visible={activePrompt !== null}
       />
     </View>
   );

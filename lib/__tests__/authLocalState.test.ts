@@ -3,6 +3,8 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
   getJourneyDefault,
   getLastAccountHint,
+  hasSeenListsIntro,
+  markListsIntroSeen,
   recordAppUsed,
   recordSignIn,
 } from '@/lib/authLocalState';
@@ -65,4 +67,13 @@ test('recordSignIn drops blank fields', async () => {
 test('unreadable local store falls back to sign-up', async () => {
   getLocalLists.mockRejectedValue(new Error('boom'));
   expect(await getJourneyDefault()).toBe('sign-up');
+});
+
+test('lists intro is unseen on a fresh install', async () => {
+  expect(await hasSeenListsIntro()).toBe(false);
+});
+
+test('lists intro reads as seen after being marked', async () => {
+  await markListsIntroSeen();
+  expect(await hasSeenListsIntro()).toBe(true);
 });
