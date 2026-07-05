@@ -24,6 +24,7 @@ and restoring purchases.
 | Web purchases | Mobile-only for now; web shows status + "subscribe on mobile" notice |
 | Cap enforcement | Client-side only; premium status is server-validated by RevenueCat. Firestore-rules enforcement is a documented follow-up, not in scope |
 | Signup flow order | Choose plan → create account → paywall (purchase tied to Firebase uid) |
+| Complimentary premium | Owner-managed Firestore allowlist keyed by email (`premiumGrants/{email}`), edited in the Firebase console — no deploy needed. Chosen over RevenueCat promotional entitlements, which can't target an email before the user exists |
 
 ## Architecture
 
@@ -43,8 +44,37 @@ and restoring purchases.
   - `purchase(pkg)`, `restore()`, `managementURL`
 - After each entitlement refresh, the client mirrors `premium: boolean` to its
   own `users/{uid}` doc. The mirror is **display-only** (web build, cross-user
-  UI); the source of truth is RevenueCat's server-validated entitlement.
+  UI); the source of truth is RevenueCat's server-validated entitlement. The
+  mirror reflects the **store** entitlement only — comp grants are resolved
+  live from `premiumGrants` on every platform and never need mirroring.
 - Entitlement id in RevenueCat: `premium`.
+- **Plan resolution:** `premium = store entitlement (RevenueCat) OR comp grant
+  (Firestore allowlist)`. `usePlan()` also exposes
+  `planSource: 'store' | 'comp' | null` so the UI can distinguish paid from
+  complimentary (store wins when both apply, so subscription management stays
+  visible).
+
+### Complimentary premium (owner grants)
+
+- Collection `premiumGrants/{email}` — doc ID is the **lowercased** email;
+  fields are informational only (`note`, `createdAt`); the doc's existence is
+  the grant. Optional expiry is out of scope.
+- Written **only** from the Firebase console (or Admin SDK) by the owner.
+  Security rules allow no client writes and allow `get` only when
+  `request.auth.token.email.lower() == email` — a user can check their own
+  grant and nobody can enumerate the list.
+- The client subscribes to its own grant doc after sign-in, so grants and
+  revocations apply live without a reinstall or new release.
+- Comped users skip the paywall everywhere — including the premium branch of
+  signup (the post-account-creation step checks the resolved plan before
+  showing the paywall).
+- Works on web and in Expo Go too, since it's a plain Firestore read — comped
+  testers get premium even where the purchase SDK is unavailable.
+- Caveats (documented for the owner): grants match the exact sign-in email, so
+  Apple "Hide My Email" relay addresses must be comped as the relay address;
+  email ownership is not re-verified (an unverified email/password account
+  claiming a comped address is accepted) — acceptable risk for a
+  friends-and-family list, revisit if grants ever carry real value.
 
 ### Data model (`users/{uid}`)
 
@@ -109,6 +139,10 @@ and restoring purchases.
   store-compliant cancel/downgrade path; access continues until the paid
   period ends), and **Restore purchases** (Apple review requirement).
 - Web/Expo Go: show plan status; upgrade explains it needs the mobile app.
+- Comped users (`planSource === 'comp'`): badge reads "Premium —
+  complimentary"; no Manage subscription (there is no store subscription) and
+  no upgrade CTA. If a comped user also holds a store subscription, the store
+  view wins so they can still manage it.
 
 ## Error handling
 
@@ -128,8 +162,9 @@ and restoring purchases.
 
 - Jest (jest-expo): all `lib/listLimits.ts` helpers incl. over-cap resolution
   and chooser predicate; plan derivation from mocked RevenueCat customer info;
-  purchases module probe fallback (SDK absent under Jest exercises the same
-  path as Expo Go).
+  plan merge across the four store/comp combinations (incl. `planSource`
+  precedence); purchases module probe fallback (SDK absent under Jest
+  exercises the same path as Expo Go).
 - Manual: sandbox purchases (App Store sandbox / Play internal testing) on a
   dev build — purchase, cancel-mid-flow, restore, cancellation → read-only
   downgrade path.
@@ -148,6 +183,8 @@ and restoring purchases.
 
 - Web (Stripe) purchases.
 - Firestore-rules/server-side cap enforcement.
+- In-app admin UI for managing comp grants (Firebase console is the tool) and
+  grant expiry dates.
 - Grandfathering: any pre-existing free account with >2 lists goes through the
   same over-cap chooser/read-only flow.
 - Proration UX for monthly↔annual switches (the stores/RevenueCat handle the
