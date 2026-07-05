@@ -15,3 +15,17 @@ To see and use the button, run a **dev build** (`npx expo run:android` / `run:io
 rather than Expo Go. It also requires `EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID` to be set
 in `.env`. If the button is missing, check *which app you launched* before touching
 the code — a missing button in Expo Go is expected, not a bug.
+
+# Premium purchases only work in dev builds, not Expo Go or web
+
+The Premium plan chooser/paywall rely on `react-native-purchases` (RevenueCat),
+which Expo Go does not include. `isPurchasesAvailable()` in
+`lib/purchases.native.ts` probes for the `RNPurchases` native module (same
+pattern as Google sign-in) and returns `false` when it is absent or when the
+`EXPO_PUBLIC_REVENUECAT_*_KEY` env vars are unset — the signup flow then skips
+the plan chooser entirely. The web build never sells: it displays premium
+status from the `users/{uid}.premium` mirror and comp grants only.
+
+Complimentary premium: add a doc whose ID is the (lowercased) email under the
+`premiumGrants` Firestore collection in the Firebase console. See
+`docs/premium-setup.md`.
