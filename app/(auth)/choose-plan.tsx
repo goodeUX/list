@@ -77,7 +77,6 @@ export default function ChoosePlanScreen() {
     <Pressable
       accessibilityLabel={`Choose the ${title} plan`}
       accessibilityRole="button"
-      key={plan}
       onPress={() => continueWith(plan)}
       style={({ pressed }) => [
         styles.card,
@@ -108,6 +107,12 @@ export default function ChoosePlanScreen() {
       ))}
     </Pressable>
   );
+
+  // Same check as the redirect effect above: skip rendering the chooser UI
+  // for the frame(s) before the replace lands.
+  if (!isPurchasesAvailable()) {
+    return null;
+  }
 
   return (
     <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.bg }]}>
