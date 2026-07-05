@@ -20,6 +20,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import ChooseEditableListsModal from '@/components/ChooseEditableListsModal';
 import EmptyState from '@/components/EmptyState';
 import ListCard from '@/components/ListCard';
 import ListFormModal from '@/components/ListFormModal';
@@ -40,6 +41,7 @@ import {
   FREE_LIST_LIMIT,
   isAtFreeListLimit,
   isListEditable,
+  needsEditableListPick,
   resolveEditableListIds,
 } from '@/lib/listLimits';
 import { useLists } from '@/hooks/useLists';
@@ -73,7 +75,8 @@ export default function ListsHomeScreen() {
   const safeAreaInsets = useSafeAreaInsets();
   const { user } = useAuth();
   const { lists, loading, createList } = useLists();
-  const { plan, purchasesAvailable, planReady, activeListIds } = usePlan();
+  const { plan, purchasesAvailable, planReady, activeListIds, setActiveListIds } =
+    usePlan();
   const listsOpacity = useSharedValue(0);
   const [modalVisible, setModalVisible] = useState(false);
   const [creating, setCreating] = useState(false);
@@ -139,6 +142,13 @@ export default function ListsHomeScreen() {
         : ('all' as const),
     [activeListIds, lists, plan, planReady, user],
   );
+
+  const [pickDismissed, setPickDismissed] = useState(false);
+  const needsPick =
+    Boolean(user) &&
+    planReady &&
+    !loading &&
+    needsEditableListPick(plan, lists.map((list) => list.id), activeListIds);
 
   useEffect(() => {
     if (loading) {
@@ -398,6 +408,17 @@ export default function ListsHomeScreen() {
         onUpgrade={handleUpgrade}
         purchasesAvailable={purchasesAvailable}
         visible={upgradePromptVisible}
+      />
+
+      <ChooseEditableListsModal
+        initialSelection={activeListIds}
+        lists={lists}
+        onConfirm={async (ids) => {
+          await setActiveListIds(ids);
+          setPickDismissed(false);
+        }}
+        onDismiss={() => setPickDismissed(true)}
+        visible={needsPick && !pickDismissed}
       />
     </View>
   );
