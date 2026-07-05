@@ -1,5 +1,5 @@
 import { MaterialIcons } from '@expo/vector-icons';
-import { router, useLocalSearchParams } from 'expo-router';
+import { Redirect, router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -28,13 +28,6 @@ export default function ChoosePlanScreen() {
   const { redirect } = useLocalSearchParams<{ redirect?: string }>();
   const resolvedRedirect = parseAuthRedirect(redirect);
   const [monthlyPrice, setMonthlyPrice] = useState<string | null>(null);
-
-  // Web / Expo Go: no purchases — go straight to the plain sign-up form.
-  useEffect(() => {
-    if (!isPurchasesAvailable()) {
-      router.replace(buildAuthHref('sign-up', resolvedRedirect));
-    }
-  }, [resolvedRedirect]);
 
   useEffect(() => {
     let active = true;
@@ -108,10 +101,9 @@ export default function ChoosePlanScreen() {
     </Pressable>
   );
 
-  // Same check as the redirect effect above: skip rendering the chooser UI
-  // for the frame(s) before the replace lands.
+  // Web / Expo Go: no purchases — go straight to the plain sign-up form.
   if (!isPurchasesAvailable()) {
-    return null;
+    return <Redirect href={buildAuthHref('sign-up', resolvedRedirect)} />;
   }
 
   return (
