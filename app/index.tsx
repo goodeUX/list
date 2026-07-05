@@ -24,7 +24,9 @@ import EmptyState from '@/components/EmptyState';
 import ListCard from '@/components/ListCard';
 import ListFormModal from '@/components/ListFormModal';
 import SignInBenefitsModal from '@/components/SignInBenefitsModal';
+import UpgradePromptModal from '@/components/UpgradePromptModal';
 import { useAuth } from '@/contexts/AuthContext';
+import { usePlan } from '@/contexts/PlanContext';
 import { useTheme } from '@/contexts/ThemeContext';
 import { APP_NAME } from '@/lib/appName';
 import { buildPlanChooserHref } from '@/lib/authRedirect';
@@ -33,7 +35,7 @@ import {
   markListsIntroSeen,
 } from '@/lib/authLocalState';
 import { buttonLabelStyle, buttonLayoutStyle } from '@/lib/buttonStyles';
-import { FREE_LIST_LIMIT, isAtFreeListLimit } from '@/lib/listLimits';
+import { canCreateList, FREE_LIST_LIMIT, isAtFreeListLimit } from '@/lib/listLimits';
 import { useLists } from '@/hooks/useLists';
 import {
   acquireKeyboardSession,
@@ -65,6 +67,7 @@ export default function ListsHomeScreen() {
   const safeAreaInsets = useSafeAreaInsets();
   const { user } = useAuth();
   const { lists, loading, createList } = useLists();
+  const { plan, purchasesAvailable } = usePlan();
   const listsOpacity = useSharedValue(0);
   const [modalVisible, setModalVisible] = useState(false);
   const [creating, setCreating] = useState(false);
@@ -72,6 +75,7 @@ export default function ListsHomeScreen() {
   const [countsRefreshKey, setCountsRefreshKey] = useState(0);
   const [introSeen, setIntroSeen] = useState<boolean | null>(null);
   const [limitPromptVisible, setLimitPromptVisible] = useState(false);
+  const [upgradePromptVisible, setUpgradePromptVisible] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -130,16 +134,20 @@ export default function ListsHomeScreen() {
   }));
 
   const openCreateModal = useCallback(() => {
-    // Single enforcement point for the free-tier cap: signed-out users are held
-    // at the limit and shown the sign-in prompt instead of the create form.
+    // Single enforcement point for the free-tier cap. Signed-out users get
+    // the sign-in pitch; signed-in free users at the cap get the premium one.
     if (!user && isAtFreeListLimit(lists.length)) {
       setLimitPromptVisible(true);
+      return;
+    }
+    if (user && !canCreateList(plan, lists.length)) {
+      setUpgradePromptVisible(true);
       return;
     }
 
     setError(null);
     setModalVisible(true);
-  }, [lists.length, user]);
+  }, [lists.length, plan, user]);
 
   const dismissPrompt = useCallback(() => {
     if (limitPromptVisible) {
@@ -155,6 +163,11 @@ export default function ListsHomeScreen() {
     dismissPrompt();
     router.push(buildPlanChooserHref());
   }, [dismissPrompt]);
+
+  const handleUpgrade = useCallback(() => {
+    setUpgradePromptVisible(false);
+    router.push({ pathname: '/(auth)/paywall', params: { from: 'settings' } });
+  }, []);
 
   const closeCreateModal = useCallback(() => {
     setModalVisible(false);
@@ -351,6 +364,13 @@ export default function ListsHomeScreen() {
           activePrompt === 'limit' ? 'Create more lists' : `Get more from ${APP_NAME}`
         }
         visible={activePrompt !== null}
+      />
+
+      <UpgradePromptModal
+        onDismiss={() => setUpgradePromptVisible(false)}
+        onUpgrade={handleUpgrade}
+        purchasesAvailable={purchasesAvailable}
+        visible={upgradePromptVisible}
       />
     </View>
   );
