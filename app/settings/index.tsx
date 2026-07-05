@@ -30,10 +30,23 @@ import { buttonLabelStyle, buttonLayoutStyle } from '@/lib/buttonStyles';
 import { restorePremiumPurchases } from '@/lib/purchases';
 
 const THEME_OPTION_ICON_SIZE = 18;
-const STORE_SUBSCRIPTIONS_URL =
-  Platform.OS === 'ios'
-    ? 'https://apps.apple.com/account/subscriptions'
-    : 'https://play.google.com/store/account/subscriptions';
+const APPLE_SUBSCRIPTIONS_URL = 'https://apps.apple.com/account/subscriptions';
+const PLAY_SUBSCRIPTIONS_URL = 'https://play.google.com/store/account/subscriptions';
+
+function getStoreSubscriptionsUrl(): string {
+  if (Platform.OS === 'ios') {
+    return APPLE_SUBSCRIPTIONS_URL;
+  }
+  if (Platform.OS === 'android') {
+    return PLAY_SUBSCRIPTIONS_URL;
+  }
+  // Web mirror: the SDK isn't here to tell us which store the subscription
+  // came from, so guess from the browser UA (same pattern as appStoreUrls.ts).
+  if (typeof navigator !== 'undefined' && /iPhone|iPad|iPod/i.test(navigator.userAgent)) {
+    return APPLE_SUBSCRIPTIONS_URL;
+  }
+  return PLAY_SUBSCRIPTIONS_URL;
+}
 const introLightImage =
   require('../../assets/images/intro-light.png') as ImageSourcePropType;
 const introDarkImage =
@@ -75,7 +88,7 @@ export default function SettingsScreen() {
     // RevenueCat's managementURL when known; otherwise the store's generic
     // subscriptions page. Cancelling/downgrading is store-managed — access
     // continues until the paid period ends.
-    void Linking.openURL(entitlement.managementURL ?? STORE_SUBSCRIPTIONS_URL);
+    void Linking.openURL(entitlement.managementURL ?? getStoreSubscriptionsUrl());
   };
 
   const handleRestore = async () => {
