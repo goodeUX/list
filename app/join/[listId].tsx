@@ -62,6 +62,9 @@ export default function JoinListScreen() {
 
     const alreadyMember = lists.some((list) => list.id === resolvedListId);
     if (!alreadyMember && !canJoinList(plan, lists.length)) {
+      // A blocked invite must not auto-resume: clear the stored id so leaving
+      // this screen doesn't bounce straight back via useResumePendingInvite.
+      void clearPendingInviteListId();
       setBlocked(true);
       return;
     }
