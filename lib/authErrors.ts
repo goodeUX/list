@@ -1,6 +1,21 @@
 export function getAuthErrorMessage(error: unknown): string {
   const code = (error as { code?: string } | null | undefined)?.code;
 
+  return getMessageForCode(code);
+}
+
+/**
+ * True when the error is Firebase's authoritative "this email already has an
+ * account" rejection — the signal to route the message under the email field.
+ */
+export function isEmailTakenError(error: unknown): boolean {
+  return (
+    (error as { code?: string } | null | undefined)?.code ===
+    'auth/email-already-in-use'
+  );
+}
+
+function getMessageForCode(code: string | undefined): string {
   switch (code) {
     case 'auth/invalid-email':
       return 'Please enter a valid email address.';

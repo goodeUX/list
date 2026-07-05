@@ -10,7 +10,11 @@ import {
 
 import SocialAuthButtons from '@/components/auth/SocialAuthButtons';
 import ThemedTextInput from '@/components/ThemedTextInput';
-import { getAuthErrorMessage, useAuth } from '@/contexts/AuthContext';
+import {
+  getAuthErrorMessage,
+  isEmailTakenError,
+  useAuth,
+} from '@/contexts/AuthContext';
 import { useTheme } from '@/contexts/ThemeContext';
 import { APP_NAME } from '@/lib/appName';
 import {
@@ -34,7 +38,7 @@ type AuthJourneyProps = {
 };
 
 type JourneyStep = 'email' | 'details';
-type BusyAction = 'submit' | 'google' | 'apple' | 'reset' | null;
+type BusyAction = 'continue' | 'submit' | 'google' | 'apple' | 'reset' | null;
 
 function firstNameOf(displayName: string | undefined): string | undefined {
   const first = displayName?.trim().split(/\s+/)[0];
@@ -49,8 +53,14 @@ export default function AuthJourney({
   labelBackgroundColor,
 }: AuthJourneyProps) {
   const { colors, radii, spacing } = useTheme();
-  const { signIn, signUp, signInWithGoogle, signInWithApple, resetPassword } =
-    useAuth();
+  const {
+    signIn,
+    signUp,
+    isEmailRegistered,
+    signInWithGoogle,
+    signInWithApple,
+    resetPassword,
+  } = useAuth();
 
   const [step, setStep] = useState<JourneyStep>('email');
   const [email, setEmail] = useState('');
@@ -108,12 +118,28 @@ export default function AuthJourney({
     ? 'Sign up for free to sync and share your lists'
     : 'Log in to get back to your lists';
 
-  const handleContinue = () => {
+  const handleContinue = async () => {
     setError(null);
 
-    if (!EMAIL_PATTERN.test(email.trim())) {
+    const trimmedEmail = email.trim();
+    if (!EMAIL_PATTERN.test(trimmedEmail)) {
       setError('Please enter a valid email address.');
       return;
+    }
+
+    // On signup, block early if this email already has an account. This is a
+    // best-effort probe; account creation still enforces uniqueness as a
+    // guaranteed fallback (see handleSubmitDetails).
+    if (isSignUp) {
+      setBusy('continue');
+      try {
+        if (await isEmailRegistered(trimmedEmail)) {
+          setError(getAuthErrorMessage({ code: 'auth/email-already-in-use' }));
+          return;
+        }
+      } finally {
+        setBusy(null);
+      }
     }
 
     setResetSent(false);
@@ -148,6 +174,12 @@ export default function AuthJourney({
       }
       await onAuthenticated();
     } catch (err) {
+      // If the up-front probe missed it (e.g. enumeration protection), the
+      // authoritative rejection lands here — send the user back to the email
+      // step so the message shows under the email field.
+      if (isSignUp && isEmailTakenError(err)) {
+        setStep('email');
+      }
       setError(getAuthErrorMessage(err));
     } finally {
       setBusy(null);
@@ -212,7 +244,7 @@ export default function AuthJourney({
             label="Email"
             labelBackgroundColor={labelBackgroundColor}
             onChangeText={setEmail}
-            onSubmitEditing={handleContinue}
+            onSubmitEditing={() => void handleContinue()}
             placeholder="you@example.com"
             returnKeyType="next"
             textContentType="emailAddress"
@@ -231,7 +263,7 @@ export default function AuthJourney({
 
           <Pressable
             disabled={disabled}
-            onPress={handleContinue}
+            onPress={() => void handleContinue()}
             style={({ pressed }) => [
               styles.primaryButton,
               buttonLayoutStyle,
@@ -242,9 +274,13 @@ export default function AuthJourney({
               },
             ]}
           >
-            <Text style={[buttonLabelStyle(16), { color: colors.surface }]}>
-              Continue
-            </Text>
+            {busy === 'continue' ? (
+              <ActivityIndicator color={colors.surface} />
+            ) : (
+              <Text style={[buttonLabelStyle(16), { color: colors.surface }]}>
+                Continue
+              </Text>
+            )}
           </Pressable>
 
           {showGoogle || showApple ? (

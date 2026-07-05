@@ -1,4 +1,4 @@
-import { getAuthErrorMessage } from '@/lib/authErrors';
+import { getAuthErrorMessage, isEmailTakenError } from '@/lib/authErrors';
 
 test('maps existing email/password codes', () => {
   expect(getAuthErrorMessage({ code: 'auth/invalid-credential' })).toBe(
@@ -24,6 +24,17 @@ test('maps new social auth codes', () => {
   expect(getAuthErrorMessage({ code: 'auth/provider-unavailable' })).toBe(
     "That sign-in method isn't available on this device.",
   );
+});
+
+test('recognises the email-already-in-use error', () => {
+  expect(isEmailTakenError({ code: 'auth/email-already-in-use' })).toBe(true);
+});
+
+test('does not treat other errors as email-taken', () => {
+  expect(isEmailTakenError({ code: 'auth/wrong-password' })).toBe(false);
+  expect(isEmailTakenError(new Error('boom'))).toBe(false);
+  expect(isEmailTakenError(undefined)).toBe(false);
+  expect(isEmailTakenError(null)).toBe(false);
 });
 
 test('falls back to a generic message', () => {

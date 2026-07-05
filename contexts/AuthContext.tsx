@@ -1,6 +1,7 @@
 import {
   createUserWithEmailAndPassword,
   EmailAuthProvider,
+  fetchSignInMethodsForEmail,
   getAdditionalUserInfo,
   onAuthStateChanged,
   reauthenticateWithCredential,
@@ -27,7 +28,7 @@ import {
 } from 'react';
 
 import { auth, db } from '@/lib/firebase';
-export { getAuthErrorMessage } from '@/lib/authErrors';
+export { getAuthErrorMessage, isEmailTakenError } from '@/lib/authErrors';
 import { recordSignIn } from '@/lib/authLocalState';
 import { migrateLocalDataToCloud } from '@/lib/migrateLocalToCloud';
 import { getAppleCredential, getGoogleCredential } from '@/lib/socialAuth';
@@ -55,6 +56,7 @@ type AuthContextValue = {
   loading: boolean;
   signIn: (email: string, password: string) => Promise<void>;
   signUp: (email: string, password: string, displayName: string) => Promise<void>;
+  isEmailRegistered: (email: string) => Promise<boolean>;
   signInWithGoogle: () => Promise<SocialSignInResult>;
   signInWithApple: () => Promise<SocialSignInResult>;
   resetPassword: (email: string) => Promise<void>;
@@ -134,6 +136,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     },
     [],
   );
+
+  const isEmailRegistered = useCallback(async (email: string): Promise<boolean> => {
+    try {
+      const methods = await fetchSignInMethodsForEmail(auth, email.trim());
+      return methods.length > 0;
+    } catch {
+      // Fail open: creating the account is the authoritative uniqueness check,
+      // so a probe that errors (offline, enumeration protection, etc.) must
+      // never block a legitimate signup — it just falls through to that check.
+      return false;
+    }
+  }, []);
 
   const completeCredentialSignIn = useCallback(
     async (credential: AuthCredential, fallbackName?: string) => {
@@ -295,6 +309,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       loading,
       signIn,
       signUp,
+      isEmailRegistered,
       signInWithGoogle,
       signInWithApple,
       resetPassword,
@@ -306,6 +321,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       loading,
       signIn,
       signUp,
+      isEmailRegistered,
       signInWithGoogle,
       signInWithApple,
       resetPassword,
