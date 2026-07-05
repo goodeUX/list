@@ -1,6 +1,6 @@
 import { MaterialIcons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Pressable,
@@ -39,12 +39,19 @@ export default function PaywallScreen() {
   const [packages, setPackages] = useState<PremiumPackage[] | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [busy, setBusy] = useState<'purchase' | 'restore' | null>(null);
+  const hasFinishedRef = useRef(false);
 
   const finish = () => {
+    if (hasFinishedRef.current) {
+      return;
+    }
+    hasFinishedRef.current = true;
     if (fromSettings && router.canGoBack()) {
       router.back();
       return;
     }
+    // Settings entry with an unrestorable stack (deep link/restored session)
+    // falls through to the default post-auth destination.
     void navigateAfterSignIn(resolvedRedirect);
   };
 
@@ -83,7 +90,10 @@ export default function PaywallScreen() {
         finish();
       }
     } catch {
-      showAppAlert('Purchase failed', 'Nothing was charged. Please try again.');
+      showAppAlert(
+        'Purchase not completed',
+        'Something went wrong. If you were charged, your Premium access will activate shortly — or use Restore purchases.',
+      );
     } finally {
       setBusy(null);
     }
@@ -171,12 +181,15 @@ export default function PaywallScreen() {
         <View style={{ gap: spacing.sm }}>
           {packages !== null && packages.length > 0 ? (
             <Button
-              label={busy === 'purchase' ? 'Processing…' : 'Subscribe'}
+              disabled={busy !== null || selectedId === null}
+              label="Subscribe"
+              loading={busy === 'purchase'}
               onPress={() => void handlePurchase()}
               variant="primary"
             />
           ) : null}
           <Button
+            disabled={busy !== null}
             label={fromSettings ? 'Cancel' : 'Not now — start with Free'}
             onPress={finish}
             variant="ghost"
