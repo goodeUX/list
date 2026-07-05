@@ -17,6 +17,7 @@ import { useTheme } from '@/contexts/ThemeContext';
 import { buildAuthHref, parseAuthRedirect } from '@/lib/authRedirect';
 import type { AuthJourneyMode } from '@/lib/authLocalState';
 import { navigateAfterSignIn } from '@/lib/postAuthNavigation';
+import { isPurchasesAvailable } from '@/lib/purchases';
 
 const catLightImage =
   require('../../assets/images/splash-light.png') as ImageSourcePropType;
@@ -25,8 +26,9 @@ const catDarkImage =
 
 export default function SignUpScreen() {
   const { colors, colorScheme, spacing } = useTheme();
-  const { redirect } = useLocalSearchParams<{ redirect?: string }>();
+  const { redirect, plan } = useLocalSearchParams<{ redirect?: string; plan?: string }>();
   const resolvedRedirect = parseAuthRedirect(redirect);
+  const wantsPremium = plan === 'premium';
   const catImage = colorScheme === 'dark' ? catDarkImage : catLightImage;
 
   const handleGoBack = () => {
@@ -82,7 +84,16 @@ export default function SignUpScreen() {
             <AuthJourney
               labelBackgroundColor={colors.bg}
               mode="sign-up"
-              onAuthenticated={() => navigateAfterSignIn(resolvedRedirect)}
+              onAuthenticated={() => {
+                if (wantsPremium && isPurchasesAvailable()) {
+                  router.replace({
+                    pathname: '/(auth)/paywall',
+                    params: resolvedRedirect ? { redirect: resolvedRedirect } : {},
+                  });
+                  return;
+                }
+                return navigateAfterSignIn(resolvedRedirect);
+              }}
               onSwitchMode={handleSwitchMode}
             />
           </View>
