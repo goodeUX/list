@@ -9,6 +9,11 @@ dist/
 web-build/
 expo-env.d.ts
 
+# Generated web export / hosting build artifacts
+.expo-web-export/
+.firebase/
+build-meta.json
+
 # Native
 .kotlin/
 *.orig.*
