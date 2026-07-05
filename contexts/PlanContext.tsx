@@ -40,6 +40,11 @@ const PlanContext = createContext<PlanContextValue | null>(null);
 
 export function PlanProvider({ children }: { children: ReactNode }) {
   const { user, loading: authLoading } = useAuth();
+  // Key effects on the stable uid/email, not the User object: Firebase emits
+  // a new User reference on token refresh, which would otherwise tear down
+  // and re-create every listener for the same signed-in user.
+  const uid = user?.uid ?? null;
+  const email = user?.email ?? null;
   const purchasesAvailable = isPurchasesAvailable();
 
   const [entitlement, setEntitlement] = useState(INACTIVE_ENTITLEMENT);
@@ -66,8 +71,13 @@ export function PlanProvider({ children }: { children: ReactNode }) {
     }
 
     setIdentityReady(false);
+    if (!uid) {
+      // Defensive: a previous user's in-memory entitlement must never
+      // outlive their identity.
+      setEntitlement(INACTIVE_ENTITLEMENT);
+    }
     let active = true;
-    void setPurchasesUser(user?.uid ?? null).finally(() => {
+    void setPurchasesUser(uid).finally(() => {
       if (active) {
         setIdentityReady(true);
       }
@@ -76,18 +86,18 @@ export function PlanProvider({ children }: { children: ReactNode }) {
     return () => {
       active = false;
     };
-  }, [authLoading, user]);
+  }, [authLoading, uid]);
 
   useEffect(() => {
-    if (!user?.email) {
+    if (!email) {
       setCompActive(false);
       return;
     }
-    return subscribeToPremiumGrant(user.email, setCompActive);
-  }, [user]);
+    return subscribeToPremiumGrant(email, setCompActive);
+  }, [email]);
 
   useEffect(() => {
-    if (!user) {
+    if (!uid) {
       setMirroredPremium(false);
       setActiveListIdsState([]);
       setUserDocLoaded(false);
@@ -95,7 +105,7 @@ export function PlanProvider({ children }: { children: ReactNode }) {
     }
 
     return onSnapshot(
-      doc(db, 'users', user.uid),
+      doc(db, 'users', uid),
       (snapshot) => {
         const data = snapshot.data();
         setMirroredPremium(Boolean(data?.premium));
@@ -104,22 +114,23 @@ export function PlanProvider({ children }: { children: ReactNode }) {
         );
         setUserDocLoaded(true);
       },
+      // Errors intentionally preserve prior mirror state and only mark the doc loaded.
       () => setUserDocLoaded(true),
     );
-  }, [user]);
+  }, [uid]);
 
   // On devices with the SDK, RevenueCat's server-validated state is the truth.
   // Elsewhere (web, Expo Go) fall back to the display mirror.
   const storeActive = purchasesAvailable ? entitlement.premium : mirroredPremium;
   const { plan, planSource } = resolvePlan(
-    Boolean(user) && storeActive,
-    Boolean(user) && compActive,
+    Boolean(uid) && storeActive,
+    Boolean(uid) && compActive,
   );
 
   // Mirror the store entitlement to users/{uid} so web and other read-only
   // surfaces can display it. Display-only; RevenueCat remains the truth.
   useEffect(() => {
-    if (!user || !purchasesAvailable || !entitlementLoaded || !identityReady || !userDocLoaded) {
+    if (!uid || !purchasesAvailable || !entitlementLoaded || !identityReady || !userDocLoaded) {
       return;
     }
     if (mirroredPremium === entitlement.premium) {
@@ -127,7 +138,7 @@ export function PlanProvider({ children }: { children: ReactNode }) {
     }
 
     void setDoc(
-      doc(db, 'users', user.uid),
+      doc(db, 'users', uid),
       { premium: entitlement.premium },
       { merge: true },
     ).catch((error) => console.warn('[plan] failed to mirror premium flag', error));
@@ -137,27 +148,27 @@ export function PlanProvider({ children }: { children: ReactNode }) {
     identityReady,
     mirroredPremium,
     purchasesAvailable,
-    user,
+    uid,
     userDocLoaded,
   ]);
 
   const setActiveListIds = useCallback(
     async (ids: string[]) => {
-      if (!user) {
+      if (!uid) {
         return;
       }
       await setDoc(
-        doc(db, 'users', user.uid),
+        doc(db, 'users', uid),
         { activeListIds: ids },
         { merge: true },
       );
     },
-    [user],
+    [uid],
   );
 
   const planReady =
     !authLoading &&
-    (!user || userDocLoaded) &&
+    (!uid || userDocLoaded) &&
     (!purchasesAvailable || (entitlementLoaded && identityReady));
 
   const value = useMemo(
