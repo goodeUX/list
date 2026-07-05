@@ -9,9 +9,10 @@ import type { AppList } from '@/lib/types';
 type ListCardProps = {
   list: AppList;
   countsRefreshKey?: number;
+  locked?: boolean;
 };
 
-export default function ListCard({ list, countsRefreshKey = 0 }: ListCardProps) {
+export default function ListCard({ list, countsRefreshKey = 0, locked = false }: ListCardProps) {
   const { colors, radii, spacing } = useTheme();
 
   const { doneCount, totalCount } = useListItemCounts(list.id, countsRefreshKey);
@@ -47,6 +48,11 @@ export default function ListCard({ list, countsRefreshKey = 0 }: ListCardProps) 
           {list.name}
         </Text>
         <View style={styles.trailingMeta}>
+          {locked ? (
+            <View accessibilityLabel="Read-only list" style={styles.groupIcon}>
+              <MaterialIcons color={colors.textSecondary} name="lock-outline" size={16} />
+            </View>
+          ) : null}
           {isShared ? (
             <View accessibilityLabel="Shared list" style={styles.groupIcon}>
               <MaterialIcons color={colors.textSecondary} name="group" size={16} />

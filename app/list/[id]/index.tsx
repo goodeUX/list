@@ -29,6 +29,7 @@ import ThemedTextInput, { getThemedInputContainerStyle } from '@/components/Them
 import { useAuth } from '@/contexts/AuthContext';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useItemHistory } from '@/hooks/useItemHistory';
+import { useListAccess } from '@/hooks/useListAccess';
 import { isOptimisticListItem, useListItems } from '@/hooks/useListItems';
 import { useChildSlideTransition } from '@/hooks/useSlideTransition';
 import { showAppAlert } from '@/lib/appAlert';
@@ -46,6 +47,7 @@ import {
 } from '@/lib/itemName';
 import { deleteListById, leaveListById, setListMoveDoneToBottom, updateListDetails } from '@/lib/listMutations';
 import { consumePendingAddInputFocus } from '@/lib/pendingAddInputFocus';
+import { isPurchasesAvailable } from '@/lib/purchases';
 import { SLIDE_IN_MS } from '@/lib/slideTransition';
 import type { ListItem } from '@/lib/types';
 
@@ -90,6 +92,7 @@ export default function ListDetailScreen() {
     applyItemLayout,
     groupDoneItemsAtBottom,
   } = useListItems(listId, { moveDoneToBottom });
+  const { readOnly } = useListAccess(listId);
   const hasTitle = Boolean(paramName || listName);
   const isSlideReady = hasTitle && !loading;
   const { animatedStyle, goBack, isEnabled: slideTransitionEnabled } =
@@ -352,6 +355,10 @@ export default function ListDetailScreen() {
   const displayListName = listName || paramName || 'List';
 
   const handleShare = () => {
+    if (readOnly) {
+      showReadOnlyNotice();
+      return;
+    }
     if (!user) {
       router.push({
         pathname: '/(auth)/sign-in',
@@ -396,7 +403,18 @@ export default function ListDetailScreen() {
     ]);
   };
 
+  const showReadOnlyNotice = () => {
+    showAppAlert(
+      'This list is read-only',
+      'The Free plan includes 2 editable lists. Upgrade to Premium, or delete/leave a list to free a slot.',
+    );
+  };
+
   const handleRenameList = () => {
+    if (readOnly) {
+      showReadOnlyNotice();
+      return;
+    }
     blurAddInput();
     setListOptionsVisible(false);
     setRenameError(null);
@@ -426,6 +444,10 @@ export default function ListDetailScreen() {
   );
 
   const handleClearList = () => {
+    if (readOnly) {
+      showReadOnlyNotice();
+      return;
+    }
     confirmDestructiveAction(
       'Clear list',
       `Remove all items from “${displayListName}”? This cannot be undone.`,
@@ -477,6 +499,10 @@ export default function ListDetailScreen() {
   };
 
   const handleMoveDoneToBottomChange = (value: boolean) => {
+    if (readOnly) {
+      showReadOnlyNotice();
+      return;
+    }
     if (!listId) {
       return;
     }
@@ -589,6 +615,7 @@ export default function ListDetailScreen() {
 
   const handlePressItem = useCallback(
     (item: ListItem) => {
+      if (readOnly) return;
       blurAddInput();
       if (!listId) {
         return;
@@ -598,15 +625,16 @@ export default function ListDetailScreen() {
         params: { id: listId, itemId: item.id },
       });
     },
-    [blurAddInput, listId],
+    [blurAddInput, listId, readOnly],
   );
 
   const handleToggleItem = useCallback(
     (id: string) => {
+      if (readOnly) return;
       blurAddInput();
       void toggleItem(id);
     },
-    [blurAddInput, toggleItem],
+    [blurAddInput, readOnly, toggleItem],
   );
 
   const handleReorder = useCallback(
@@ -779,87 +807,121 @@ export default function ListDetailScreen() {
         />
       ) : null}
 
-      <Pressable
-        nativeID={ADD_INPUT_ROW_NATIVE_ID}
-        onPress={focusAddInput}
-        style={[
-          styles.addInputRow,
-          getThemedInputContainerStyle(
-            colors,
-            isAddInputFocused,
-            newItemName.length >= ITEM_NAME_MAX_LENGTH,
-          ),
-          {
-            borderRadius: radii.item,
-            marginHorizontal: spacing.lg,
-            marginTop: spacing.lg,
-            paddingRight: showSubmitButton
-                ? spacing.xs
-                : isAddInputFocused
-                  ? 12
-                  : 15,
+      {readOnly ? (
+        <View
+          style={[
+            styles.readOnlyBanner,
+            {
+              backgroundColor: colors.surfaceMuted,
+              borderColor: colors.border,
+              borderRadius: radii.item,
+              marginHorizontal: spacing.lg,
+              marginTop: spacing.lg,
+              padding: spacing.md,
             },
           ]}
         >
-          <ThemedTextInput
-            ref={addItemInputRef}
-            onBlur={handleInputBlur}
-            onChangeText={handleChangeNewItemName}
-            onFocus={handleInputFocus}
-            onSubmitEditing={handleSubmitEditing}
-            placeholder="Add an item..."
-            returnKeyType="done"
-            showSoftInputOnFocus
-            style={styles.addInput}
-            value={newItemName}
-            variant="plain"
-          />
-          {isAddInputFocused ? (
-            <Text
-              style={[
-                styles.charCounter,
-                {
-                  color:
-                    newItemName.length >= ITEM_NAME_MAX_LENGTH
-                      ? colors.accent
-                      : colors.textSecondary,
-                },
-              ]}
+          <MaterialIcons color={colors.textSecondary} name="lock-outline" size={20} />
+          <Text style={[styles.readOnlyText, { color: colors.textSecondary }]}>
+            Read-only on the Free plan
+          </Text>
+          {isPurchasesAvailable() ? (
+            <Pressable
+              accessibilityRole="button"
+              hitSlop={8}
+              onPress={() =>
+                router.push({ pathname: '/(auth)/paywall', params: { from: 'settings' } })
+              }
             >
-              {newItemName.length}/{ITEM_NAME_MAX_LENGTH}
-            </Text>
+              <Text style={[styles.readOnlyUpgrade, { color: colors.accent }]}>
+                Upgrade
+              </Text>
+            </Pressable>
           ) : null}
-          <Pressable
-            accessibilityLabel="Add item"
-            accessibilityRole="button"
-            accessibilityState={{ disabled: !canSubmitNewItem }}
-            disabled={Platform.OS !== 'web' && !canSubmitNewItem}
-            {...(Platform.OS === 'web'
-              ? ({ onMouseDown: handleSubmitMouseDown } as object)
-              : {
-                  onPress: handleSubmitPress,
-                  onPressIn: handleSubmitPressIn,
-                })}
-            style={({ pressed }) => [
-              styles.addSubmitButton,
-              {
-                backgroundColor: colors.accent,
-                borderRadius: radii.checkbox,
-                opacity: showSubmitButton ? (pressed && canSubmitNewItem ? 0.85 : 1) : 0,
-                pointerEvents: showSubmitButton ? 'auto' : 'none',
-                width: showSubmitButton ? ADD_SUBMIT_BUTTON_SIZE : 0,
+        </View>
+      ) : (
+        <Pressable
+          nativeID={ADD_INPUT_ROW_NATIVE_ID}
+          onPress={focusAddInput}
+          style={[
+            styles.addInputRow,
+            getThemedInputContainerStyle(
+              colors,
+              isAddInputFocused,
+              newItemName.length >= ITEM_NAME_MAX_LENGTH,
+            ),
+            {
+              borderRadius: radii.item,
+              marginHorizontal: spacing.lg,
+              marginTop: spacing.lg,
+              paddingRight: showSubmitButton
+                  ? spacing.xs
+                  : isAddInputFocused
+                    ? 12
+                    : 15,
               },
             ]}
           >
-            <MaterialIcons color={colors.surface} name="check" size={22} />
+            <ThemedTextInput
+              ref={addItemInputRef}
+              onBlur={handleInputBlur}
+              onChangeText={handleChangeNewItemName}
+              onFocus={handleInputFocus}
+              onSubmitEditing={handleSubmitEditing}
+              placeholder="Add an item..."
+              returnKeyType="done"
+              showSoftInputOnFocus
+              style={styles.addInput}
+              value={newItemName}
+              variant="plain"
+            />
+            {isAddInputFocused ? (
+              <Text
+                style={[
+                  styles.charCounter,
+                  {
+                    color:
+                      newItemName.length >= ITEM_NAME_MAX_LENGTH
+                        ? colors.accent
+                        : colors.textSecondary,
+                  },
+                ]}
+              >
+                {newItemName.length}/{ITEM_NAME_MAX_LENGTH}
+              </Text>
+            ) : null}
+            <Pressable
+              accessibilityLabel="Add item"
+              accessibilityRole="button"
+              accessibilityState={{ disabled: !canSubmitNewItem }}
+              disabled={Platform.OS !== 'web' && !canSubmitNewItem}
+              {...(Platform.OS === 'web'
+                ? ({ onMouseDown: handleSubmitMouseDown } as object)
+                : {
+                    onPress: handleSubmitPress,
+                    onPressIn: handleSubmitPressIn,
+                  })}
+              style={({ pressed }) => [
+                styles.addSubmitButton,
+                {
+                  backgroundColor: colors.accent,
+                  borderRadius: radii.checkbox,
+                  opacity: showSubmitButton ? (pressed && canSubmitNewItem ? 0.85 : 1) : 0,
+                  pointerEvents: showSubmitButton ? 'auto' : 'none',
+                  width: showSubmitButton ? ADD_SUBMIT_BUTTON_SIZE : 0,
+                },
+              ]}
+            >
+              <MaterialIcons color={colors.surface} name="check" size={22} />
+            </Pressable>
           </Pressable>
-        </Pressable>
+      )}
 
       <Animated.View style={[styles.listContainer, listFadeStyle]}>
         <Pressable onPress={handleBackgroundPress} style={styles.flex}>
           <ReorderableItemList
             contentContainerStyle={listContentStyle}
-            disabled={lockListItems}
+            disabled={lockListItems || readOnly}
             isItemDraggable={isItemDraggable}
             items={items}
             ListEmptyComponent={emptyList}
@@ -972,6 +1034,22 @@ const styles = StyleSheet.create({
     height: ADD_SUBMIT_BUTTON_SIZE,
     justifyContent: 'center',
     width: ADD_SUBMIT_BUTTON_SIZE,
+  },
+  readOnlyBanner: {
+    alignItems: 'center',
+    borderWidth: 1,
+    flexDirection: 'row',
+    gap: 8,
+  },
+  readOnlyText: {
+    flex: 1,
+    fontFamily: 'NunitoSans_600SemiBold',
+    fontSize: 14,
+    lineHeight: 20,
+  },
+  readOnlyUpgrade: {
+    fontFamily: 'NunitoSans_600SemiBold',
+    fontSize: 14,
   },
   listContainer: {
     flex: 1,

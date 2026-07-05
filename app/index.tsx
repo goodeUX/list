@@ -35,7 +35,13 @@ import {
   markListsIntroSeen,
 } from '@/lib/authLocalState';
 import { buttonLabelStyle, buttonLayoutStyle } from '@/lib/buttonStyles';
-import { canCreateList, FREE_LIST_LIMIT, isAtFreeListLimit } from '@/lib/listLimits';
+import {
+  canCreateList,
+  FREE_LIST_LIMIT,
+  isAtFreeListLimit,
+  isListEditable,
+  resolveEditableListIds,
+} from '@/lib/listLimits';
 import { useLists } from '@/hooks/useLists';
 import {
   acquireKeyboardSession,
@@ -67,7 +73,7 @@ export default function ListsHomeScreen() {
   const safeAreaInsets = useSafeAreaInsets();
   const { user } = useAuth();
   const { lists, loading, createList } = useLists();
-  const { plan, purchasesAvailable } = usePlan();
+  const { plan, purchasesAvailable, planReady, activeListIds } = usePlan();
   const listsOpacity = useSharedValue(0);
   const [modalVisible, setModalVisible] = useState(false);
   const [creating, setCreating] = useState(false);
@@ -124,6 +130,14 @@ export default function ListsHomeScreen() {
   const sharedCount = useMemo(
     () => lists.filter((list) => list.memberIds.length > 1).length,
     [lists],
+  );
+
+  const editableListIds = useMemo(
+    () =>
+      user && planReady
+        ? resolveEditableListIds(plan, lists.map((list) => list.id), activeListIds)
+        : ('all' as const),
+    [activeListIds, lists, plan, planReady, user],
   );
 
   useEffect(() => {
@@ -293,7 +307,11 @@ export default function ListsHomeScreen() {
                 extraData={countsRefreshKey}
                 keyExtractor={(item) => item.id}
                 renderItem={({ item }) => (
-                  <ListCard countsRefreshKey={countsRefreshKey} list={item} />
+                  <ListCard
+                    countsRefreshKey={countsRefreshKey}
+                    list={item}
+                    locked={!isListEditable(item.id, editableListIds)}
+                  />
                 )}
                 showsVerticalScrollIndicator={false}
               />
