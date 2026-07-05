@@ -21,3 +21,15 @@ export function buildAuthHref(
 
   return `/(auth)/${screen}`;
 }
+
+/**
+ * Sign-up entry point. The chooser screen itself falls back to the plain
+ * sign-up form when purchases are unavailable (web, Expo Go).
+ */
+export function buildPlanChooserHref(redirect?: string): Href {
+  if (redirect) {
+    return { pathname: '/(auth)/choose-plan', params: { redirect } };
+  }
+
+  return '/(auth)/choose-plan';
+}

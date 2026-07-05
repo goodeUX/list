@@ -14,7 +14,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import AuthJourney from '@/components/auth/AuthJourney';
 import KeyboardDismissScrollView from '@/components/KeyboardDismissScrollView';
 import { useTheme } from '@/contexts/ThemeContext';
-import { buildAuthHref, parseAuthRedirect } from '@/lib/authRedirect';
+import { buildAuthHref, buildPlanChooserHref, parseAuthRedirect } from '@/lib/authRedirect';
 import type { AuthJourneyMode } from '@/lib/authLocalState';
 import { navigateAfterSignIn } from '@/lib/postAuthNavigation';
 
@@ -38,7 +38,11 @@ export default function SignInScreen() {
   };
 
   const handleSwitchMode = (mode: AuthJourneyMode) => {
-    router.replace(buildAuthHref(mode === 'sign-up' ? 'sign-up' : 'sign-in', resolvedRedirect));
+    if (mode === 'sign-up') {
+      router.replace(buildPlanChooserHref(resolvedRedirect));
+      return;
+    }
+    router.replace(buildAuthHref('sign-in', resolvedRedirect));
   };
 
   return (

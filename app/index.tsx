@@ -27,7 +27,7 @@ import SignInBenefitsModal from '@/components/SignInBenefitsModal';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTheme } from '@/contexts/ThemeContext';
 import { APP_NAME } from '@/lib/appName';
-import { buildAuthHref } from '@/lib/authRedirect';
+import { buildPlanChooserHref } from '@/lib/authRedirect';
 import {
   hasSeenListsIntro,
   markListsIntroSeen,
@@ -153,7 +153,7 @@ export default function ListsHomeScreen() {
 
   const handlePromptSignIn = useCallback(() => {
     dismissPrompt();
-    router.push(buildAuthHref('sign-up'));
+    router.push(buildPlanChooserHref());
   }, [dismissPrompt]);
 
   const closeCreateModal = useCallback(() => {

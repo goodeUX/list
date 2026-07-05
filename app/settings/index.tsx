@@ -21,6 +21,7 @@ import { useTheme } from '@/contexts/ThemeContext';
 import { useAppLock } from '@/hooks/useAppLock';
 import { useChildSlideTransition } from '@/hooks/useSlideTransition';
 import type { ThemePreference } from '@/lib/theme';
+import { buildPlanChooserHref } from '@/lib/authRedirect';
 import { buttonLabelStyle, buttonLayoutStyle } from '@/lib/buttonStyles';
 
 const THEME_OPTION_ICON_SIZE = 18;
@@ -301,12 +302,7 @@ export default function SettingsScreen() {
               </Pressable>
 
               <Pressable
-                onPress={() =>
-                  router.push({
-                    pathname: '/(auth)/sign-up',
-                    params: { redirect: '/' },
-                  })
-                }
+                onPress={() => router.push(buildPlanChooserHref('/'))}
                 style={({ pressed }) => [
                   styles.actionButton,
                   buttonLayoutStyle,
