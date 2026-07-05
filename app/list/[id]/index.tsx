@@ -41,6 +41,7 @@ import { scheduleAddItemInputFocus } from '@/lib/focusAddItemInput';
 import { dismissKeyboard } from '@/lib/dismissKeyboard';
 import { focusTextInputNow } from '@/lib/focusTextInput';
 import { isLocalListId, usesCloudListData } from '@/lib/listIds';
+import { FREE_LIST_LIMIT } from '@/lib/listLimits';
 import {
   ITEM_NAME_MAX_LENGTH,
   limitItemNameLength,
@@ -406,7 +407,7 @@ export default function ListDetailScreen() {
   const showReadOnlyNotice = () => {
     showAppAlert(
       'This list is read-only',
-      'The Free plan includes 2 editable lists. Upgrade to Premium, or delete/leave a list to free a slot.',
+      `The Free plan includes ${FREE_LIST_LIMIT} editable lists. Upgrade to Premium, or delete/leave a list to free a slot.`,
     );
   };
 

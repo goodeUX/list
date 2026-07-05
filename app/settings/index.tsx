@@ -27,6 +27,7 @@ import { showAppAlert } from '@/lib/appAlert';
 import type { ThemePreference } from '@/lib/theme';
 import { buildPlanChooserHref } from '@/lib/authRedirect';
 import { buttonLabelStyle, buttonLayoutStyle } from '@/lib/buttonStyles';
+import { FREE_LIST_LIMIT } from '@/lib/listLimits';
 import { restorePremiumPurchases } from '@/lib/purchases';
 
 const THEME_OPTION_ICON_SIZE = 18;
@@ -410,7 +411,7 @@ export default function SettingsScreen() {
                         ? `Renews ${renewalDate}`
                         : `Ends ${renewalDate}`
                       : 'Active subscription'
-                  : 'Up to 2 lists'}
+                  : `Up to ${FREE_LIST_LIMIT} lists`}
               </Text>
             </View>
 
