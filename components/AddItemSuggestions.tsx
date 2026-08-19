@@ -1,4 +1,3 @@
-import { MaterialIcons } from '@expo/vector-icons';
 import { Platform, Pressable, ScrollView, StyleSheet, Text } from 'react-native';
 
 import { useTheme } from '@/contexts/ThemeContext';
@@ -83,9 +82,6 @@ export default function AddItemSuggestions({
               <Text style={[styles.matched, { color: colors.text }]}>{matched}</Text>
               {after}
             </Text>
-            {checkedItemId ? (
-              <MaterialIcons color={colors.textSecondary} name="check" size={18} />
-            ) : null}
           </Pressable>
         );
       })}
