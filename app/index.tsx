@@ -564,7 +564,7 @@ const styles = StyleSheet.create({
   titleRow: {
     alignItems: 'center',
     flexDirection: 'row',
-    gap: 12,
+    gap: 8,
     // The sort menu drops out of this row; without this it would be clipped.
     overflow: 'visible',
     zIndex: 1,

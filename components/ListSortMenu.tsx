@@ -5,7 +5,11 @@ import { BackHandler, Platform, Pressable, StyleSheet, Text, View } from 'react-
 import { useTheme } from '@/contexts/ThemeContext';
 import type { ListSortMode } from '@/lib/listSort';
 
-const BUTTON_SIZE = 36;
+// The button has no background, so its box is sized to the icon itself —
+// anything larger would read as extra gap after the title. hitSlop restores
+// a comfortable touch target.
+const ICON_SIZE = 24;
+const BUTTON_SIZE = ICON_SIZE;
 const MENU_ANCHOR_GAP = 8;
 const MENU_MIN_WIDTH = 240;
 const MENU_ITEM_ICON_SIZE = 20;
@@ -81,14 +85,18 @@ export default function ListSortMenu({
           accessibilityLabel="Sort lists"
           accessibilityRole="button"
           accessibilityState={{ expanded: visible }}
-          hitSlop={8}
+          hitSlop={12}
           onPress={toggleMenu}
           style={({ pressed }) => [
             styles.button,
             { opacity: pressed || visible ? 0.7 : 1 },
           ]}
         >
-          <MaterialIcons color={colors.accent} name={activeOption.icon} size={22} />
+          <MaterialIcons
+            color={colors.accent}
+            name={activeOption.icon}
+            size={ICON_SIZE}
+          />
         </Pressable>
 
         {visible ? (
