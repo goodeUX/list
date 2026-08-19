@@ -341,13 +341,22 @@ export default function ListsHomeScreen() {
     opacity: headerDividerOpacity.value,
   }));
   const showCreateBar = !loading && lists.length > 0;
-  const bottomBarInset = Math.max(safeAreaInsets.bottom, spacing.md);
+  // Cards scroll under the system bar, so every bottom offset clears it by a
+  // real gap rather than stopping level with it. Falls back to spacing.md on
+  // devices that report no inset.
+  const bottomBarInset = safeAreaInsets.bottom + spacing.md;
   const listBottomPadding =
     FAB_SIZE + spacing.md + bottomBarInset + spacing.lg;
+  const emptyListBottomPadding = spacing.xl + safeAreaInsets.bottom;
 
   return (
     <View style={[styles.flex, { backgroundColor: colors.bg }]}>
-      <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.bg }]}>
+      {/* No bottom edge: the list is meant to scroll under the system bar, and
+          each bottom offset below reserves the inset itself. */}
+      <SafeAreaView
+        edges={['top', 'left', 'right']}
+        style={[styles.safeArea, { backgroundColor: colors.bg }]}
+      >
         <View
           style={[
             styles.headerTop,
@@ -430,7 +439,9 @@ export default function ListsHomeScreen() {
                   styles.listContent,
                   {
                     padding: spacing.lg,
-                    paddingBottom: showCreateBar ? listBottomPadding : spacing.xl,
+                    paddingBottom: showCreateBar
+                      ? listBottomPadding
+                      : emptyListBottomPadding,
                     // 8 less than the surrounding inset, to sit closer to the header.
                     paddingTop: spacing.md,
                   },
@@ -544,8 +555,10 @@ const styles = StyleSheet.create({
     position: 'relative',
     zIndex: 2,
   },
+  // Matches the list page header's borderBottomWidth: 1 rather than a
+  // hairline, which was too thin to read on a high-density screen.
   headerDivider: {
-    height: StyleSheet.hairlineWidth,
+    height: 1,
     width: '100%',
   },
   menuBackdrop: {
@@ -556,17 +569,18 @@ const styles = StyleSheet.create({
     top: 0,
     zIndex: 1,
   },
-  // Sized by its content rather than filling the header, so the title row is
-  // never handed less width than the title needs.
+  // Never shrinks. flexShrink with minWidth: 0 is what lets a flex item be
+  // squeezed below its own content, which clipped the title on narrow
+  // screens; sized by content instead, the block always fits its title row.
   titleBlock: {
-    flexShrink: 1,
+    flexShrink: 0,
     gap: 4,
-    minWidth: 0,
   },
   titleRow: {
     alignItems: 'center',
     flexDirection: 'row',
     flexShrink: 0,
+    flexWrap: 'nowrap',
     gap: 8,
     // The sort menu drops out of this row; without this it would be clipped.
     overflow: 'visible',
@@ -581,9 +595,9 @@ const styles = StyleSheet.create({
     width: 44,
   },
   title: {
-    // The title keeps exactly the width of its own text: it never shrinks for
-    // the sort button beside it, and carries no numberOfLines, so there is
-    // nothing for the layout to ellipsize away.
+    // Exactly the width of its own text: it never grows or shrinks for the
+    // sort button beside it, and carries no numberOfLines, so no character
+    // can be ellipsized away at any font scale.
     flexGrow: 0,
     flexShrink: 0,
     fontFamily: 'Fraunces_600SemiBold',
