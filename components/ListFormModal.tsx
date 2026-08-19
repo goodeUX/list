@@ -510,6 +510,7 @@ const styles = StyleSheet.create({
   nameField: {
     alignItems: 'center',
     flexDirection: 'row',
+    gap: 8,
     minHeight: getBorderedInputHeight(),
     paddingRight: 12,
   },
