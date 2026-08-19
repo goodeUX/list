@@ -5,25 +5,35 @@
       "name": "expo-start",
       "runtimeExecutable": "npm",
       "runtimeArgs": ["run", "start"],
-      "port": 8081
+      "port": 8081,
+      "autoPort": true
     },
     {
       "name": "expo-web",
       "runtimeExecutable": "npm",
       "runtimeArgs": ["run", "web"],
-      "port": 8081
+      "port": 8081,
+      "autoPort": true
+    },
+    {
+      "name": "expo-web-preview",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": ["expo", "start", "--web", "--port", "8090"],
+      "port": 8090
     },
     {
       "name": "expo-android",
       "runtimeExecutable": "npm",
       "runtimeArgs": ["run", "android"],
-      "port": 8081
+      "port": 8081,
+      "autoPort": true
     },
     {
       "name": "expo-ios",
       "runtimeExecutable": "npm",
       "runtimeArgs": ["run", "ios"],
-      "port": 8081
+      "port": 8081,
+      "autoPort": true
     }
   ]
 }

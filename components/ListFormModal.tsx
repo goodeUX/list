@@ -9,7 +9,6 @@ import {
   Text,
   useWindowDimensions,
   View,
-  type LayoutRectangle,
 } from 'react-native';
 import Animated, {
   cancelAnimation,
@@ -89,9 +88,7 @@ export default function ListFormModal({
   const [listEmoji, setListEmoji] = useState(initialEmoji);
   const [isListNameFocused, setIsListNameFocused] = useState(false);
   const listNameInputRef = useRef<ElementRef<typeof ThemedTextInput>>(null);
-  const modalDialogRef = useRef<View>(null);
   const lastOpenModalAtRef = useRef(0);
-  const [modalDialogLayout, setModalDialogLayout] = useState<LayoutRectangle | null>(null);
   const [modalOverlayPaddingTop, setModalOverlayPaddingTop] = useState(24);
   const [modalLayerHeight, setModalLayerHeight] = useState<number | null>(null);
   const [validationError, setValidationError] = useState<string | null>(null);
@@ -105,26 +102,6 @@ export default function ListFormModal({
     opacity: modalDialogOpacity.value,
     transform: [{ translateY: modalDialogTranslateY.value }],
   }));
-
-  const modalContentLayout = useMemo(() => {
-    if (!modalDialogLayout) {
-      return null;
-    }
-
-    const inset = spacing.lg;
-    return {
-      x: modalDialogLayout.x + inset,
-      y: modalDialogLayout.y + inset,
-      width: modalDialogLayout.width - inset * 2,
-      height: modalDialogLayout.height - inset * 2,
-    };
-  }, [modalDialogLayout, spacing.lg]);
-
-  const updateModalDialogLayout = useCallback(() => {
-    modalDialogRef.current?.measureInWindow((x, y, width, height) => {
-      setModalDialogLayout({ x, y, width, height });
-    });
-  }, []);
 
   const dismissImmediately = useCallback(() => {
     cancelAnimation(modalBackdropOpacity);
@@ -229,15 +206,11 @@ export default function ListFormModal({
     );
     playOpenModalAnimation();
     focusNameInput();
-
-    const frame = requestAnimationFrame(updateModalDialogLayout);
-    return () => cancelAnimationFrame(frame);
   }, [
     focusNameInput,
     initialEmoji,
     initialName,
     playOpenModalAnimation,
-    updateModalDialogLayout,
     visible,
     windowHeight,
   ]);
@@ -309,7 +282,6 @@ export default function ListFormModal({
       <View style={styles.nameRow}>
         <EmojiPickerButton
           disabled={submitting}
-          dropdownContainerLayout={modalContentLayout}
           onChange={setListEmoji}
           value={listEmoji}
         />
@@ -404,9 +376,7 @@ export default function ListFormModal({
         style={[styles.modalBackdrop, modalBackdropStyle]}
       />
       <Animated.View
-        ref={modalDialogRef}
         collapsable={false}
-        onLayout={updateModalDialogLayout}
         style={[
           styles.modalDialog,
           modalDialogAnimatedStyle,
