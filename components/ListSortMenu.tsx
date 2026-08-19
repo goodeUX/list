@@ -78,110 +78,101 @@ export default function ListSortMenu({
     SORT_OPTIONS.find((option) => option.mode === sortMode) ?? SORT_OPTIONS[0];
 
   return (
-    <View collapsable={false} style={styles.layoutSlot}>
-      <View collapsable={false} style={[styles.root, visible && styles.rootOpen]}>
-        <Pressable
-          accessibilityHint={`Currently ${activeOption.label}`}
-          accessibilityLabel="Sort lists"
-          accessibilityRole="button"
-          accessibilityState={{ expanded: visible }}
-          hitSlop={12}
-          onPress={toggleMenu}
-          style={({ pressed }) => [
-            styles.button,
-            { opacity: pressed || visible ? 0.7 : 1 },
-          ]}
-        >
-          <MaterialIcons
-            color={colors.accent}
-            name={activeOption.icon}
-            size={ICON_SIZE}
-          />
-        </Pressable>
+    <View collapsable={false} style={[styles.root, visible && styles.rootOpen]}>
+      <Pressable
+        accessibilityHint={`Currently ${activeOption.label}`}
+        accessibilityLabel="Sort lists"
+        accessibilityRole="button"
+        accessibilityState={{ expanded: visible }}
+        hitSlop={12}
+        onPress={toggleMenu}
+        style={({ pressed }) => [
+          styles.button,
+          { opacity: pressed || visible ? 0.7 : 1 },
+        ]}
+      >
+        <MaterialIcons
+          color={colors.accent}
+          name={activeOption.icon}
+          size={ICON_SIZE}
+        />
+      </Pressable>
 
-        {visible ? (
-          <View style={styles.dropdown}>
-            <View
-              style={[
-                styles.menu,
-                {
-                  backgroundColor: colors.surface,
-                  borderColor: colors.border,
-                  borderRadius: radii.card,
-                  paddingVertical: spacing.xs,
-                  ...(Platform.OS === 'web'
-                    ? { boxShadow: '0 8px 24px rgba(44, 36, 23, 0.18)' }
-                    : {
-                        elevation: 8,
-                        shadowColor: '#000',
-                        shadowOffset: { width: 0, height: 4 },
-                        shadowOpacity: 0.14,
-                        shadowRadius: 10,
-                      }),
-                },
-              ]}
-            >
-              {SORT_OPTIONS.map((option) => {
-                const selected = option.mode === sortMode;
+      {visible ? (
+        <View style={styles.dropdown}>
+          <View
+            style={[
+              styles.menu,
+              {
+                backgroundColor: colors.surface,
+                borderColor: colors.border,
+                borderRadius: radii.card,
+                paddingVertical: spacing.xs,
+                ...(Platform.OS === 'web'
+                  ? { boxShadow: '0 8px 24px rgba(44, 36, 23, 0.18)' }
+                  : {
+                      elevation: 8,
+                      shadowColor: '#000',
+                      shadowOffset: { width: 0, height: 4 },
+                      shadowOpacity: 0.14,
+                      shadowRadius: 10,
+                    }),
+              },
+            ]}
+          >
+            {SORT_OPTIONS.map((option) => {
+              const selected = option.mode === sortMode;
 
-                return (
-                  <Pressable
-                    accessibilityRole="radio"
-                    accessibilityState={{ checked: selected }}
-                    key={option.mode}
-                    onPress={() => {
-                      closeMenu();
-                      onSortModeChange(option.mode);
-                    }}
-                    style={({ pressed }) => [
-                      styles.menuItem,
-                      { opacity: pressed ? 0.7 : 1 },
-                    ]}
-                  >
+              return (
+                <Pressable
+                  accessibilityRole="radio"
+                  accessibilityState={{ checked: selected }}
+                  key={option.mode}
+                  onPress={() => {
+                    closeMenu();
+                    onSortModeChange(option.mode);
+                  }}
+                  style={({ pressed }) => [
+                    styles.menuItem,
+                    { opacity: pressed ? 0.7 : 1 },
+                  ]}
+                >
+                  <MaterialIcons
+                    color={colors.text}
+                    name={option.icon}
+                    size={MENU_ITEM_ICON_SIZE}
+                  />
+                  <Text style={[menuItemTextStyle, { color: colors.text }]}>
+                    {option.label}
+                  </Text>
+                  {selected ? (
                     <MaterialIcons
-                      color={colors.text}
-                      name={option.icon}
+                      color={colors.accent}
+                      name="check"
                       size={MENU_ITEM_ICON_SIZE}
                     />
-                    <Text style={[menuItemTextStyle, { color: colors.text }]}>
-                      {option.label}
-                    </Text>
-                    {selected ? (
-                      <MaterialIcons
-                        color={colors.accent}
-                        name="check"
-                        size={MENU_ITEM_ICON_SIZE}
-                      />
-                    ) : null}
-                  </Pressable>
-                );
-              })}
-            </View>
+                  ) : null}
+                </Pressable>
+              );
+            })}
           </View>
-        ) : null}
-      </View>
+        </View>
+      ) : null}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  layoutSlot: {
+  // The button takes part in the header's layout like any other item; only the
+  // menu it opens is lifted out, so opening it never reflows the title.
+  root: {
     flexShrink: 0,
     height: BUTTON_SIZE,
     overflow: 'visible',
     width: BUTTON_SIZE,
   },
-  root: {
-    height: BUTTON_SIZE,
-    left: 0,
-    overflow: 'visible',
-    position: 'absolute',
-    top: 0,
-    width: BUTTON_SIZE,
-  },
   rootOpen: {
     elevation: 24,
-    width: MENU_MIN_WIDTH,
     zIndex: 1000,
   },
   button: {
@@ -193,13 +184,15 @@ const styles = StyleSheet.create({
   },
   dropdown: {
     alignItems: 'flex-start',
+    left: 0,
     marginTop: MENU_ANCHOR_GAP,
-    width: '100%',
+    minWidth: MENU_MIN_WIDTH,
+    position: 'absolute',
+    top: '100%',
   },
   menu: {
     borderWidth: 1,
     minWidth: MENU_MIN_WIDTH,
-    width: '100%',
   },
   menuItem: {
     alignItems: 'center',

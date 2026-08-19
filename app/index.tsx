@@ -356,7 +356,7 @@ export default function ListsHomeScreen() {
         >
           <View style={styles.titleBlock}>
               <View style={styles.titleRow}>
-                <Text numberOfLines={1} style={[styles.title, { color: colors.text }]}>
+                <Text style={[styles.title, { color: colors.text }]}>
                   My Lists
                 </Text>
                 {!loading && lists.length > 0 ? (
@@ -556,14 +556,17 @@ const styles = StyleSheet.create({
     top: 0,
     zIndex: 1,
   },
+  // Sized by its content rather than filling the header, so the title row is
+  // never handed less width than the title needs.
   titleBlock: {
-    flex: 1,
+    flexShrink: 1,
     gap: 4,
     minWidth: 0,
   },
   titleRow: {
     alignItems: 'center',
     flexDirection: 'row',
+    flexShrink: 0,
     gap: 8,
     // The sort menu drops out of this row; without this it would be clipped.
     overflow: 'visible',
@@ -578,8 +581,10 @@ const styles = StyleSheet.create({
     width: 44,
   },
   title: {
-    // In a row the title is a flex item, so without this it gets shrunk and
-    // wrapped by the sort button beside it. It was a column child before.
+    // The title keeps exactly the width of its own text: it never shrinks for
+    // the sort button beside it, and carries no numberOfLines, so there is
+    // nothing for the layout to ellipsize away.
+    flexGrow: 0,
     flexShrink: 0,
     fontFamily: 'Fraunces_600SemiBold',
     fontSize: 32,
