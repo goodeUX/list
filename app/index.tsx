@@ -356,7 +356,9 @@ export default function ListsHomeScreen() {
         >
           <View style={styles.titleBlock}>
               <View style={styles.titleRow}>
-                <Text style={[styles.title, { color: colors.text }]}>My Lists</Text>
+                <Text numberOfLines={1} style={[styles.title, { color: colors.text }]}>
+                  My Lists
+                </Text>
                 {!loading && lists.length > 0 ? (
                   <ListSortMenu
                     onSortModeChange={setSortMode}
@@ -576,6 +578,9 @@ const styles = StyleSheet.create({
     width: 44,
   },
   title: {
+    // In a row the title is a flex item, so without this it gets shrunk and
+    // wrapped by the sort button beside it. It was a column child before.
+    flexShrink: 0,
     fontFamily: 'Fraunces_600SemiBold',
     fontSize: 32,
     lineHeight: 40,

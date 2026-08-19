@@ -47,9 +47,9 @@ const HEADER_HEIGHT = 34;
 const MIN_CELL_SIZE = 44;
 const TAB_BAR_HEIGHT = 52;
 const EMOJI_FONT_SIZE = 26;
-// Inset shared by the emoji grid and the category row, so both sit in from the
-// sheet edges by the same amount.
-const CONTENT_HORIZONTAL_PADDING = 16;
+// Shared by the search row, the emoji grid and the category row, so all three
+// sections line up against the same inset.
+const CONTENT_HORIZONTAL_PADDING = 12;
 
 const OPEN_DURATION_MS = 220;
 const CLOSE_DURATION_MS = 180;
@@ -90,7 +90,7 @@ export default function EmojiPickerSheet({
   selected,
   keyboardHeight = 0,
 }: EmojiPickerSheetProps) {
-  const { colors, radii, spacing } = useTheme();
+  const { colors, radii } = useTheme();
   const { width: windowWidth } = useWindowDimensions();
   const insets = useSafeAreaInsets();
   const [query, setQuery] = useState('');
@@ -335,10 +335,7 @@ export default function EmojiPickerSheet({
       >
         <View onLayout={handleChromeLayout}>
         <View
-          style={[
-            styles.searchRow,
-            { borderBottomColor: colors.border, paddingHorizontal: spacing.md },
-          ]}
+          style={[styles.searchRow, { borderBottomColor: colors.border }]}
         >
           <View
             style={[
@@ -459,6 +456,7 @@ const styles = StyleSheet.create({
     // Matches the tab bar's top border so both dividers read the same weight.
     borderBottomWidth: StyleSheet.hairlineWidth,
     paddingBottom: 16,
+    paddingHorizontal: CONTENT_HORIZONTAL_PADDING,
     paddingTop: 16,
   },
   searchField: {
