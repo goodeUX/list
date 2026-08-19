@@ -269,7 +269,6 @@ export default function AuthJourney({
               buttonLayoutStyle,
               {
                 backgroundColor: colors.accent,
-                borderRadius: radii.item,
                 opacity: pressed || disabled ? 0.85 : 1,
               },
             ]}
@@ -376,7 +375,6 @@ export default function AuthJourney({
               buttonLayoutStyle,
               {
                 backgroundColor: colors.accent,
-                borderRadius: radii.item,
                 opacity: pressed || disabled ? 0.85 : 1,
               },
             ]}

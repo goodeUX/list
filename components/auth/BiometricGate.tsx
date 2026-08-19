@@ -69,7 +69,6 @@ export default function BiometricGate({ onUnlocked, onSignedOut }: BiometricGate
           buttonLayoutStyle,
           {
             backgroundColor: colors.accent,
-            borderRadius: radii.item,
             opacity: pressed || busy ? 0.85 : 1,
           },
         ]}

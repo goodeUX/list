@@ -29,7 +29,6 @@ export default function SocialAuthButtons({
     {
       backgroundColor: colors.surface,
       borderColor: colors.border,
-      borderRadius: radii.item,
       opacity: pressed || disabled ? 0.7 : 1,
     },
   ];

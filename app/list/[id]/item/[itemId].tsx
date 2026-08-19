@@ -283,7 +283,6 @@ export default function ItemDetailScreen() {
               buttonLayoutStyle,
               {
                 backgroundColor: colors.accent,
-                borderRadius: radii.item,
                 opacity: pressed || saving ? 0.85 : 1,
               },
             ]}
@@ -303,7 +302,6 @@ export default function ItemDetailScreen() {
               buttonLayoutStyle,
               {
                 borderColor: colors.border,
-                borderRadius: radii.item,
                 opacity: pressed || saving ? 0.85 : 1,
               },
             ]}

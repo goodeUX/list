@@ -11,6 +11,8 @@ import {
   StyleSheet,
   Text,
   View,
+  type NativeScrollEvent,
+  type NativeSyntheticEvent,
 } from 'react-native';
 import Animated, {
   Easing,
@@ -35,7 +37,6 @@ import {
   hasSeenListsIntro,
   markListsIntroSeen,
 } from '@/lib/authLocalState';
-import { buttonLabelStyle, buttonLayoutStyle } from '@/lib/buttonStyles';
 import {
   canCreateList,
   FREE_LIST_LIMIT,
@@ -53,13 +54,14 @@ import {
 import { markPendingAddInputFocus } from '@/lib/pendingAddInputFocus';
 
 const DEFAULT_EMOJI = '📋';
-const CREATE_BUTTON_HEIGHT = 48;
+const FAB_SIZE = 72;
+// Squircle corner, matching the product's other buttons. borderCurve only
+// smooths the corner on iOS; Android draws a plain rounded rect at this radius.
+const FAB_BORDER_RADIUS = 24;
 const LISTS_FADE_MS = 300;
-
-const frostedBackgrounds = {
-  light: 'rgba(250, 247, 242, 0.82)',
-  dark: 'rgba(26, 22, 18, 0.82)',
-} as const;
+// Far enough that overscroll bounce alone doesn't flicker the header divider.
+const HEADER_DIVIDER_SCROLL_THRESHOLD = 2;
+const HEADER_DIVIDER_FADE_MS = 150;
 
 function formatSummary(listCount: number, sharedCount: number): string {
   const listLabel = listCount === 1 ? '1 list' : `${listCount} lists`;
@@ -71,7 +73,7 @@ function formatSummary(listCount: number, sharedCount: number): string {
 }
 
 export default function ListsHomeScreen() {
-  const { colors, colorScheme, radii, spacing } = useTheme();
+  const { colors, spacing } = useTheme();
   const safeAreaInsets = useSafeAreaInsets();
   const { user } = useAuth();
   const { lists, loading, createList } = useLists();
@@ -253,10 +255,32 @@ export default function ListsHomeScreen() {
   );
 
   const summary = formatSummary(lists.length, sharedCount);
+
+  // The header divider only appears once content has moved underneath it.
+  const [listScrolled, setListScrolled] = useState(false);
+  const headerDividerOpacity = useSharedValue(0);
+
+  const handleListScroll = useCallback(
+    (event: NativeSyntheticEvent<NativeScrollEvent>) => {
+      const next = event.nativeEvent.contentOffset.y > HEADER_DIVIDER_SCROLL_THRESHOLD;
+      setListScrolled((current) => (current === next ? current : next));
+    },
+    [],
+  );
+
+  useEffect(() => {
+    headerDividerOpacity.value = withTiming(listScrolled ? 1 : 0, {
+      duration: HEADER_DIVIDER_FADE_MS,
+    });
+  }, [headerDividerOpacity, listScrolled]);
+
+  const headerDividerStyle = useAnimatedStyle(() => ({
+    opacity: headerDividerOpacity.value,
+  }));
   const showCreateBar = !loading && lists.length > 0;
   const bottomBarInset = Math.max(safeAreaInsets.bottom, spacing.md);
   const listBottomPadding =
-    CREATE_BUTTON_HEIGHT + spacing.md * 2 + bottomBarInset + spacing.lg;
+    FAB_SIZE + spacing.md + bottomBarInset + spacing.lg;
 
   return (
     <View style={[styles.flex, { backgroundColor: colors.bg }]}>
@@ -293,6 +317,16 @@ export default function ListsHomeScreen() {
             </Pressable>
         </View>
 
+        {/* Sibling of the header so it spans full width, not inset by its padding. */}
+        <Animated.View
+          pointerEvents="none"
+          style={[
+            styles.headerDivider,
+            headerDividerStyle,
+            { backgroundColor: colors.border },
+          ]}
+        />
+
         {loading ? (
           <View style={styles.loading}>
             <ActivityIndicator color={colors.accent} size="large" />
@@ -311,11 +345,15 @@ export default function ListsHomeScreen() {
                     gap: 12,
                     padding: spacing.lg,
                     paddingBottom: showCreateBar ? listBottomPadding : spacing.xl,
+                    // 8 less than the surrounding inset, to sit closer to the header.
+                    paddingTop: spacing.md,
                   },
                 ]}
                 data={lists}
                 extraData={countsRefreshKey}
                 keyExtractor={(item) => item.id}
+                onScroll={handleListScroll}
+                scrollEventThrottle={16}
                 renderItem={({ item }) => (
                   <ListCard
                     countsRefreshKey={countsRefreshKey}
@@ -331,48 +369,27 @@ export default function ListsHomeScreen() {
 
         {showCreateBar ? (
           <View
-            style={[styles.bottomBar, { paddingBottom: bottomBarInset, pointerEvents: 'box-none' }]}
+            style={[
+              styles.fabLayer,
+              {
+                paddingBottom: bottomBarInset,
+                paddingRight: spacing.lg,
+                pointerEvents: 'box-none',
+              },
+            ]}
           >
-            <View
-              style={[
-                styles.bottomBarSurface,
-                {
-                  backgroundColor: frostedBackgrounds[colorScheme],
-                  borderTopColor: colors.border,
-                  paddingHorizontal: spacing.lg,
-                  paddingTop: spacing.lg,
-                  paddingBottom: spacing.md,
-                },
-                Platform.OS === 'web'
-                  ? ({
-                      backdropFilter: 'blur(20px)',
-                      WebkitBackdropFilter: 'blur(20px)',
-                    } as object)
-                  : null,
+            <Pressable
+              accessibilityLabel="Create a new list"
+              accessibilityRole="button"
+              onPress={openCreateModal}
+              style={({ pressed }) => [
+                styles.fab,
+                styles.fabShadow,
+                { backgroundColor: colors.accent, opacity: pressed ? 0.85 : 1 },
               ]}
             >
-              <Pressable
-                accessibilityLabel="Create a new list"
-                accessibilityRole="button"
-                onPress={openCreateModal}
-                style={({ pressed }) => [
-                  styles.createListButton,
-                  buttonLayoutStyle,
-                  {
-                    backgroundColor: colors.surface,
-                    borderRadius: radii.item,
-                    flexDirection: 'row',
-                    gap: 8,
-                    opacity: pressed ? 0.7 : 1,
-                  },
-                ]}
-              >
-                <MaterialIcons color={colors.accent} name="add" size={24} />
-                <Text style={[buttonLabelStyle(16), { color: colors.text }]}>
-                  Create a new list
-                </Text>
-              </Pressable>
-            </View>
+              <Text style={[styles.fabIcon, { color: colors.surface }]}>+</Text>
+            </Pressable>
           </View>
         ) : null}
       </SafeAreaView>
@@ -438,8 +455,13 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: 12,
     justifyContent: 'space-between',
+    paddingBottom: 8,
     position: 'relative',
     zIndex: 2,
+  },
+  headerDivider: {
+    height: StyleSheet.hairlineWidth,
+    width: '100%',
   },
   titleBlock: {
     flex: 1,
@@ -475,18 +497,35 @@ const styles = StyleSheet.create({
   listContent: {
     flexGrow: 1,
   },
-  bottomBar: {
+  fabLayer: {
+    alignItems: 'flex-end',
     bottom: 0,
     left: 0,
     position: 'absolute',
     right: 0,
   },
-  bottomBarSurface: {
-    borderTopWidth: StyleSheet.hairlineWidth,
-    width: '100%',
+  fab: {
+    alignItems: 'center',
+    borderCurve: 'continuous',
+    borderRadius: FAB_BORDER_RADIUS,
+    height: FAB_SIZE,
+    justifyContent: 'center',
+    width: FAB_SIZE,
   },
-  createListButton: {
-    minHeight: 54,
-    width: '100%',
+  fabShadow: Platform.select({
+    web: { boxShadow: '0px 6px 16px rgba(44, 36, 23, 0.28)' },
+    default: {
+      elevation: 8,
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.24,
+      shadowRadius: 12,
+    },
+  }),
+  fabIcon: {
+    fontFamily: 'NunitoSans_700Bold',
+    fontSize: 40,
+    lineHeight: 48,
+    textAlign: 'center',
   },
 });

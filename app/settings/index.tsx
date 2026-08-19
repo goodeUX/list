@@ -343,7 +343,6 @@ export default function SettingsScreen() {
                   buttonLayoutStyle,
                   {
                     backgroundColor: colors.accent,
-                    borderRadius: radii.item,
                     borderWidth: 0,
                     opacity: pressed ? 0.85 : 1,
                   },
@@ -361,7 +360,6 @@ export default function SettingsScreen() {
                   buttonLayoutStyle,
                   {
                     borderColor: colors.border,
-                    borderRadius: radii.item,
                     opacity: pressed ? 0.85 : 1,
                   },
                 ]}

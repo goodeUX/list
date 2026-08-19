@@ -58,7 +58,6 @@ export default function EmptyState({
           buttonLayoutStyle,
           {
             backgroundColor: colors.accent,
-            borderRadius: radii.item,
             flexDirection: 'row',
             gap: 8,
             marginTop: spacing.md,
