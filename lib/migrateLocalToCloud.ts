@@ -3,31 +3,22 @@ import {
   collection,
   doc,
   serverTimestamp,
-  setDoc,
   writeBatch,
 } from 'firebase/firestore';
 
 import { db } from '@/lib/firebase';
-import { historyDocId } from '@/lib/historyDocId';
-import { clearLocalHistory, getLocalHistorySnapshot } from '@/lib/localHistory';
+import { copyListItemHistoryToCloud } from '@/lib/listItemHistory';
+import {
+  deleteLocalListHistory,
+  getLocalListHistory,
+} from '@/lib/localListHistory';
 import { clearLocalDatabase, getLocalDatabaseSnapshot } from '@/lib/localStore';
 
 export async function migrateLocalDataToCloud(userId: string): Promise<number> {
   const snapshot = await getLocalDatabaseSnapshot();
-  const history = await getLocalHistorySnapshot();
 
-  if (snapshot.lists.length === 0 && history.length === 0) {
+  if (snapshot.lists.length === 0) {
     return 0;
-  }
-
-  for (const entry of history) {
-    await setDoc(doc(db, 'users', userId, 'itemHistory', historyDocId(entry.name)), {
-      name: entry.name,
-      quantity: entry.quantity,
-      lastUsedAt: serverTimestamp(),
-      useCount: entry.useCount,
-      lastListId: entry.lastListId,
-    });
   }
 
   for (const list of snapshot.lists) {
@@ -40,6 +31,10 @@ export async function migrateLocalDataToCloud(userId: string): Promise<number> {
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
     });
+
+    // Carried over so the suggestions the list had built up survive sign-in.
+    await copyListItemHistoryToCloud(listRef.id, await getLocalListHistory(list.id));
+    await deleteLocalListHistory(list.id);
 
     const items = snapshot.itemsByListId[list.id] ?? [];
     if (items.length === 0) {
@@ -65,6 +60,5 @@ export async function migrateLocalDataToCloud(userId: string): Promise<number> {
   }
 
   await clearLocalDatabase();
-  await clearLocalHistory();
   return snapshot.lists.length;
 }

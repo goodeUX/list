@@ -22,21 +22,23 @@ import Animated, {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { doc, getDocFromCache, onSnapshot } from 'firebase/firestore';
 
+import AddItemSuggestions from '@/components/AddItemSuggestions';
 import ListOptionsMenu from '@/components/ListOptionsMenu';
 import ListFormModal from '@/components/ListFormModal';
 import ReorderableItemList from '@/components/ReorderableItemList';
 import ThemedTextInput, { getThemedInputContainerStyle } from '@/components/ThemedTextInput';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTheme } from '@/contexts/ThemeContext';
-import { useItemHistory } from '@/hooks/useItemHistory';
 import { useListAccess } from '@/hooks/useListAccess';
+import { useListItemHistory } from '@/hooks/useListItemHistory';
 import { isOptimisticListItem, useListItems } from '@/hooks/useListItems';
 import { useChildSlideTransition } from '@/hooks/useSlideTransition';
 import { showAppAlert } from '@/lib/appAlert';
+import { getItemSuggestions, type ItemSuggestion } from '@/lib/itemSuggestions';
 import { db } from '@/lib/firebase';
 import { handleFirestoreListenerError } from '@/lib/firestoreListenerErrors';
 import { getLocalList, getCachedLocalList, subscribeLocalData } from '@/lib/localStore';
-import { playAddItemHaptic } from '@/lib/haptics';
+import { playAddItemHaptic, playToggleHaptic } from '@/lib/haptics';
 import { scheduleAddItemInputFocus } from '@/lib/focusAddItemInput';
 import { dismissKeyboard } from '@/lib/dismissKeyboard';
 import { focusTextInputNow } from '@/lib/focusTextInput';
@@ -99,7 +101,10 @@ export default function ListDetailScreen() {
   const { animatedStyle, goBack, isEnabled: slideTransitionEnabled } =
     useChildSlideTransition({ ready: isSlideReady });
   const listOpacity = useSharedValue(0);
-  const { recordItemUsage } = useItemHistory();
+  const { entries: nameHistory, recordName } = useListItemHistory(listId, {
+    items,
+    itemsLoading: loading,
+  });
   const [newItemName, setNewItemName] = useState('');
   const [isAddInputFocused, setIsAddInputFocused] = useState(false);
   const [listOptionsVisible, setListOptionsVisible] = useState(false);
@@ -527,8 +532,9 @@ export default function ListDetailScreen() {
     setNewItemName(limitedText);
   };
 
-  const handleAddItem = useCallback(() => {
-      const trimmedName = newItemNameRef.current.trim();
+  const submitItemName = useCallback(
+    (name: string) => {
+      const trimmedName = name.trim();
       if (!listId || !trimmedName) {
         return;
       }
@@ -552,7 +558,7 @@ export default function ListDetailScreen() {
 
       void addItem(nameToAdd)
         .then(() => {
-          void recordItemUsage(nameToAdd, null, listId);
+          void recordName(nameToAdd);
         })
         .catch(() => {
           newItemNameRef.current = nameToAdd;
@@ -560,8 +566,12 @@ export default function ListDetailScreen() {
           showAppAlert('Could not add item', 'Please try again.');
         });
     },
-    [addItem, listId, recordItemUsage, refocusAddInput],
+    [addItem, listId, recordName, refocusAddInput],
   );
+
+  const handleAddItem = useCallback(() => {
+    submitItemName(newItemNameRef.current);
+  }, [submitItemName]);
 
   const handleSubmitEditing = () => {
     handleAddItem();
@@ -586,6 +596,33 @@ export default function ListDetailScreen() {
     handleSubmitPressIn();
     handleAddItem();
   };
+
+  const handleSelectSuggestion = useCallback(
+    (suggestion: ItemSuggestion) => {
+      const { checkedItemId, name } = suggestion;
+
+      if (!checkedItemId) {
+        submitItemName(name);
+        return;
+      }
+
+      // The name is already on the list, just done — bring it back rather than
+      // adding a second copy of it.
+      playToggleHaptic();
+      newItemNameRef.current = '';
+      setNewItemName('');
+      refocusAddInput();
+      void toggleItem(checkedItemId);
+      void recordName(name);
+    },
+    [recordName, refocusAddInput, submitItemName, toggleItem],
+  );
+
+  const suggestions = useMemo(
+    () =>
+      isAddInputFocused ? getItemSuggestions(newItemName, nameHistory, items) : [],
+    [isAddInputFocused, items, nameHistory, newItemName],
+  );
 
   const canSubmitNewItem = Boolean(newItemName.trim());
   const showSubmitButton = isAddInputFocused && newItemName.length > 0;
@@ -841,6 +878,7 @@ export default function ListDetailScreen() {
           ) : null}
         </View>
       ) : (
+        <View style={styles.addInputWrapper}>
         <Pressable
           nativeID={ADD_INPUT_ROW_NATIVE_ID}
           onPress={focusAddInput}
@@ -916,6 +954,12 @@ export default function ListDetailScreen() {
               <MaterialIcons color={colors.surface} name="check" size={22} />
             </Pressable>
           </Pressable>
+          <AddItemSuggestions
+            onPressIn={handleSubmitPressIn}
+            onSelect={handleSelectSuggestion}
+            suggestions={suggestions}
+          />
+        </View>
       )}
 
       <Animated.View style={[styles.listContainer, listFadeStyle]}>
@@ -1025,6 +1069,10 @@ const styles = StyleSheet.create({
     gap: 8,
     paddingLeft: 15,
     paddingVertical: 6,
+  },
+  // Lifts the suggestion panel above the item list that follows it.
+  addInputWrapper: {
+    zIndex: 20,
   },
   addInput: {
     flex: 1,

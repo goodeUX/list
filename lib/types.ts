@@ -28,15 +28,6 @@ export interface ListItem {
   updatedAt: Date;
 }
 
-export interface ItemHistoryEntry {
-  id: string;
-  name: string;
-  quantity: string | null;
-  lastUsedAt: Date;
-  useCount: number;
-  lastListId: string;
-}
-
 export interface AppUser {
   uid: string;
   displayName: string;

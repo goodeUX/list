@@ -12,6 +12,7 @@ import {
 
 import { db } from '@/lib/firebase';
 import { usesCloudListData } from '@/lib/listIds';
+import { deleteListItemHistory } from '@/lib/listItemHistory';
 import { normalizeListName } from '@/lib/listName';
 import {
   clearLocalListItems,
@@ -26,6 +27,8 @@ export async function deleteListById(
   if (!listId) {
     return;
   }
+
+  await deleteListItemHistory(listId, user);
 
   if (!usesCloudListData(user, listId)) {
     await deleteLocalList(listId);

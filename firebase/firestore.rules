@@ -44,10 +44,6 @@ service cloud.firestore {
       // Collaborators need to see each other's display name / email on shared lists.
       allow get: if isSignedIn();
       allow write: if isOwner(uid);
-
-      match /itemHistory/{historyId} {
-        allow read, write: if isOwner(uid);
-      }
     }
 
     match /premiumGrants/{email} {
@@ -83,6 +79,12 @@ service cloud.firestore {
         && request.auth.uid == resource.data.ownerId;
 
       match /items/{itemId} {
+        allow read, write: if isListMember(listId);
+      }
+
+      // Names this list has held, used for the add-item suggestions. It
+      // belongs to the list, so every member shares one history.
+      match /itemHistory/{historyId} {
         allow read, write: if isListMember(listId);
       }
 
