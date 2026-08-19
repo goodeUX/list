@@ -100,12 +100,7 @@ const styles = StyleSheet.create({
   },
   panel: {
     borderWidth: StyleSheet.hairlineWidth,
-    elevation: 8,
     position: 'absolute',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.14,
-    shadowRadius: 10,
     top: '100%',
     zIndex: 20,
   },

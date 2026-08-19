@@ -176,15 +176,6 @@ export default function ListOptionsMenu({
                   borderColor: colors.border,
                   borderRadius: radii.card,
                   paddingVertical: spacing.xs,
-                  ...(Platform.OS === 'web'
-                    ? { boxShadow: '0 8px 24px rgba(44, 36, 23, 0.18)' }
-                    : {
-                        elevation: 8,
-                        shadowColor: '#000',
-                        shadowOffset: { width: 0, height: 4 },
-                        shadowOpacity: 0.14,
-                        shadowRadius: 10,
-                      }),
                 },
               ]}
             >
