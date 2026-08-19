@@ -40,7 +40,7 @@ const FALLBACK_VISIBLE_ROWS = 6;
 // Close to the real measured value, so the first open doesn't visibly resize.
 const ESTIMATED_CHROME_HEIGHT = 72;
 // Corner of the highlight behind the selected category icon.
-const CATEGORY_ACTIVE_RADIUS = 2;
+const CATEGORY_ACTIVE_RADIUS = 8;
 // Never collapse the grid to nothing on a very short keyboard.
 const MIN_VISIBLE_ROWS = 2;
 const HEADER_HEIGHT = 34;
