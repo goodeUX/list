@@ -1070,9 +1070,11 @@ const styles = StyleSheet.create({
     paddingLeft: 15,
     paddingVertical: 6,
   },
-  // Lifts the suggestion panel above the item list that follows it.
+  // Lifts the suggestion panel above the item list that follows it, and no
+  // higher: the menu backdrop (5) and the header's options menu (10) must
+  // both still sit above the input row.
   addInputWrapper: {
-    zIndex: 20,
+    zIndex: 1,
   },
   addInput: {
     flex: 1,
