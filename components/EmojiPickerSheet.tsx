@@ -47,6 +47,9 @@ const HEADER_HEIGHT = 34;
 const MIN_CELL_SIZE = 44;
 const TAB_BAR_HEIGHT = 52;
 const EMOJI_FONT_SIZE = 26;
+// Inset shared by the emoji grid and the category row, so both sit in from the
+// sheet edges by the same amount.
+const CONTENT_HORIZONTAL_PADDING = 16;
 
 const OPEN_DURATION_MS = 220;
 const CLOSE_DURATION_MS = 180;
@@ -108,8 +111,11 @@ export default function EmojiPickerSheet({
     sheetHeightRef.current = event.nativeEvent.layout.height;
   }, []);
 
-  const columns = Math.max(6, Math.floor(windowWidth / MIN_CELL_SIZE));
-  const cellSize = windowWidth / columns;
+  // Cells are sized against the padded width, not the window, so the last
+  // column lands flush with the inset instead of overflowing past it.
+  const gridWidth = windowWidth - CONTENT_HORIZONTAL_PADDING * 2;
+  const columns = Math.max(6, Math.floor(gridWidth / MIN_CELL_SIZE));
+  const cellSize = gridWidth / columns;
 
   // Knob + search row, measured so the list can take exactly the space left over.
   const [chromeHeight, setChromeHeight] = useState(ESTIMATED_CHROME_HEIGHT);
@@ -375,6 +381,7 @@ export default function EmojiPickerSheet({
           </View>
         ) : (
           <FlatList
+            contentContainerStyle={styles.listContent}
             data={rows}
             getItemLayout={getItemLayout}
             initialNumToRender={INITIAL_ROWS_RENDERED}
@@ -476,6 +483,9 @@ const styles = StyleSheet.create({
     fontFamily: 'NunitoSans_600SemiBold',
     fontSize: 13,
   },
+  listContent: {
+    paddingHorizontal: CONTENT_HORIZONTAL_PADDING,
+  },
   emojiRow: {
     flexDirection: 'row',
   },
@@ -499,6 +509,7 @@ const styles = StyleSheet.create({
     alignItems: 'stretch',
     borderTopWidth: StyleSheet.hairlineWidth,
     flexDirection: 'row',
+    paddingHorizontal: CONTENT_HORIZONTAL_PADDING,
   },
   tab: {
     alignItems: 'center',
