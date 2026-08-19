@@ -1,17 +1,26 @@
-import { useCallback, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
+  BackHandler,
   FlatList,
   Keyboard,
-  Modal,
+  Platform,
   Pressable,
   StyleSheet,
   Text,
   TextInput,
   useWindowDimensions,
   View,
+  type LayoutChangeEvent,
   type NativeScrollEvent,
   type NativeSyntheticEvent,
 } from 'react-native';
+import Animated, {
+  runOnJS,
+  useAnimatedStyle,
+  useSharedValue,
+  withTiming,
+} from 'react-native-reanimated';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 
 import { useTheme } from '@/contexts/ThemeContext';
@@ -25,12 +34,24 @@ import {
   type EmojiRow,
 } from '@/lib/emojiCatalog';
 
-/** How many emoji rows are visible before scrolling. The sheet sizes itself to fit. */
-const VISIBLE_ROWS = 6;
+// Used only until a native keyboard has been measured; after that the sheet
+// matches the keyboard's height exactly.
+const FALLBACK_VISIBLE_ROWS = 6;
+// Close to the real measured value, so the first open doesn't visibly resize.
+const ESTIMATED_CHROME_HEIGHT = 72;
+// Corner of the highlight behind the selected category icon.
+const CATEGORY_ACTIVE_RADIUS = 2;
+// Never collapse the grid to nothing on a very short keyboard.
+const MIN_VISIBLE_ROWS = 2;
 const HEADER_HEIGHT = 34;
 const MIN_CELL_SIZE = 44;
 const TAB_BAR_HEIGHT = 52;
 const EMOJI_FONT_SIZE = 26;
+
+const OPEN_DURATION_MS = 220;
+const CLOSE_DURATION_MS = 180;
+// Start far enough down to be off screen before the sheet has been measured.
+const OFFSCREEN_FALLBACK = 1000;
 
 // Rendering every emoji at once would stall the open animation, so the list keeps
 // a deliberately large window mounted instead. That covers several screens in each
@@ -55,6 +76,8 @@ type EmojiPickerSheetProps = {
   onClose: () => void;
   onSelect: (emoji: string) => void;
   selected: string;
+  /** Height of the native keyboard in dp; the sheet matches it. 0 if unknown. */
+  keyboardHeight?: number;
 };
 
 export default function EmojiPickerSheet({
@@ -62,18 +85,57 @@ export default function EmojiPickerSheet({
   onClose,
   onSelect,
   selected,
+  keyboardHeight = 0,
 }: EmojiPickerSheetProps) {
   const { colors, radii, spacing } = useTheme();
   const { width: windowWidth } = useWindowDimensions();
+  const insets = useSafeAreaInsets();
   const [query, setQuery] = useState('');
   const [activeCategory, setActiveCategory] = useState(0);
   const listRef = useRef<FlatList<EmojiRow>>(null);
   // Set while a tab tap is scrolling, so the scroll handler doesn't fight it.
   const pendingCategoryRef = useRef<number | null>(null);
+  // Stays mounted through the closing slide, then unmounts.
+  const [mounted, setMounted] = useState(visible);
+  const sheetHeightRef = useRef(0);
+  const translateY = useSharedValue(OFFSCREEN_FALLBACK);
+
+  const sheetAnimatedStyle = useAnimatedStyle(() => ({
+    transform: [{ translateY: translateY.value }],
+  }));
+
+  const handleSheetLayout = useCallback((event: LayoutChangeEvent) => {
+    sheetHeightRef.current = event.nativeEvent.layout.height;
+  }, []);
 
   const columns = Math.max(6, Math.floor(windowWidth / MIN_CELL_SIZE));
   const cellSize = windowWidth / columns;
-  const listHeight = VISIBLE_ROWS * cellSize;
+
+  // Knob + search row, measured so the list can take exactly the space left over.
+  const [chromeHeight, setChromeHeight] = useState(ESTIMATED_CHROME_HEIGHT);
+  const tabBarHeight = TAB_BAR_HEIGHT + insets.bottom;
+
+  const handleChromeLayout = useCallback((event: LayoutChangeEvent) => {
+    const next = event.nativeEvent.layout.height;
+    setChromeHeight((current) => (current === next ? current : next));
+  }, []);
+
+  // Android reports the keyboard height as the resized window area, which stops
+  // above the navigation bar. This sheet draws to the screen edge, so it has to
+  // cover that strip too or it lands short of where the keyboard was. iOS already
+  // includes the home indicator in its reported height.
+  const targetSheetHeight =
+    keyboardHeight > 0
+      ? keyboardHeight + (Platform.OS === 'android' ? insets.bottom : 0)
+      : 0;
+
+  const listHeight =
+    targetSheetHeight > 0
+      ? Math.max(
+          MIN_VISIBLE_ROWS * cellSize,
+          targetSheetHeight - chromeHeight - tabBarHeight,
+        )
+      : FALLBACK_VISIBLE_ROWS * cellSize;
 
   const layout = useMemo(
     () => buildEmojiLayout(columns, HEADER_HEIGHT, cellSize),
@@ -152,20 +214,58 @@ export default function EmojiPickerSheet({
 
   const handleSelectEmoji = useCallback(
     (emoji: CatalogEmoji) => {
-      // Drop the search keyboard first so the sheet slides straight down instead
-      // of shifting as the window resizes underneath it.
-      Keyboard.dismiss();
       onSelect(emoji.emoji);
-      setQuery('');
     },
     [onSelect],
   );
 
-  const handleClose = () => {
+  const handleClose = useCallback(() => {
     Keyboard.dismiss();
     setQuery('');
     onClose();
-  };
+  }, [onClose]);
+
+  useEffect(() => {
+    if (visible) {
+      setMounted(true);
+    }
+  }, [visible]);
+
+  useEffect(() => {
+    if (!mounted) {
+      return;
+    }
+
+    if (visible) {
+      translateY.value = withTiming(0, { duration: OPEN_DURATION_MS });
+      return;
+    }
+
+    translateY.value = withTiming(
+      sheetHeightRef.current || OFFSCREEN_FALLBACK,
+      { duration: CLOSE_DURATION_MS },
+      (finished) => {
+        if (finished) {
+          runOnJS(setMounted)(false);
+        }
+      },
+    );
+  }, [mounted, translateY, visible]);
+
+  // Without a Modal wrapper there is no onRequestClose, so back must be handled here
+  // or it would dismiss the whole list modal instead of just this sheet.
+  useEffect(() => {
+    if (!visible) {
+      return;
+    }
+
+    const subscription = BackHandler.addEventListener('hardwareBackPress', () => {
+      handleClose();
+      return true;
+    });
+
+    return () => subscription.remove();
+  }, [handleClose, visible]);
 
   const renderRow = useCallback(
     ({ item }: { item: EmojiRow }) => {
@@ -215,161 +315,144 @@ export default function EmojiPickerSheet({
     ],
   );
 
-  return (
-    <Modal
-      animationType="slide"
-      onRequestClose={handleClose}
-      transparent
-      visible={visible}
-    >
-      <View style={styles.backdropRoot}>
-        <Pressable onPress={handleClose} style={styles.backdrop} />
+  if (!mounted) {
+    return null;
+  }
 
+  return (
+    // box-none lets taps outside the sheet reach the fields and buttons beneath,
+    // so tapping the name input focuses it in one go rather than only closing this.
+    <View pointerEvents="box-none" style={styles.layer}>
+      <Animated.View
+        onLayout={handleSheetLayout}
+        style={[styles.sheet, sheetAnimatedStyle, { backgroundColor: colors.surface }]}
+      >
+        <View onLayout={handleChromeLayout}>
         <View
           style={[
-            styles.sheet,
-            {
-              backgroundColor: colors.surface,
-              borderTopLeftRadius: radii.card,
-              borderTopRightRadius: radii.card,
-            },
+            styles.searchRow,
+            { borderBottomColor: colors.border, paddingHorizontal: spacing.md },
           ]}
         >
-          <View style={[styles.knob, { backgroundColor: colors.border }]} />
-
           <View
             style={[
-              styles.searchRow,
-              { borderBottomColor: colors.border, paddingHorizontal: spacing.md },
-            ]}
-          >
-            <View
-              style={[
-                styles.searchField,
-                {
-                  backgroundColor: colors.surfaceMuted,
-                  borderColor: colors.border,
-                  borderRadius: radii.item,
-                },
-              ]}
-            >
-              <Ionicons color={colors.textSecondary} name="search" size={16} />
-              <TextInput
-                autoCapitalize="none"
-                autoCorrect={false}
-                onChangeText={setQuery}
-                placeholder="Search"
-                placeholderTextColor={colors.textSecondary}
-                style={[styles.searchInput, { color: colors.text }]}
-                value={query}
-              />
-              {query ? (
-                <Pressable
-                  accessibilityLabel="Clear search"
-                  accessibilityRole="button"
-                  onPress={() => setQuery('')}
-                >
-                  <Ionicons color={colors.textSecondary} name="close-circle" size={16} />
-                </Pressable>
-              ) : null}
-            </View>
-          </View>
-
-          {searching && rows.length === 0 ? (
-            <View style={[styles.emptyState, { height: listHeight }]}>
-              <Text style={[styles.emptyStateText, { color: colors.textSecondary }]}>
-                No emoji found
-              </Text>
-            </View>
-          ) : (
-            <FlatList
-              data={rows}
-              getItemLayout={getItemLayout}
-              initialNumToRender={INITIAL_ROWS_RENDERED}
-              keyboardShouldPersistTaps="handled"
-              keyExtractor={(item) => item.key}
-              maxToRenderPerBatch={INITIAL_ROWS_RENDERED}
-              onScroll={handleScroll}
-              ref={listRef}
-              removeClippedSubviews={false}
-              renderItem={renderRow}
-              scrollEventThrottle={16}
-              showsVerticalScrollIndicator={false}
-              style={{ height: listHeight }}
-              windowSize={RENDER_WINDOW}
-            />
-          )}
-
-          <View
-            style={[
-              styles.tabBar,
+              styles.searchField,
               {
-                borderTopColor: colors.border,
-                height: TAB_BAR_HEIGHT,
+                backgroundColor: colors.surfaceMuted,
+                borderColor: colors.border,
+                borderRadius: radii.item,
               },
             ]}
           >
-            {EMOJI_CATEGORIES.map((category, index) => {
-              const isActive = !searching && index === activeCategory;
-
-              return (
-                <Pressable
-                  accessibilityLabel={category.label}
-                  accessibilityRole="tab"
-                  accessibilityState={{ selected: isActive }}
-                  key={category.key}
-                  onPress={() => handleSelectCategory(index)}
-                  style={styles.tab}
-                >
-                  <View
-                    style={[
-                      styles.tabIcon,
-                      {
-                        backgroundColor: isActive ? colors.surfaceMuted : 'transparent',
-                        borderRadius: radii.checkbox,
-                      },
-                    ]}
-                  >
-                    <Ionicons
-                      color={isActive ? colors.accent : colors.textSecondary}
-                      name={CATEGORY_ICONS[category.key] ?? 'ellipse-outline'}
-                      size={20}
-                    />
-                  </View>
-                </Pressable>
-              );
-            })}
+            <Ionicons color={colors.textSecondary} name="search" size={16} />
+            <TextInput
+              autoCapitalize="none"
+              autoCorrect={false}
+              onChangeText={setQuery}
+              placeholder="Search"
+              placeholderTextColor={colors.textSecondary}
+              style={[styles.searchInput, { color: colors.text }]}
+              value={query}
+            />
+            {query ? (
+              <Pressable
+                accessibilityLabel="Clear search"
+                accessibilityRole="button"
+                onPress={() => setQuery('')}
+              >
+                <Ionicons color={colors.textSecondary} name="close-circle" size={16} />
+              </Pressable>
+            ) : null}
           </View>
         </View>
-      </View>
-    </Modal>
+        </View>
+
+        {searching && rows.length === 0 ? (
+          <View style={[styles.emptyState, { height: listHeight }]}>
+            <Text style={[styles.emptyStateText, { color: colors.textSecondary }]}>
+              No emoji found
+            </Text>
+          </View>
+        ) : (
+          <FlatList
+            data={rows}
+            getItemLayout={getItemLayout}
+            initialNumToRender={INITIAL_ROWS_RENDERED}
+            keyboardShouldPersistTaps="handled"
+            keyExtractor={(item) => item.key}
+            maxToRenderPerBatch={INITIAL_ROWS_RENDERED}
+            onScroll={handleScroll}
+            ref={listRef}
+            removeClippedSubviews={false}
+            renderItem={renderRow}
+            scrollEventThrottle={16}
+            showsVerticalScrollIndicator={false}
+            style={{ height: listHeight }}
+            windowSize={RENDER_WINDOW}
+          />
+        )}
+
+        <View
+          style={[
+            styles.tabBar,
+            {
+              borderTopColor: colors.border,
+              height: TAB_BAR_HEIGHT + insets.bottom,
+              paddingBottom: insets.bottom,
+            },
+          ]}
+        >
+          {EMOJI_CATEGORIES.map((category, index) => {
+            const isActive = !searching && index === activeCategory;
+
+            return (
+              <Pressable
+                accessibilityLabel={category.label}
+                accessibilityRole="tab"
+                accessibilityState={{ selected: isActive }}
+                key={category.key}
+                onPress={() => handleSelectCategory(index)}
+                style={styles.tab}
+              >
+                <View
+                  style={[
+                    styles.tabIcon,
+                    {
+                      backgroundColor: isActive ? colors.surfaceMuted : 'transparent',
+                    },
+                  ]}
+                >
+                  <Ionicons
+                    color={isActive ? colors.accent : colors.textSecondary}
+                    name={CATEGORY_ICONS[category.key] ?? 'ellipse-outline'}
+                    size={20}
+                  />
+                </View>
+              </Pressable>
+            );
+          })}
+        </View>
+      </Animated.View>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  backdropRoot: {
-    flex: 1,
+  layer: {
+    ...StyleSheet.absoluteFillObject,
     justifyContent: 'flex-end',
+    // Above the list modal shell (zIndex 100) it sits over.
+    zIndex: 101,
   },
-  // Transparent: the New list modal underneath already dims the screen. This only
-  // exists so tapping outside the sheet still closes it.
-  backdrop: StyleSheet.absoluteFillObject,
   sheet: {
     overflow: 'hidden',
     width: '100%',
-  },
-  knob: {
-    alignSelf: 'center',
-    borderRadius: 3,
-    height: 5,
-    marginTop: 8,
-    width: 44,
   },
   searchRow: {
     // Matches the tab bar's top border so both dividers read the same weight.
     borderBottomWidth: StyleSheet.hairlineWidth,
     paddingBottom: 16,
-    paddingTop: 12,
+    paddingTop: 16,
   },
   searchField: {
     alignItems: 'center',
@@ -424,6 +507,7 @@ const styles = StyleSheet.create({
   },
   tabIcon: {
     alignItems: 'center',
+    borderRadius: CATEGORY_ACTIVE_RADIUS,
     height: 32,
     justifyContent: 'center',
     width: 32,

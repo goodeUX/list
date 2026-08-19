@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ElementRef } from 'react';
 import {
   BackHandler,
+  Keyboard,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -9,6 +10,7 @@ import {
   Text,
   useWindowDimensions,
   View,
+  type EmitterSubscription,
 } from 'react-native';
 import Animated, {
   cancelAnimation,
@@ -20,14 +22,13 @@ import Animated, {
 } from 'react-native-reanimated';
 
 import EmojiPickerButton from '@/components/EmojiPickerButton';
+import EmojiPickerSheet from '@/components/EmojiPickerSheet';
 import Button from '@/components/Button';
-import ThemedTextInput, {
-  getBorderedInputHeight,
-  getThemedInputContainerStyle,
-} from '@/components/ThemedTextInput';
+import ThemedTextInput, { getBorderedInputHeight } from '@/components/ThemedTextInput';
 import { useTheme } from '@/contexts/ThemeContext';
 import { focusTextInputNow, scheduleTextInputFocus } from '@/lib/focusTextInput';
 import { dismissKeyboard } from '@/lib/dismissKeyboard';
+import { useLastKeyboardHeight } from '@/lib/useLastKeyboardHeight';
 import {
   acquireKeyboardSession,
   releaseKeyboardProxy,
@@ -48,7 +49,10 @@ const MODAL_TRANSLATE_Y = 48;
 const MODAL_ESTIMATED_HEIGHT = 300;
 const MODAL_VERTICAL_OFFSET = 84;
 const MODAL_WIDTH_INSET = 24;
+const MODAL_BUTTON_HEIGHT = 48;
 const MODAL_EASING = Easing.out(Easing.cubic);
+// Fallback for IMEs that never emit keyboardDidHide, so the sheet still opens.
+const KEYBOARD_HIDE_TIMEOUT_MS = 350;
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
@@ -87,6 +91,13 @@ export default function ListFormModal({
   const [listName, setListName] = useState(initialName);
   const [listEmoji, setListEmoji] = useState(initialEmoji);
   const [isListNameFocused, setIsListNameFocused] = useState(false);
+  const [emojiPickerOpen, setEmojiPickerOpen] = useState(false);
+  // Observed while the name input is focused, so the sheet can match it later.
+  const keyboardHeight = useLastKeyboardHeight();
+  const pendingPickerOpenRef = useRef<{
+    subscription: EmitterSubscription;
+    timer: ReturnType<typeof setTimeout>;
+  } | null>(null);
   const listNameInputRef = useRef<ElementRef<typeof ThemedTextInput>>(null);
   const lastOpenModalAtRef = useRef(0);
   const [modalOverlayPaddingTop, setModalOverlayPaddingTop] = useState(24);
@@ -196,6 +207,7 @@ export default function ListFormModal({
     setListName(initialName);
     setListEmoji(initialEmoji || DEFAULT_EMOJI);
     setIsListNameFocused(false);
+    setEmojiPickerOpen(false);
     setValidationError(null);
     setModalLayerHeight(windowHeight);
     setModalOverlayPaddingTop(
@@ -262,13 +274,60 @@ export default function ListFormModal({
     await onSubmit(trimmedName, listEmoji);
   }, [listEmoji, listName, onSubmit]);
 
+  const cancelPendingPickerOpen = useCallback(() => {
+    if (!pendingPickerOpenRef.current) {
+      return;
+    }
+
+    pendingPickerOpenRef.current.subscription.remove();
+    clearTimeout(pendingPickerOpenRef.current.timer);
+    pendingPickerOpenRef.current = null;
+  }, []);
+
+  useEffect(() => cancelPendingPickerOpen, [cancelPendingPickerOpen]);
+
+  const closeEmojiPicker = useCallback(() => {
+    cancelPendingPickerOpen();
+    setEmojiPickerOpen(false);
+  }, [cancelPendingPickerOpen]);
+
+  const toggleEmojiPicker = useCallback(() => {
+    if (emojiPickerOpen) {
+      closeEmojiPicker();
+      return;
+    }
+
+    cancelPendingPickerOpen();
+
+    // Android resizes the window to sit above the soft keyboard, which would
+    // anchor the sheet mid-screen and make it jump once the keyboard closes.
+    // Waiting for the keyboard to finish hiding keeps the slide-in at the bottom.
+    if (!Keyboard.isVisible()) {
+      setEmojiPickerOpen(true);
+      return;
+    }
+
+    const open = () => {
+      cancelPendingPickerOpen();
+      setEmojiPickerOpen(true);
+    };
+
+    pendingPickerOpenRef.current = {
+      subscription: Keyboard.addListener('keyboardDidHide', open),
+      timer: setTimeout(open, KEYBOARD_HIDE_TIMEOUT_MS),
+    };
+
+    Keyboard.dismiss();
+  }, [cancelPendingPickerOpen, closeEmojiPicker, emojiPickerOpen]);
+
   const handleClose = useCallback(() => {
     if (submitting) {
       return;
     }
 
+    closeEmojiPicker();
     dismissImmediately();
-  }, [dismissImmediately, submitting]);
+  }, [closeEmojiPicker, dismissImmediately, submitting]);
 
   const modalBodyStyle = useMemo(
     () => [styles.modalBody, { gap: spacing.lg, padding: spacing.lg }],
@@ -277,59 +336,52 @@ export default function ListFormModal({
 
   const modalContent = (
     <>
-      <Text style={[styles.modalTitle, { color: colors.text }]}>{title}</Text>
-
-      <View style={styles.nameRow}>
+      {/* Emoji and name sit in one unstyled row so they read as a single control. */}
+      <Pressable onPress={handleFocusNameInput} style={styles.nameField}>
         <EmojiPickerButton
           disabled={submitting}
-          onChange={setListEmoji}
+          expanded={emojiPickerOpen}
+          onPress={toggleEmojiPicker}
           value={listEmoji}
         />
-        <Pressable
-          onPress={handleFocusNameInput}
-          style={[
-            styles.nameInputContainer,
-            getThemedInputContainerStyle(colors, isListNameFocused, isListNameAtLimit),
-            {
-              borderRadius: radii.item,
-              paddingRight: isListNameFocused ? 12 : 16,
-            },
-          ]}
-        >
-          <ThemedTextInput
-            editable={!submitting}
-            invalid={isListNameAtLimit}
-            onBlur={() => setIsListNameFocused(false)}
-            onChangeText={handleChangeListName}
-            onFocus={() => setIsListNameFocused(true)}
-            onSubmitEditing={() => {
-              void handleSubmit();
-            }}
-            placeholder="Groceries, packing, gifts..."
-            ref={listNameInputRef}
-            returnKeyType="done"
-            showSoftInputOnFocus
-            style={styles.nameInput}
-            value={listName}
-            variant="plain"
-          />
-          {isListNameFocused ? (
-            <Text
-              style={[
-                styles.charCounter,
-                {
-                  color:
-                    listName.length >= LIST_NAME_MAX_LENGTH
-                      ? colors.accent
-                      : colors.textSecondary,
-                },
-              ]}
-            >
-              {listName.length}/{LIST_NAME_MAX_LENGTH}
-            </Text>
-          ) : null}
-        </Pressable>
-      </View>
+        <ThemedTextInput
+          editable={!submitting}
+          invalid={isListNameAtLimit}
+          onBlur={() => setIsListNameFocused(false)}
+          onChangeText={handleChangeListName}
+          onFocus={() => {
+            setIsListNameFocused(true);
+            // A tap on the field both focuses it and dismisses the sheet, so the
+            // sheet never has to swallow a tap just to get out of the way.
+            closeEmojiPicker();
+          }}
+          onSubmitEditing={() => {
+            void handleSubmit();
+          }}
+          placeholder="Groceries, packing, gifts..."
+          ref={listNameInputRef}
+          returnKeyType="done"
+          showSoftInputOnFocus
+          style={styles.nameInput}
+          value={listName}
+          variant="plain"
+        />
+        {isListNameFocused ? (
+          <Text
+            style={[
+              styles.charCounter,
+              {
+                color:
+                  listName.length >= LIST_NAME_MAX_LENGTH
+                    ? colors.accent
+                    : colors.textSecondary,
+              },
+            ]}
+          >
+            {listName.length}/{LIST_NAME_MAX_LENGTH}
+          </Text>
+        ) : null}
+      </Pressable>
 
       {error || validationError ? (
         <Text style={[styles.error, { color: colors.accent }]}>
@@ -337,7 +389,15 @@ export default function ListFormModal({
         </Text>
       ) : null}
 
-      <View style={styles.buttonGroup}>
+      <View style={styles.buttonRow}>
+        <Button
+          disabled={submitting}
+          label="Cancel"
+          onPress={handleClose}
+          style={styles.buttonRowItem}
+          variant="ghost"
+        />
+
         <Button
           label={submitLabel}
           loading={submitting}
@@ -345,20 +405,15 @@ export default function ListFormModal({
             void handleSubmit();
           }}
           onPressIn={onSubmitPressIn}
+          style={styles.buttonRowItem}
           variant="primary"
-        />
-
-        <Button
-          disabled={submitting}
-          label="Cancel"
-          onPress={handleClose}
-          variant="ghost"
         />
       </View>
     </>
   );
 
   return (
+    <>
     <View
       accessibilityElementsHidden={!visible}
       importantForAccessibility={visible ? 'yes' : 'no-hide-descendants'}
@@ -376,6 +431,8 @@ export default function ListFormModal({
         style={[styles.modalBackdrop, modalBackdropStyle]}
       />
       <Animated.View
+        accessibilityLabel={title}
+        accessibilityViewIsModal
         collapsable={false}
         style={[
           styles.modalDialog,
@@ -408,6 +465,19 @@ export default function ListFormModal({
         )}
       </Animated.View>
     </View>
+
+      {/* Sibling of the shell so it spans the screen, is not clipped by the
+          shell padding, and layers above the dialog. */}
+      {visible ? (
+        <EmojiPickerSheet
+          keyboardHeight={keyboardHeight}
+          onClose={closeEmojiPicker}
+          onSelect={setListEmoji}
+          selected={listEmoji}
+          visible={emojiPickerOpen}
+        />
+      ) : null}
+    </>
   );
 }
 
@@ -437,27 +507,15 @@ const styles = StyleSheet.create({
   modalScroll: {
     overflow: 'visible',
   },
-  modalTitle: {
-    fontFamily: 'Fraunces_600SemiBold',
-    fontSize: 24,
-    lineHeight: 32,
-  },
-  nameRow: {
+  nameField: {
     alignItems: 'center',
     flexDirection: 'row',
-    gap: 10,
-  },
-  nameInputContainer: {
-    alignItems: 'center',
-    flex: 1,
-    flexDirection: 'row',
-    gap: 8,
     minHeight: getBorderedInputHeight(),
     paddingRight: 12,
   },
   nameInput: {
+    // No left padding: the emoji cell supplies the field's left inset.
     flex: 1,
-    paddingLeft: 16,
     paddingVertical: 14,
   },
   error: {
@@ -467,13 +525,22 @@ const styles = StyleSheet.create({
   },
   charCounter: {
     flexShrink: 0,
-    fontFamily: 'NunitoSans_400Regular',
-    fontSize: 14,
-    lineHeight: 20,
+    fontFamily: 'NunitoSans_600SemiBold',
+    fontSize: 12,
+    lineHeight: 16,
+    marginLeft: 8,
   },
-  buttonGroup: {
+  buttonRow: {
     alignSelf: 'stretch',
+    flexDirection: 'row',
     gap: 8,
     width: '100%',
+  },
+  buttonRowItem: {
+    flex: 1,
+    height: MODAL_BUTTON_HEIGHT,
+    minHeight: MODAL_BUTTON_HEIGHT,
+    minWidth: 0,
+    width: 'auto',
   },
 });

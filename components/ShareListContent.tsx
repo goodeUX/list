@@ -89,7 +89,6 @@ export default function ShareListContent({
               buttonLayoutStyle,
               {
                 backgroundColor: colors.surfaceMuted,
-                borderRadius: radii.item,
                 opacity: pressed ? 0.85 : 1,
               },
             ]}
@@ -108,7 +107,6 @@ export default function ShareListContent({
           buttonLayoutStyle,
           {
             backgroundColor: colors.accent,
-            borderRadius: radii.item,
             opacity: pressed ? 0.85 : 1,
           },
         ]}

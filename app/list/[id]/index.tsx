@@ -935,24 +935,27 @@ export default function ListDetailScreen() {
         </Pressable>
       </Animated.View>
 
-      {listId ? (
-        <ListFormModal
-            error={renameError}
-            initialEmoji={listEmoji}
-            initialName={listName}
-            onClose={() => {
-              setRenameModalVisible(false);
-              setRenameError(null);
-            }}
-            onSubmit={handleSaveRename}
-            submitLabel="Save"
-            submitting={renaming}
-            title="Rename list"
-            visible={renameModalVisible}
-        />
-      ) : null}
       </KeyboardAvoidingView>
       </View>
+
+      {/* Sits outside the safe-area and keyboard wrappers so its backdrop covers
+          the whole screen and the dialog centres on it, matching the new list modal. */}
+      {listId ? (
+        <ListFormModal
+          error={renameError}
+          initialEmoji={listEmoji}
+          initialName={listName}
+          onClose={() => {
+            setRenameModalVisible(false);
+            setRenameError(null);
+          }}
+          onSubmit={handleSaveRename}
+          submitLabel="Save"
+          submitting={renaming}
+          title="Rename list"
+          visible={renameModalVisible}
+        />
+      ) : null}
     </Animated.View>
   );
 }

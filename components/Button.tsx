@@ -87,7 +87,6 @@ export default function Button({
                 : undefined,
           borderColor:
             isFilled || isSurface || isGhost ? 'transparent' : colors.border,
-          borderRadius: radii.item,
           borderWidth: isFilled || isSurface || isGhost ? 0 : 1,
           opacity: pressed || isDisabled ? (isGhost ? 0.7 : isLarge ? 0.7 : 0.85) : 1,
         },
