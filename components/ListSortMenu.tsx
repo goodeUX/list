@@ -21,7 +21,7 @@ type SortOption = {
 const SORT_OPTIONS: SortOption[] = [
   { mode: 'alphabetical', label: 'Alphabetical', icon: 'sort-by-alpha' },
   { mode: 'recent', label: 'Recently updated', icon: 'schedule' },
-  { mode: 'custom', label: 'Custom order', icon: 'reorder' },
+  { mode: 'custom', label: 'Custom order', icon: 'swap-vert' },
 ];
 
 const menuItemTextStyle = {
