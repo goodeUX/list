@@ -2,6 +2,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import type { AppList, ListItem, NewItemFields } from '@/lib/types';
 import { normalizeItemName } from '@/lib/itemName';
+import { nextItemOrder } from '@/lib/listItemOrdering';
 import { normalizeListName } from '@/lib/listName';
 
 const STORAGE_KEY = 'list_app_local_data_v1';
@@ -208,7 +209,6 @@ export async function addLocalItem(
   }
 
   const items = data.itemsByListId[listId] ?? [];
-  const maxOrder = items.reduce((max, item) => Math.max(max, item.order), -1);
   const now = new Date();
 
   const item: ListItem = {
@@ -218,7 +218,7 @@ export async function addLocalItem(
     description: fields.description ?? null,
     link: fields.link ?? null,
     checked: false,
-    order: maxOrder + 1,
+    order: nextItemOrder(items),
     createdBy: 'local',
     createdAt: now,
     updatedAt: now,

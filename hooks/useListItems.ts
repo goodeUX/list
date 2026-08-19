@@ -5,6 +5,7 @@ import {
   doc,
   getDocs,
   getDocsFromCache,
+  limit,
   onSnapshot,
   orderBy,
   query,
@@ -25,6 +26,7 @@ import { normalizeItemName } from '@/lib/itemName';
 import { clearListItemsById } from '@/lib/listMutations';
 import {
   groupItemsWithDoneAtBottom,
+  nextItemOrder,
   orderItemsAfterToggle,
   withSequentialOrder,
 } from '@/lib/listItemOrdering';
@@ -81,7 +83,6 @@ function createOptimisticItem(
 ): ListItem {
   const now = new Date();
   const persistedItems = getPersistedItems(existingItems);
-  const maxOrder = persistedItems.reduce((max, item) => Math.max(max, item.order), -1);
 
   return {
     id: `${OPTIMISTIC_ITEM_ID_PREFIX}${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
@@ -90,7 +91,7 @@ function createOptimisticItem(
     description: fields.description ?? null,
     link: fields.link ?? null,
     checked: false,
-    order: maxOrder + 1,
+    order: nextItemOrder(persistedItems),
     createdBy,
     createdAt: now,
     updatedAt: now,
@@ -129,15 +130,15 @@ export async function addItemToList(
     return;
   }
 
-  let maxOrder = existingItems.reduce((max, item) => Math.max(max, item.order), -1);
+  let order = nextItemOrder(existingItems);
   if (existingItems.length === 0) {
+    // No local snapshot to go on (e.g. adding before the listener has primed),
+    // so read the stored orders rather than assuming the list is empty.
     const snapshot = await getDocs(
-      query(collection(db, 'lists', listId, 'items'), orderBy('order')),
+      query(collection(db, 'lists', listId, 'items'), orderBy('order'), limit(1)),
     );
-    maxOrder = snapshot.docs.reduce(
-      (max, docSnap) => Math.max(max, (docSnap.data().order as number) ?? 0),
-      -1,
-    );
+    const lowestStored = snapshot.docs[0]?.data().order as number | undefined;
+    order = lowestStored === undefined ? 0 : Math.min(lowestStored, 0) - 1;
   }
 
   await addDoc(collection(db, 'lists', listId, 'items'), {
@@ -146,7 +147,7 @@ export async function addItemToList(
     description: fields.description ?? null,
     link: fields.link ?? null,
     checked: false,
-    order: maxOrder + 1,
+    order,
     createdBy: user.uid,
     createdAt: serverTimestamp(),
     updatedAt: serverTimestamp(),
