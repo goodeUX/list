@@ -10,8 +10,6 @@ import {
   StyleSheet,
   Text,
   View,
-  type NativeScrollEvent,
-  type NativeSyntheticEvent,
 } from 'react-native';
 import DraggableFlatList, {
   type DragEndParams,
@@ -328,13 +326,10 @@ export default function ListsHomeScreen() {
   const [listScrolled, setListScrolled] = useState(false);
   const headerDividerOpacity = useSharedValue(0);
 
-  const handleListScroll = useCallback(
-    (event: NativeSyntheticEvent<NativeScrollEvent>) => {
-      const next = event.nativeEvent.contentOffset.y > HEADER_DIVIDER_SCROLL_THRESHOLD;
-      setListScrolled((current) => (current === next ? current : next));
-    },
-    [],
-  );
+  const handleListScroll = useCallback((offsetY: number) => {
+    const next = offsetY > HEADER_DIVIDER_SCROLL_THRESHOLD;
+    setListScrolled((current) => (current === next ? current : next));
+  }, []);
 
   useEffect(() => {
     headerDividerOpacity.value = withTiming(listScrolled ? 1 : 0, {
@@ -443,10 +438,11 @@ export default function ListsHomeScreen() {
                 extraData={countsRefreshKey}
                 keyExtractor={(item) => item.id}
                 onDragEnd={handleDragEnd}
-                onScroll={handleListScroll}
+                // NOT onScroll: DraggableFlatList installs its own scroll
+                // handler on the inner list, so an onScroll prop is discarded.
+                onScrollOffsetChange={handleListScroll}
                 removeClippedSubviews={false}
                 renderItem={renderListCard}
-                scrollEventThrottle={16}
                 showsVerticalScrollIndicator={false}
                 style={styles.flex}
               />

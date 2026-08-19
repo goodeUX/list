@@ -68,14 +68,16 @@ export default function ListSortMenu({
     return () => subscription.remove();
   }, [closeMenu, visible]);
 
-  const activeLabel =
-    SORT_OPTIONS.find((option) => option.mode === sortMode)?.label ?? '';
+  // The button wears the active mode's own icon, so the current sort is
+  // readable without opening the menu.
+  const activeOption =
+    SORT_OPTIONS.find((option) => option.mode === sortMode) ?? SORT_OPTIONS[0];
 
   return (
     <View collapsable={false} style={styles.layoutSlot}>
       <View collapsable={false} style={[styles.root, visible && styles.rootOpen]}>
         <Pressable
-          accessibilityHint={activeLabel ? `Currently ${activeLabel}` : undefined}
+          accessibilityHint={`Currently ${activeOption.label}`}
           accessibilityLabel="Sort lists"
           accessibilityRole="button"
           accessibilityState={{ expanded: visible }}
@@ -83,15 +85,10 @@ export default function ListSortMenu({
           onPress={toggleMenu}
           style={({ pressed }) => [
             styles.button,
-            {
-              backgroundColor: visible ? colors.surfaceMuted : colors.surface,
-              borderColor: visible ? colors.accent : 'transparent',
-              borderWidth: visible ? 1.5 : 0,
-              opacity: pressed ? 0.7 : 1,
-            },
+            { opacity: pressed || visible ? 0.7 : 1 },
           ]}
         >
-          <MaterialIcons color={colors.accent} name="sort" size={20} />
+          <MaterialIcons color={colors.accent} name={activeOption.icon} size={22} />
         </Pressable>
 
         {visible ? (
@@ -182,7 +179,6 @@ const styles = StyleSheet.create({
   button: {
     alignItems: 'center',
     alignSelf: 'flex-start',
-    borderRadius: BUTTON_SIZE / 2,
     height: BUTTON_SIZE,
     justifyContent: 'center',
     width: BUTTON_SIZE,
