@@ -46,4 +46,8 @@ export interface AppUser {
   premium?: boolean;
   /** Over-cap pick: which lists stay editable on the free plan. */
   activeListIds?: string[];
+  /** How the home screen orders lists. */
+  listSortMode?: 'alphabetical' | 'recent' | 'custom';
+  /** List ids in the user's hand-dragged order, used by the custom mode. */
+  listCustomOrder?: string[];
 }

@@ -5,7 +5,6 @@ import { MaterialIcons } from '@expo/vector-icons';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
-  FlatList,
   Platform,
   Pressable,
   StyleSheet,
@@ -14,6 +13,10 @@ import {
   type NativeScrollEvent,
   type NativeSyntheticEvent,
 } from 'react-native';
+import DraggableFlatList, {
+  type DragEndParams,
+  type RenderItemParams,
+} from 'react-native-draggable-flatlist';
 import Animated, {
   Easing,
   useAnimatedStyle,
@@ -26,6 +29,7 @@ import ChooseEditableListsModal from '@/components/ChooseEditableListsModal';
 import EmptyState from '@/components/EmptyState';
 import ListCard from '@/components/ListCard';
 import ListFormModal from '@/components/ListFormModal';
+import ListSortMenu from '@/components/ListSortMenu';
 import SignInBenefitsModal from '@/components/SignInBenefitsModal';
 import UpgradePromptModal from '@/components/UpgradePromptModal';
 import { useAuth } from '@/contexts/AuthContext';
@@ -46,12 +50,17 @@ import {
   resolveEditableListIds,
 } from '@/lib/listLimits';
 import { useLists } from '@/hooks/useLists';
+import { useListSortPreference } from '@/hooks/useListSortPreference';
+import { DROP_ANIMATION_CONFIG } from '@/lib/dragAnimation';
+import { playToggleHaptic } from '@/lib/haptics';
+import { customOrderFrom, pruneCustomOrder, sortLists } from '@/lib/listSort';
 import {
   acquireKeyboardSession,
   releaseKeyboardProxy,
   renewKeyboardSession,
 } from '@/lib/keyboardProxy';
 import { markPendingAddInputFocus } from '@/lib/pendingAddInputFocus';
+import type { AppList } from '@/lib/types';
 
 const DEFAULT_EMOJI = '📋';
 const FAB_SIZE = 72;
@@ -77,6 +86,9 @@ export default function ListsHomeScreen() {
   const safeAreaInsets = useSafeAreaInsets();
   const { user } = useAuth();
   const { lists, loading, createList } = useLists();
+  const { sortMode, customOrder, setSortMode, applyCustomOrder } =
+    useListSortPreference();
+  const [sortMenuVisible, setSortMenuVisible] = useState(false);
   const { plan, purchasesAvailable, planReady, activeListIds, setActiveListIds } =
     usePlan();
   const listsOpacity = useSharedValue(0);
@@ -137,6 +149,22 @@ export default function ListsHomeScreen() {
     [lists],
   );
 
+  const orderedLists = useMemo(
+    () => sortLists(lists, sortMode, customOrder),
+    [customOrder, lists, sortMode],
+  );
+
+  // A drag saves the new arrangement AND switches the mode to custom. The
+  // displayed order is derived from lists + prefs, and both prefs are React
+  // state first, so this re-derives the dropped order immediately — no
+  // separate optimistic copy to keep in sync.
+  const handleDragEnd = useCallback(
+    ({ data }: DragEndParams<AppList>) => {
+      applyCustomOrder(pruneCustomOrder(customOrderFrom(data), data));
+    },
+    [applyCustomOrder],
+  );
+
   const editableListIds = useMemo(
     () =>
       user && planReady
@@ -145,6 +173,46 @@ export default function ListsHomeScreen() {
     [activeListIds, lists, plan, planReady, user],
   );
 
+  const renderListCard = useCallback(
+    ({ item, drag, isActive }: RenderItemParams<AppList>) => {
+      const startDrag = () => {
+        if (Platform.OS !== 'web') {
+          playToggleHaptic();
+        }
+        drag();
+      };
+
+      const dragHandle =
+        Platform.OS === 'web' ? (
+          <Pressable
+            accessibilityLabel="Drag to reorder"
+            accessibilityRole="button"
+            onPressIn={drag}
+            style={({ pressed }) => [
+              styles.handleButton,
+              { opacity: pressed ? 0.6 : 1 },
+              Platform.OS === 'web' ? ({ cursor: 'grab' } as object) : null,
+            ]}
+          >
+            <MaterialIcons color={colors.textSecondary} name="drag-indicator" size={20} />
+          </Pressable>
+        ) : undefined;
+
+      return (
+        <View style={[styles.cardCell, isActive ? styles.activeCell : null]}>
+          <ListCard
+            countsRefreshKey={countsRefreshKey}
+            dragHandle={dragHandle}
+            isActive={isActive}
+            list={item}
+            locked={!isListEditable(item.id, editableListIds)}
+            onLongPress={Platform.OS !== 'web' ? startDrag : undefined}
+          />
+        </View>
+      );
+    },
+    [colors.textSecondary, countsRefreshKey, editableListIds],
+  );
   const [pickDismissed, setPickDismissed] = useState(false);
   const needsPick =
     Boolean(user) &&
@@ -292,7 +360,17 @@ export default function ListsHomeScreen() {
           ]}
         >
           <View style={styles.titleBlock}>
-              <Text style={[styles.title, { color: colors.text }]}>My Lists</Text>
+              <View style={styles.titleRow}>
+                <Text style={[styles.title, { color: colors.text }]}>My Lists</Text>
+                {!loading && lists.length > 0 ? (
+                  <ListSortMenu
+                    onSortModeChange={setSortMode}
+                    onVisibleChange={setSortMenuVisible}
+                    sortMode={sortMode}
+                    visible={sortMenuVisible}
+                  />
+                ) : null}
+              </View>
               {!loading ? (
                 <Text style={[styles.summary, { color: colors.textSecondary }]}>
                   {summary}
@@ -327,6 +405,16 @@ export default function ListsHomeScreen() {
           ]}
         />
 
+        {/* Tapping anywhere off the menu closes it. Sits under the header's
+            zIndex so the menu itself stays tappable. */}
+        {sortMenuVisible ? (
+          <Pressable
+            accessibilityLabel="Close sort menu"
+            onPress={() => setSortMenuVisible(false)}
+            style={styles.menuBackdrop}
+          />
+        ) : null}
+
         {loading ? (
           <View style={styles.loading}>
             <ActivityIndicator color={colors.accent} size="large" />
@@ -338,30 +426,29 @@ export default function ListsHomeScreen() {
             {lists.length === 0 ? (
               <EmptyState onCreateList={openCreateModal} />
             ) : (
-              <FlatList
+              <DraggableFlatList
+                animationConfig={DROP_ANIMATION_CONFIG}
+                containerStyle={styles.flex}
                 contentContainerStyle={[
                   styles.listContent,
                   {
-                    gap: 12,
                     padding: spacing.lg,
                     paddingBottom: showCreateBar ? listBottomPadding : spacing.xl,
                     // 8 less than the surrounding inset, to sit closer to the header.
                     paddingTop: spacing.md,
                   },
                 ]}
-                data={lists}
+                data={orderedLists}
+                dragItemOverflow
                 extraData={countsRefreshKey}
                 keyExtractor={(item) => item.id}
+                onDragEnd={handleDragEnd}
                 onScroll={handleListScroll}
+                removeClippedSubviews={false}
+                renderItem={renderListCard}
                 scrollEventThrottle={16}
-                renderItem={({ item }) => (
-                  <ListCard
-                    countsRefreshKey={countsRefreshKey}
-                    list={item}
-                    locked={!isListEditable(item.id, editableListIds)}
-                  />
-                )}
                 showsVerticalScrollIndicator={false}
+                style={styles.flex}
               />
             )}
           </Animated.View>
@@ -463,10 +550,26 @@ const styles = StyleSheet.create({
     height: StyleSheet.hairlineWidth,
     width: '100%',
   },
+  menuBackdrop: {
+    bottom: 0,
+    left: 0,
+    position: 'absolute',
+    right: 0,
+    top: 0,
+    zIndex: 1,
+  },
   titleBlock: {
     flex: 1,
     gap: 4,
     minWidth: 0,
+  },
+  titleRow: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: 12,
+    // The sort menu drops out of this row; without this it would be clipped.
+    overflow: 'visible',
+    zIndex: 1,
   },
   settingsButton: {
     alignItems: 'center',
@@ -496,6 +599,28 @@ const styles = StyleSheet.create({
   },
   listContent: {
     flexGrow: 1,
+  },
+  // The gap between cards lives here rather than as a contentContainer `gap`:
+  // DraggableFlatList measures cell heights to place a drop, and container gap
+  // isn't part of that measurement.
+  cardCell: {
+    marginBottom: 12,
+  },
+  activeCell: Platform.select({
+    web: { boxShadow: '0px 4px 12px rgba(0, 0, 0, 0.18)' },
+    default: {
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.18,
+      shadowRadius: 12,
+      elevation: 6,
+    },
+  }),
+  handleButton: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: 32,
+    minWidth: 32,
   },
   fabLayer: {
     alignItems: 'flex-end',

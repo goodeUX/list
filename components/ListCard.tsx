@@ -1,5 +1,6 @@
 import { MaterialIcons } from '@expo/vector-icons';
 import { router } from 'expo-router';
+import { type ReactNode } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { useTheme } from '@/contexts/ThemeContext';
@@ -10,9 +11,22 @@ type ListCardProps = {
   list: AppList;
   countsRefreshKey?: number;
   locked?: boolean;
+  /** Long-press-to-drag on native; omitted when reordering is unavailable. */
+  onLongPress?: () => void;
+  /** True while this card is the one lifted out of the list mid-drag. */
+  isActive?: boolean;
+  /** Web-only grab affordance, since long-press-to-drag has no mouse analogue. */
+  dragHandle?: ReactNode;
 };
 
-export default function ListCard({ list, countsRefreshKey = 0, locked = false }: ListCardProps) {
+export default function ListCard({
+  list,
+  countsRefreshKey = 0,
+  locked = false,
+  onLongPress,
+  isActive = false,
+  dragHandle,
+}: ListCardProps) {
   const { colors, radii, spacing } = useTheme();
 
   const { doneCount, totalCount } = useListItemCounts(list.id, countsRefreshKey);
@@ -28,13 +42,16 @@ export default function ListCard({ list, countsRefreshKey = 0, locked = false }:
 
   return (
     <Pressable
+      delayLongPress={250}
+      onLongPress={onLongPress}
       onPress={handlePress}
-      style={[
+      style={({ pressed }) => [
         styles.card,
         {
           backgroundColor: colors.surface,
-          borderColor: colors.border,
+          borderColor: isActive ? colors.accent : colors.border,
           borderRadius: radii.card,
+          opacity: pressed && !isActive ? 0.72 : 1,
           padding: spacing.md,
         },
       ]}
@@ -71,6 +88,7 @@ export default function ListCard({ list, countsRefreshKey = 0, locked = false }:
               {incompleteCount}
             </Text>
           </View>
+          {dragHandle}
         </View>
       </View>
     </Pressable>
