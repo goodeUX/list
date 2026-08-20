@@ -363,7 +363,7 @@ export default function ListsHomeScreen() {
             { paddingHorizontal: spacing.lg, paddingTop: spacing.md },
           ]}
         >
-          <Text style={[styles.title, { color: colors.text }]}>
+          <Text numberOfLines={1} style={[styles.title, { color: colors.text }]}>
             My Lists
           </Text>
           {!loading && lists.length > 0 ? (
@@ -593,14 +593,21 @@ const styles = StyleSheet.create({
     width: 44,
   },
   title: {
-    // Exactly the width of its own text: it never grows or shrinks for the
-    // sort button beside it, and carries no numberOfLines, so no character
-    // can be ellipsized away at any font scale.
+    // numberOfLines={1} on the element is what keeps this on one line: left
+    // free to wrap, Android broke it after "My" and clipped the second line,
+    // since the box is only one line tall.
+    //
+    // The padding/margin pair adds 2dp of measurement slack without moving
+    // the 8px gap to the sort button: Android measures text at sub-pixel
+    // widths, and a box rounded a hair under what the glyphs need is what
+    // triggered the break in the first place.
     flexGrow: 0,
     flexShrink: 0,
     fontFamily: 'Fraunces_600SemiBold',
     fontSize: 32,
     lineHeight: 40,
+    marginRight: -2,
+    paddingRight: 2,
   },
   summary: {
     fontFamily: 'NunitoSans_400Regular',
