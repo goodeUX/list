@@ -363,43 +363,50 @@ export default function ListsHomeScreen() {
             { paddingHorizontal: spacing.lg, paddingTop: spacing.md },
           ]}
         >
-          <View style={styles.titleBlock}>
-              <View style={styles.titleRow}>
-                <Text style={[styles.title, { color: colors.text }]}>
-                  My Lists
-                </Text>
-                {!loading && lists.length > 0 ? (
-                  <ListSortMenu
-                    onSortModeChange={setSortMode}
-                    onVisibleChange={setSortMenuVisible}
-                    sortMode={sortMode}
-                    visible={sortMenuVisible}
-                  />
-                ) : null}
-              </View>
-              {!loading ? (
-                <Text style={[styles.summary, { color: colors.textSecondary }]}>
-                  {summary}
-                </Text>
-              ) : null}
-            </View>
+          <Text style={[styles.title, { color: colors.text }]}>
+            My Lists
+          </Text>
+          {!loading && lists.length > 0 ? (
+            <ListSortMenu
+              onSortModeChange={setSortMode}
+              onVisibleChange={setSortMenuVisible}
+              sortMode={sortMode}
+              visible={sortMenuVisible}
+            />
+          ) : null}
 
-            <Pressable
-              accessibilityLabel="Settings"
-              accessibilityRole="button"
-              hitSlop={8}
-              onPress={() => router.push('/settings')}
-              style={({ pressed }) => [
-                styles.settingsButton,
-                {
-                  backgroundColor: colors.surface,
-                  opacity: pressed ? 0.7 : 1,
-                },
-              ]}
-            >
-              <MaterialIcons color={colors.accent} name="more-horiz" size={24} />
-            </Pressable>
+          {/* Swallows every spare pixel, so the title and the buttons never
+              compete for width and the title is measured against the whole
+              header rather than what a sibling block left over. */}
+          <View style={styles.headerSpacer} />
+
+          <Pressable
+            accessibilityLabel="Settings"
+            accessibilityRole="button"
+            hitSlop={8}
+            onPress={() => router.push('/settings')}
+            style={({ pressed }) => [
+              styles.settingsButton,
+              {
+                backgroundColor: colors.surface,
+                opacity: pressed ? 0.7 : 1,
+              },
+            ]}
+          >
+            <MaterialIcons color={colors.accent} name="more-horiz" size={24} />
+          </Pressable>
         </View>
+
+        {!loading ? (
+          <Text
+            style={[
+              styles.summary,
+              { color: colors.textSecondary, paddingHorizontal: spacing.lg },
+            ]}
+          >
+            {summary}
+          </Text>
+        ) : null}
 
         {/* Sibling of the header so it spans full width, not inset by its padding. */}
         <Animated.View
@@ -546,14 +553,22 @@ const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
   },
+  // One flat row: title, sort button, spacer, settings. Nothing nested, so
+  // the title is measured against the full header width and cannot be handed
+  // a narrower box by a sibling block. gap gives the title its 8px to the
+  // sort button; the spacer supplies the rest of the separation.
   headerTop: {
-    alignItems: 'flex-start',
+    alignItems: 'center',
     flexDirection: 'row',
-    gap: 12,
-    justifyContent: 'space-between',
-    paddingBottom: 8,
+    gap: 8,
+    // The sort menu drops out of this row; without this it would be clipped.
+    overflow: 'visible',
+    paddingBottom: 4,
     position: 'relative',
     zIndex: 2,
+  },
+  headerSpacer: {
+    flex: 1,
   },
   // Matches the list page header's borderBottomWidth: 1 rather than a
   // hairline, which was too thin to read on a high-density screen.
@@ -567,23 +582,6 @@ const styles = StyleSheet.create({
     position: 'absolute',
     right: 0,
     top: 0,
-    zIndex: 1,
-  },
-  // Never shrinks. flexShrink with minWidth: 0 is what lets a flex item be
-  // squeezed below its own content, which clipped the title on narrow
-  // screens; sized by content instead, the block always fits its title row.
-  titleBlock: {
-    flexShrink: 0,
-    gap: 4,
-  },
-  titleRow: {
-    alignItems: 'center',
-    flexDirection: 'row',
-    flexShrink: 0,
-    flexWrap: 'nowrap',
-    gap: 8,
-    // The sort menu drops out of this row; without this it would be clipped.
-    overflow: 'visible',
     zIndex: 1,
   },
   settingsButton: {
@@ -608,6 +606,7 @@ const styles = StyleSheet.create({
     fontFamily: 'NunitoSans_400Regular',
     fontSize: 15,
     lineHeight: 22,
+    paddingBottom: 8,
   },
   loading: {
     alignItems: 'center',
