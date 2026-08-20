@@ -61,6 +61,13 @@ import { markPendingAddInputFocus } from '@/lib/pendingAddInputFocus';
 import type { AppList } from '@/lib/types';
 
 const DEFAULT_EMOJI = '📋';
+// The header's only fixed values: type sizes and the settings button's box.
+// Everything else about the header comes from flex rules and theme spacing.
+const TITLE_FONT_SIZE = 32;
+const TITLE_LINE_HEIGHT = 40;
+const SUMMARY_FONT_SIZE = 15;
+const SUMMARY_LINE_HEIGHT = 22;
+const SETTINGS_BUTTON_SIZE = 44;
 const FAB_SIZE = 72;
 // Squircle corner, matching the product's other buttons. borderCurve only
 // smooths the corner on iOS; Android draws a plain rounded rect at this radius.
@@ -359,54 +366,50 @@ export default function ListsHomeScreen() {
       >
         <View
           style={[
-            styles.headerTop,
-            { paddingHorizontal: spacing.lg, paddingTop: spacing.md },
+            styles.header,
+            {
+              gap: spacing.xs,
+              paddingBottom: spacing.sm,
+              paddingHorizontal: spacing.lg,
+              paddingTop: spacing.md,
+            },
           ]}
         >
-          <Text numberOfLines={1} style={[styles.title, { color: colors.text }]}>
-            My Lists
-          </Text>
-          {!loading && lists.length > 0 ? (
-            <ListSortMenu
-              onSortModeChange={setSortMode}
-              onVisibleChange={setSortMenuVisible}
-              sortMode={sortMode}
-              visible={sortMenuVisible}
-            />
+          <View style={[styles.headerRow, { gap: spacing.sm }]}>
+            <Text numberOfLines={1} style={[styles.title, { color: colors.text }]}>
+              My Lists
+            </Text>
+            {!loading && lists.length > 0 ? (
+              <ListSortMenu
+                onSortModeChange={setSortMode}
+                onVisibleChange={setSortMenuVisible}
+                sortMode={sortMode}
+                visible={sortMenuVisible}
+              />
+            ) : null}
+            <Pressable
+              accessibilityLabel="Settings"
+              accessibilityRole="button"
+              hitSlop={8}
+              onPress={() => router.push('/settings')}
+              style={({ pressed }) => [
+                styles.settingsButton,
+                {
+                  backgroundColor: colors.surface,
+                  opacity: pressed ? 0.7 : 1,
+                },
+              ]}
+            >
+              <MaterialIcons color={colors.accent} name="more-horiz" size={24} />
+            </Pressable>
+          </View>
+
+          {!loading ? (
+            <Text style={[styles.summary, { color: colors.textSecondary }]}>
+              {summary}
+            </Text>
           ) : null}
-
-          {/* Swallows every spare pixel, so the title and the buttons never
-              compete for width and the title is measured against the whole
-              header rather than what a sibling block left over. */}
-          <View style={styles.headerSpacer} />
-
-          <Pressable
-            accessibilityLabel="Settings"
-            accessibilityRole="button"
-            hitSlop={8}
-            onPress={() => router.push('/settings')}
-            style={({ pressed }) => [
-              styles.settingsButton,
-              {
-                backgroundColor: colors.surface,
-                opacity: pressed ? 0.7 : 1,
-              },
-            ]}
-          >
-            <MaterialIcons color={colors.accent} name="more-horiz" size={24} />
-          </Pressable>
         </View>
-
-        {!loading ? (
-          <Text
-            style={[
-              styles.summary,
-              { color: colors.textSecondary, paddingHorizontal: spacing.lg },
-            ]}
-          >
-            {summary}
-          </Text>
-        ) : null}
 
         {/* Sibling of the header so it spans full width, not inset by its padding. */}
         <Animated.View
@@ -553,22 +556,16 @@ const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
   },
-  // One flat row: title, sort button, spacer, settings. Nothing nested, so
-  // the title is measured against the full header width and cannot be handed
-  // a narrower box by a sibling block. gap gives the title its 8px to the
-  // sort button; the spacer supplies the rest of the separation.
-  headerTop: {
-    alignItems: 'center',
-    flexDirection: 'row',
-    gap: 8,
-    // The sort menu drops out of this row; without this it would be clipped.
+  // Title block: a full-width column holding the title row and the summary.
+  header: {
+    // The sort menu hangs out of the header; without this it gets clipped.
     overflow: 'visible',
-    paddingBottom: 4,
-    position: 'relative',
     zIndex: 2,
   },
-  headerSpacer: {
-    flex: 1,
+  headerRow: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    overflow: 'visible',
   },
   // Matches the list page header's borderBottomWidth: 1 rather than a
   // hairline, which was too thin to read on a high-density screen.
@@ -584,36 +581,27 @@ const styles = StyleSheet.create({
     top: 0,
     zIndex: 1,
   },
+  // marginLeft: 'auto' takes every spare pixel in the row, which is what
+  // pushes this to the far edge. No spacer element, no positioning.
   settingsButton: {
     alignItems: 'center',
-    borderRadius: 22,
-    flexShrink: 0,
-    height: 44,
+    borderRadius: SETTINGS_BUTTON_SIZE / 2,
+    height: SETTINGS_BUTTON_SIZE,
     justifyContent: 'center',
-    width: 44,
+    marginLeft: 'auto',
+    width: SETTINGS_BUTTON_SIZE,
   },
+  // No flex properties: flexShrink defaults to 0 in React Native, so a text
+  // node already keeps its own width and the row grows around it.
   title: {
-    // numberOfLines={1} on the element is what keeps this on one line: left
-    // free to wrap, Android broke it after "My" and clipped the second line,
-    // since the box is only one line tall.
-    //
-    // The padding/margin pair adds 2dp of measurement slack without moving
-    // the 8px gap to the sort button: Android measures text at sub-pixel
-    // widths, and a box rounded a hair under what the glyphs need is what
-    // triggered the break in the first place.
-    flexGrow: 0,
-    flexShrink: 0,
     fontFamily: 'Fraunces_600SemiBold',
-    fontSize: 32,
-    lineHeight: 40,
-    marginRight: -2,
-    paddingRight: 2,
+    fontSize: TITLE_FONT_SIZE,
+    lineHeight: TITLE_LINE_HEIGHT,
   },
   summary: {
     fontFamily: 'NunitoSans_400Regular',
-    fontSize: 15,
-    lineHeight: 22,
-    paddingBottom: 8,
+    fontSize: SUMMARY_FONT_SIZE,
+    lineHeight: SUMMARY_LINE_HEIGHT,
   },
   loading: {
     alignItems: 'center',
