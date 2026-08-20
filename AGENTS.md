@@ -29,3 +29,34 @@ status from the `users/{uid}.premium` mirror and comp grants only.
 Complimentary premium: add a doc whose ID is the (lowercased) email under the
 `premiumGrants` Firestore collection in the Firebase console. See
 `docs/premium-setup.md`.
+
+# Google sign-in DEVELOPER_ERROR (code 10) is a console problem, never a code bug
+
+If the Google account picker opens and sign-in fails the moment an account is
+chosen, the native module rejected with `"10"` — `CommonStatusCodes.DEVELOPER_ERROR`.
+It means no Android OAuth client in the Firebase project matches the *installed*
+build's package name plus **signing certificate**. Nothing in this repo can fix it.
+
+Each way of installing the app uses a different signing key, and **every one of
+them needs its own SHA-1 registered** under Firebase Console → Project settings →
+Your apps → Android (`com.goode_company.listkitty`) → Add fingerprint:
+
+- **Play Store install** (`installerPackageName=com.android.vending`) — Play
+  re-signs the AAB with its own key, so the EAS fingerprint does *not* apply.
+  Get it from Play Console → Test and release → Setup → App signing.
+- **EAS build installed directly** (`preview`/`development` profiles) — the EAS
+  upload keystore, via `eas credentials -p android`.
+- **`npx expo run:android`** — the template debug keystore,
+  `5E:8F:16:06:2E:A3:CD:2C:4A:0D:54:78:76:BA:A6:F3:8C:AB:F6:25`.
+
+Fingerprints propagate in a few minutes; no rebuild or resubmission is needed.
+
+To read the fingerprint the installed build actually carries:
+
+```bash
+adb shell pm path com.goode_company.listkitty
+adb pull <base.apk path> base.apk
+apksigner verify --print-certs base.apk
+```
+
+A DN of `CN=Android, O=Google Inc.` means Play App Signing re-signed it.
