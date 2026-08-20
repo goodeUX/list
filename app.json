@@ -17,7 +17,7 @@
     },
     "android": {
       "icon": "./assets/images/icon.png",
-      "versionCode": 7,
+      "versionCode": 8,
       "adaptiveIcon": {
         "backgroundColor": "#EDE4D4",
         "foregroundImage": "./assets/images/android-icon-foreground.png",
