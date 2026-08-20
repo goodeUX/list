@@ -173,8 +173,13 @@ export default function RootLayout() {
                   />
                 </Reanimated.View>
               ) : null}
+              {/* Waits for the fonts. Mounted earlier, the tree lays out with
+                  the fallback font and keeps those measurements: text boxes
+                  end up sized for the wrong glyphs, and the real font then
+                  overflows them. The main layer is invisible until `loaded`
+                  anyway, so this costs nothing on screen. */}
               <Reanimated.View style={[styles.mainLayer, mainAnimatedStyle]}>
-                <RootLayoutNav />
+                {loaded ? <RootLayoutNav /> : null}
               </Reanimated.View>
               <AppAlertHost />
             </ThemeProvider>
