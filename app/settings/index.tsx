@@ -8,7 +8,6 @@ import {
   Pressable,
   ScrollView,
   StyleSheet,
-  Switch,
   Text,
   View,
   type ImageSourcePropType,
@@ -18,7 +17,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useAuth } from '@/contexts/AuthContext';
 import Button from '@/components/Button';
-import MaterialSymbol from '@/components/MaterialSymbol';
+import UserAvatar from '@/components/UserAvatar';
 import { usePlan } from '@/contexts/PlanContext';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useAppLock } from '@/hooks/useAppLock';
@@ -31,6 +30,7 @@ import { FREE_LIST_LIMIT } from '@/lib/listLimits';
 import { restorePremiumPurchases } from '@/lib/purchases';
 
 const THEME_OPTION_ICON_SIZE = 18;
+const HEADER_AVATAR_SIZE = 36;
 const APPLE_SUBSCRIPTIONS_URL = 'https://apps.apple.com/account/subscriptions';
 const PLAY_SUBSCRIPTIONS_URL = 'https://play.google.com/store/account/subscriptions';
 
@@ -65,25 +65,20 @@ const THEME_OPTIONS: {
 
 export default function SettingsScreen() {
   const { colors, colorScheme, radii, spacing, preference, setPreference } = useTheme();
-  const { user, signOut } = useAuth();
+  const { user } = useAuth();
   const appLock = useAppLock();
-  const showSecurity = Boolean(user) && appLock.capability !== 'unsupported';
+  // Hidden when the page would be empty: no biometrics on this device and
+  // no password of ours to change.
+  const hasPasswordProvider =
+    user?.providerData.some((provider) => provider.providerId === 'password') ?? false;
+  const showSecurity =
+    Boolean(user) && (appLock.capability !== 'unsupported' || hasPasswordProvider);
   const insets = useSafeAreaInsets();
   const { animatedStyle, goBack, isEnabled: slideTransitionEnabled } =
     useChildSlideTransition();
   const { plan, planSource, purchasesAvailable, entitlement } = usePlan();
 
-  const [appLockBusy, setAppLockBusy] = useState(false);
   const [restoring, setRestoring] = useState(false);
-
-  const handleAppLockToggle = async (next: boolean) => {
-    setAppLockBusy(true);
-    try {
-      await appLock.setEnabled(next);
-    } finally {
-      setAppLockBusy(false);
-    }
-  };
 
   const handleManageSubscription = () => {
     // RevenueCat's managementURL when known; otherwise the store's generic
@@ -113,15 +108,6 @@ export default function SettingsScreen() {
     ? new Date(entitlement.expirationDate).toLocaleDateString()
     : null;
 
-  const handleSignOut = async () => {
-    await signOut();
-    if (router.canGoBack()) {
-      goBack();
-      return;
-    }
-    router.replace('/');
-  };
-
   const handleClose = () => {
     if (router.canGoBack()) {
       goBack();
@@ -131,7 +117,6 @@ export default function SettingsScreen() {
   };
 
   const accountLabel = user?.displayName || user?.email || '';
-  const accountInitial = accountLabel.trim().charAt(0).toUpperCase() || '?';
   const introImage = colorScheme === 'dark' ? introDarkImage : introLightImage;
 
   return (
@@ -180,11 +165,25 @@ export default function SettingsScreen() {
           <MaterialIcons color={colors.accent} name="chevron-left" size={24} />
         </Pressable>
 
-        <Text style={[styles.title, { color: colors.text, flex: 1, minWidth: 0 }]}>
-          Settings
-        </Text>
+        <Text style={[styles.title, { color: colors.text }]}>Settings</Text>
 
-        <View style={styles.headerSpacer} />
+        {user ? (
+          <Pressable
+            accessibilityLabel="Profile"
+            accessibilityRole="button"
+            hitSlop={8}
+            onPress={() => router.push('/settings/profile')}
+            style={({ pressed }) => [styles.avatarButton, { opacity: pressed ? 0.7 : 1 }]}
+          >
+            <UserAvatar
+              label={accountLabel}
+              photoURL={user.photoURL}
+              size={HEADER_AVATAR_SIZE}
+            />
+          </Pressable>
+        ) : (
+          <View style={styles.headerSpacer} />
+        )}
       </View>
 
       <ScrollView
@@ -240,6 +239,28 @@ export default function SettingsScreen() {
         </View>
 
         {showSecurity ? (
+          <Pressable
+            accessibilityLabel="Security"
+            accessibilityRole="button"
+            onPress={() => router.push('/settings/security')}
+            style={({ pressed }) => [
+              styles.section,
+              styles.navRow,
+              {
+                backgroundColor: colors.surface,
+                borderColor: colors.border,
+                borderRadius: radii.card,
+                opacity: pressed ? 0.7 : 1,
+                padding: spacing.md,
+              },
+            ]}
+          >
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>Security</Text>
+            <MaterialIcons color={colors.textSecondary} name="chevron-right" size={24} />
+          </Pressable>
+        ) : null}
+
+        {!user ? (
           <View
             style={[
               styles.section,
@@ -251,85 +272,8 @@ export default function SettingsScreen() {
               },
             ]}
           >
-            <Text style={[styles.sectionTitle, { color: colors.text }]}>Security</Text>
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>Account</Text>
 
-            {appLock.capability === 'ready' ? (
-              <View style={[styles.appLockRow, { marginTop: spacing.sm }]}>
-                <View style={styles.appLockLabels}>
-                  <Text style={[styles.appLockTitle, { color: colors.text }]}>
-                    App lock
-                  </Text>
-                  <Text style={[styles.appLockSubtitle, { color: colors.textSecondary }]}>
-                    Require fingerprint / Face ID to open List Kitty
-                  </Text>
-                </View>
-                <Switch
-                  accessibilityLabel="App lock"
-                  disabled={appLock.loading || appLockBusy}
-                  onValueChange={(next) => void handleAppLockToggle(next)}
-                  thumbColor={appLock.enabled ? colors.accent : colors.textSecondary}
-                  trackColor={{ false: colors.border, true: colors.accentSoft }}
-                  value={appLock.enabled}
-                />
-              </View>
-            ) : (
-              <Text
-                style={[
-                  styles.appLockSubtitle,
-                  { color: colors.textSecondary, marginTop: spacing.sm },
-                ]}
-              >
-                Set up fingerprint or face unlock in your device settings to use App lock.
-              </Text>
-            )}
-          </View>
-        ) : null}
-
-        <View
-          style={[
-            styles.section,
-            {
-              backgroundColor: colors.surface,
-              borderColor: colors.border,
-              borderRadius: radii.card,
-              padding: spacing.md,
-            },
-          ]}
-        >
-          <Text style={[styles.sectionTitle, { color: colors.text }]}>Account</Text>
-
-          {user ? (
-            <View style={[styles.accountRow, { gap: spacing.sm, marginTop: spacing.sm }]}>
-              <View
-                style={[
-                  styles.avatar,
-                  { backgroundColor: colors.accentSoft },
-                ]}
-              >
-                <Text style={[styles.avatarText, { color: colors.text }]}>
-                  {accountInitial}
-                </Text>
-              </View>
-              <Text style={[styles.accountEmail, { color: colors.text, flex: 1 }]}>
-                {accountLabel}
-              </Text>
-              <Pressable
-                accessibilityLabel="Edit account"
-                accessibilityRole="button"
-                hitSlop={8}
-                onPress={() => router.push('/settings/edit-account')}
-                style={({ pressed }) => [
-                  styles.editButton,
-                  {
-                    backgroundColor: colors.surface,
-                    opacity: pressed ? 0.7 : 1,
-                  },
-                ]}
-              >
-                <MaterialSymbol color={colors.accent} filled name="person_edit" size={22} />
-              </Pressable>
-            </View>
-          ) : (
             <View style={[styles.accountActions, { gap: spacing.sm, marginTop: spacing.sm }]}>
               <Pressable
                 onPress={() =>
@@ -369,8 +313,8 @@ export default function SettingsScreen() {
                 </Text>
               </Pressable>
             </View>
-          )}
-        </View>
+          </View>
+        ) : null}
 
         {user ? (
           <View
@@ -459,21 +403,6 @@ export default function SettingsScreen() {
         </View>
       </ScrollView>
 
-      {user ? (
-        <View
-          style={[
-            styles.bottomBar,
-            {
-              borderTopColor: colors.border,
-              paddingHorizontal: spacing.lg,
-              paddingTop: spacing.md,
-              paddingBottom: spacing.lg,
-            },
-          ]}
-        >
-          <Button icon="logout" label="Sign out" onPress={handleSignOut} variant="surface" />
-        </View>
-      ) : null}
       </View>
     </Animated.View>
   );
@@ -500,17 +429,25 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     width: 44,
   },
+  // marginLeft: auto takes the row's spare width, so the title keeps its
+  // own and the trailing item sits at the edge.
   headerSpacer: {
-    flexShrink: 0,
     height: 44,
+    marginLeft: 'auto',
     width: 44,
   },
+  avatarButton: {
+    marginLeft: 'auto',
+  },
+  navRow: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
   title: {
-    flex: 1,
     fontFamily: 'Fraunces_600SemiBold',
     fontSize: 24,
     lineHeight: 30,
-    minWidth: 0,
   },
   container: {
     flexGrow: 1,
@@ -544,56 +481,7 @@ const styles = StyleSheet.create({
     fontFamily: 'NunitoSans_600SemiBold',
     fontSize: 14,
   },
-  accountRow: {
-    alignItems: 'center',
-    flexDirection: 'row',
-  },
-  avatar: {
-    alignItems: 'center',
-    borderRadius: 16,
-    height: 32,
-    justifyContent: 'center',
-    width: 32,
-  },
-  avatarText: {
-    fontFamily: 'NunitoSans_600SemiBold',
-    fontSize: 14,
-  },
-  accountEmail: {
-    fontFamily: 'NunitoSans_600SemiBold',
-    fontSize: 16,
-    lineHeight: 22,
-  },
-  editButton: {
-    alignItems: 'center',
-    borderRadius: 20,
-    flexShrink: 0,
-    height: 40,
-    justifyContent: 'center',
-    width: 40,
-  },
   accountActions: {},
-  appLockRow: {
-    alignItems: 'center',
-    flexDirection: 'row',
-    gap: 12,
-    justifyContent: 'space-between',
-  },
-  appLockLabels: {
-    flex: 1,
-    gap: 2,
-    minWidth: 0,
-  },
-  appLockTitle: {
-    fontFamily: 'NunitoSans_600SemiBold',
-    fontSize: 16,
-    lineHeight: 22,
-  },
-  appLockSubtitle: {
-    fontFamily: 'NunitoSans_400Regular',
-    fontSize: 13,
-    lineHeight: 18,
-  },
   planRow: {
     alignItems: 'center',
     flexDirection: 'row',
@@ -621,9 +509,6 @@ const styles = StyleSheet.create({
   introImage: {
     height: 240,
     width: 240,
-  },
-  bottomBar: {
-    borderTopWidth: StyleSheet.hairlineWidth,
   },
   actionButton: {
     borderWidth: 1,

@@ -17,7 +17,8 @@ export default function SettingsLayout() {
       }}
     >
       <Stack.Screen name="index" />
-      <Stack.Screen name="edit-account" options={childScreenOptions} />
+      <Stack.Screen name="profile" options={childScreenOptions} />
+      <Stack.Screen name="security" options={childScreenOptions} />
     </Stack>
   );
 }

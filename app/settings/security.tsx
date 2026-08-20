@@ -6,41 +6,34 @@ import {
   Pressable,
   ScrollView,
   StyleSheet,
+  Switch,
   Text,
   View,
 } from 'react-native';
 import Animated from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import ThemedTextInput from '@/components/ThemedTextInput';
 import Button from '@/components/Button';
+import ThemedTextInput from '@/components/ThemedTextInput';
 import { getAuthErrorMessage, useAuth } from '@/contexts/AuthContext';
 import { useTheme } from '@/contexts/ThemeContext';
+import { useAppLock } from '@/hooks/useAppLock';
 import { useChildSlideTransition } from '@/hooks/useSlideTransition';
 
-export default function EditAccountScreen() {
+export default function SecurityScreen() {
   const { colors, spacing } = useTheme();
   const { user, loading, updateAccount } = useAuth();
+  const appLock = useAppLock();
   const insets = useSafeAreaInsets();
   const { animatedStyle, goBack, isEnabled: slideTransitionEnabled } =
     useChildSlideTransition({ ready: !loading && Boolean(user) });
 
-  const [displayName, setDisplayName] = useState('');
-  const [email, setEmail] = useState('');
+  const [appLockBusy, setAppLockBusy] = useState(false);
+  const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmNewPassword, setConfirmNewPassword] = useState('');
-  const [currentPassword, setCurrentPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
-
-  useEffect(() => {
-    if (!user) {
-      return;
-    }
-
-    setDisplayName(user.displayName ?? '');
-    setEmail(user.email ?? '');
-  }, [user]);
 
   useEffect(() => {
     if (!loading && !user) {
@@ -52,62 +45,50 @@ export default function EditAccountScreen() {
     return null;
   }
 
-  const emailChanging = email.trim() !== (user.email ?? '');
-  const passwordChanging = newPassword.trim().length > 0;
-  const needsCurrentPassword = emailChanging || passwordChanging;
+  // Google- and Apple-only accounts have no password of ours to change.
   const hasPasswordProvider = user.providerData.some(
     (provider) => provider.providerId === 'password',
   );
-  const socialProviderLabel = user.providerData.some(
-    (provider) => provider.providerId === 'google.com',
-  )
-    ? 'Google'
-    : user.providerData.some((provider) => provider.providerId === 'apple.com')
-      ? 'Apple'
-      : null;
+
+  const handleAppLockToggle = async (next: boolean) => {
+    setAppLockBusy(true);
+    try {
+      await appLock.setEnabled(next);
+    } finally {
+      setAppLockBusy(false);
+    }
+  };
 
   const handleSave = async () => {
     setError(null);
 
-    if (!displayName.trim()) {
-      setError('Please enter your name.');
+    if (!newPassword.trim()) {
+      setError('Enter a new password.');
       return;
     }
 
-    if (!email.trim()) {
-      setError('Please enter your email address.');
+    if (!currentPassword) {
+      setError('Enter your current password to set a new password.');
       return;
     }
 
-    if (passwordChanging) {
-      if (!currentPassword) {
-        setError('Enter your current password to set a new password.');
-        return;
-      }
-
-      if (!confirmNewPassword.trim()) {
-        setError('Please confirm your new password.');
-        return;
-      }
-
-      if (newPassword !== confirmNewPassword) {
-        setError('New passwords do not match.');
-        return;
-      }
+    if (!confirmNewPassword) {
+      setError('Please confirm your new password.');
+      return;
     }
 
-    if (hasPasswordProvider && emailChanging && !passwordChanging && !currentPassword) {
-      setError('Enter your current password below to save your new email.');
+    if (newPassword !== confirmNewPassword) {
+      setError('New passwords do not match.');
       return;
     }
 
     setSubmitting(true);
     try {
       await updateAccount({
-        displayName,
-        email: hasPasswordProvider ? email : (user.email ?? email),
-        currentPassword: needsCurrentPassword ? currentPassword : undefined,
-        newPassword: passwordChanging ? newPassword : undefined,
+        displayName: user.displayName ?? '',
+        email: user.email ?? '',
+        currentPassword,
+        newPassword,
       });
       goBack();
     } catch (err) {
@@ -167,9 +148,7 @@ export default function EditAccountScreen() {
               <MaterialIcons color={colors.accent} name="chevron-left" size={24} />
             </Pressable>
 
-            <Text style={[styles.title, { color: colors.text, flex: 1, minWidth: 0 }]}>
-              Edit account
-            </Text>
+            <Text style={[styles.title, { color: colors.text }]}>Security</Text>
 
             <View style={styles.headerSpacer} />
           </View>
@@ -179,49 +158,40 @@ export default function EditAccountScreen() {
             keyboardShouldPersistTaps="handled"
             style={styles.scroll}
           >
-            <View style={styles.field}>
-              <Text style={[styles.label, { color: colors.textSecondary }]}>Name</Text>
-              <ThemedTextInput
-                autoComplete="name"
-                editable={!submitting}
-                onChangeText={setDisplayName}
-                placeholder="Your name"
-                textContentType="name"
-                value={displayName}
-              />
-            </View>
-
-            <View style={styles.field}>
-              <Text style={[styles.label, { color: colors.textSecondary }]}>Email</Text>
-              <ThemedTextInput
-                autoCapitalize="none"
-                autoComplete="email"
-                autoCorrect={false}
-                editable={!submitting && hasPasswordProvider}
-                keyboardType="email-address"
-                onChangeText={setEmail}
-                placeholder="you@example.com"
-                textContentType="emailAddress"
-                value={email}
-              />
-              {!hasPasswordProvider && socialProviderLabel ? (
-                <Text style={[styles.helper, { color: colors.textSecondary }]}>
-                  Your email is managed by your {socialProviderLabel} account.
-                </Text>
-              ) : emailChanging ? (
-                <Text style={[styles.helper, { color: colors.textSecondary }]}>
-                  Saving a new email requires your current password below.
-                </Text>
-              ) : null}
-            </View>
+            {appLock.capability === 'ready' ? (
+              <View style={styles.appLockRow}>
+                <View style={styles.appLockLabels}>
+                  <Text style={[styles.sectionTitle, { color: colors.text }]}>
+                    Fingerprint / Face ID
+                  </Text>
+                  <Text style={[styles.helper, { color: colors.textSecondary }]}>
+                    Require fingerprint / Face ID to open List Kitty
+                  </Text>
+                </View>
+                <Switch
+                  accessibilityLabel="App lock"
+                  disabled={appLock.loading || appLockBusy}
+                  onValueChange={(next) => void handleAppLockToggle(next)}
+                  thumbColor={appLock.enabled ? colors.accent : colors.textSecondary}
+                  trackColor={{ false: colors.border, true: colors.accentSoft }}
+                  value={appLock.enabled}
+                />
+              </View>
+            ) : appLock.capability === 'unsupported' ? null : (
+              <Text style={[styles.helper, { color: colors.textSecondary }]}>
+                Set up fingerprint or face unlock in your device settings to use App lock.
+              </Text>
+            )}
 
             {hasPasswordProvider ? (
               <View
                 style={{
                   borderTopColor: colors.border,
-                  borderTopWidth: StyleSheet.hairlineWidth,
+                  borderTopWidth:
+                    appLock.capability === 'unsupported' ? 0 : StyleSheet.hairlineWidth,
                   gap: spacing.md,
-                  paddingTop: spacing.md,
+                  paddingTop:
+                    appLock.capability === 'unsupported' ? 0 : spacing.md,
                 }}
               >
                 <Text style={[styles.sectionTitle, { color: colors.text }]}>
@@ -283,24 +253,26 @@ export default function EditAccountScreen() {
             ) : null}
           </ScrollView>
 
-          <View
-            style={[
-              styles.bottomBar,
-              {
-                borderTopColor: colors.border,
-                paddingHorizontal: spacing.lg,
-                paddingTop: spacing.md,
-                paddingBottom: spacing.lg,
-              },
-            ]}
-          >
-            <Button
-              label="Save changes"
-              loading={submitting}
-              onPress={handleSave}
-              variant="primary"
-            />
-          </View>
+          {hasPasswordProvider ? (
+            <View
+              style={[
+                styles.bottomBar,
+                {
+                  borderTopColor: colors.border,
+                  paddingHorizontal: spacing.lg,
+                  paddingTop: spacing.md,
+                  paddingBottom: spacing.lg,
+                },
+              ]}
+            >
+              <Button
+                label="Save changes"
+                loading={submitting}
+                onPress={handleSave}
+                variant="primary"
+              />
+            </View>
+          ) : null}
         </View>
       </KeyboardAvoidingView>
     </Animated.View>
@@ -323,28 +295,35 @@ const styles = StyleSheet.create({
   backButton: {
     alignItems: 'center',
     borderRadius: 22,
-    flexShrink: 0,
     height: 44,
     justifyContent: 'center',
     width: 44,
   },
   headerSpacer: {
-    flexShrink: 0,
     height: 44,
+    marginLeft: 'auto',
     width: 44,
   },
   title: {
-    flex: 1,
     fontFamily: 'Fraunces_600SemiBold',
     fontSize: 24,
     lineHeight: 30,
-    minWidth: 0,
   },
   scroll: {
     flex: 1,
   },
   content: {
     flexGrow: 1,
+  },
+  appLockRow: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: 12,
+  },
+  appLockLabels: {
+    flex: 1,
+    gap: 2,
+    minWidth: 0,
   },
   field: {
     gap: 6,
