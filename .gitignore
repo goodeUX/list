@@ -10,6 +10,7 @@ web-build/
 expo-env.d.ts
 
 # Generated web export / hosting build artifacts
+public/.well-known/
 .expo-web-export/
 .firebase/
 build-meta.json
