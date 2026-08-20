@@ -45,3 +45,47 @@ test('falls back to a generic message', () => {
     'Something went wrong. Please try again.',
   );
 });
+
+test('maps the Android DEVELOPER_ERROR translation to a specific message', () => {
+  expect(getAuthErrorMessage({ code: 'auth/google-config-error' })).toBe(
+    "Google sign-in isn't set up for this version of the app.",
+  );
+});
+
+describe('unmapped codes', () => {
+  const warn = jest.spyOn(console, 'warn').mockImplementation(() => {});
+
+  afterEach(() => {
+    warn.mockClear();
+    delete process.env.EXPO_PUBLIC_DEBUG_AUTH_ERRORS;
+  });
+
+  afterAll(() => {
+    warn.mockRestore();
+  });
+
+  test('logs the raw code so a device run can identify it', () => {
+    getAuthErrorMessage({ code: '10' });
+    expect(warn).toHaveBeenCalledWith(
+      '[auth] unmapped error code',
+      '10',
+      expect.anything(),
+    );
+  });
+
+  test('hides the raw code from the message by default', () => {
+    expect(getAuthErrorMessage({ code: '10' })).toBe(
+      'Something went wrong. Please try again.',
+    );
+  });
+
+  test('appends the raw code when the debug flag is set', () => {
+    process.env.EXPO_PUBLIC_DEBUG_AUTH_ERRORS = '1';
+    expect(getAuthErrorMessage({ code: '10' })).toBe(
+      'Something went wrong. Please try again. [10]',
+    );
+    expect(getAuthErrorMessage(new Error('boom'))).toBe(
+      'Something went wrong. Please try again. [no-code]',
+    );
+  });
+});

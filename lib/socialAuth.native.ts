@@ -37,6 +37,13 @@ function getGoogleModule(): GoogleSignInModule | null {
   return googleModule;
 }
 
+// The Android module rejects with CommonStatusCodes.DEVELOPER_ERROR ("10") when
+// no OAuth client matches this build's package name + signing certificate. The
+// account picker still opens — the failure only lands once an account is picked,
+// so it reads as "sign-in broke" rather than "sign-in is misconfigured". The
+// package's `statusCodes` has no entry for it, hence the literal.
+const ANDROID_DEVELOPER_ERROR = '10';
+
 let googleConfigured = false;
 
 function ensureGoogleConfigured(mod: GoogleSignInModule): void {
@@ -93,7 +100,14 @@ export async function getGoogleCredential(): Promise<SocialCredentialResult> {
       if (error.code === statusCodes.PLAY_SERVICES_NOT_AVAILABLE) {
         throw { code: 'auth/play-services-unavailable' };
       }
-      console.warn('[socialAuth] Google sign-in failed with code', error.code);
+      if (error.code === ANDROID_DEVELOPER_ERROR) {
+        throw { code: 'auth/google-config-error' };
+      }
+      console.warn(
+        '[socialAuth] Google sign-in failed with code',
+        error.code,
+        (error as { message?: string }).message,
+      );
     }
     throw error;
   }

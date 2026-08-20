@@ -1,7 +1,22 @@
+const GENERIC_MESSAGE = 'Something went wrong. Please try again.';
+
 export function getAuthErrorMessage(error: unknown): string {
   const code = (error as { code?: string } | null | undefined)?.code;
+  const message = getMessageForCode(code);
 
-  return getMessageForCode(code);
+  if (message !== GENERIC_MESSAGE) {
+    return message;
+  }
+
+  // An unmapped code is the only thing standing between a support report and a
+  // diagnosis, so make it recoverable: always log it, and — when
+  // EXPO_PUBLIC_DEBUG_AUTH_ERRORS is set on a diagnostic build — show it on
+  // screen for devices that can't be attached to Metro or logcat.
+  console.warn('[auth] unmapped error code', code ?? '(none)', error);
+
+  return process.env.EXPO_PUBLIC_DEBUG_AUTH_ERRORS
+    ? `${GENERIC_MESSAGE} [${code ?? 'no-code'}]`
+    : GENERIC_MESSAGE;
 }
 
 /**
@@ -41,11 +56,13 @@ function getMessageForCode(code: string | undefined): string {
       return 'That email already uses a different sign-in method — log in the way you originally signed up.';
     case 'auth/play-services-unavailable':
       return "Google sign-in isn't available on this device.";
+    case 'auth/google-config-error':
+      return "Google sign-in isn't set up for this version of the app.";
     case 'auth/network-request-failed':
       return 'No connection. Check your internet and try again.';
     case 'auth/provider-unavailable':
       return "That sign-in method isn't available on this device.";
     default:
-      return 'Something went wrong. Please try again.';
+      return GENERIC_MESSAGE;
   }
 }
