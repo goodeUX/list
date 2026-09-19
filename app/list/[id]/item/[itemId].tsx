@@ -100,6 +100,20 @@ export default function ItemDetailScreen() {
     };
   }, []);
 
+  // Once the keyboard height has been applied as bottom padding (this runs
+  // after that re-render), scroll the focused add input above the keyboard.
+  // DraggableFlatList overrides onContentSizeChange, so this effect — not that
+  // prop — is what drives the reveal.
+  useEffect(() => {
+    if (keyboardHeight <= 0 || !addInputFocusedRef.current) {
+      return;
+    }
+    const timer = setTimeout(() => {
+      subItemsListRef.current?.scrollToEnd({ animated: true });
+    }, 50);
+    return () => clearTimeout(timer);
+  }, [keyboardHeight]);
+
   useEffect(() => {
     if (!item) {
       return;
@@ -355,14 +369,6 @@ export default function ItemDetailScreen() {
           data={subItems}
           keyboardShouldPersistTaps="handled"
           keyExtractor={(subItem) => subItem.id}
-          onContentSizeChange={() => {
-            // Fires once the keyboard-height padding (or a newly added row) has
-            // grown the content, which is the right moment to reveal the footer
-            // input above the keyboard.
-            if (addInputFocusedRef.current) {
-              subItemsListRef.current?.scrollToEnd({ animated: true });
-            }
-          }}
           ListHeaderComponent={
             <View style={{ gap: spacing.md, marginBottom: spacing.sm }}>
               <View style={styles.field}>
