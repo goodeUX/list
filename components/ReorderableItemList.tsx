@@ -50,6 +50,7 @@ type ReorderableItemListProps = {
   onReorderWithChecked: (items: ListItem[]) => void | Promise<void>;
   onPressItem: (item: ListItem) => void;
   onToggleItem: (id: string) => void;
+  onToggleSubItem: (itemId: string, subId: string) => void;
   contentContainerStyle?: StyleProp<ViewStyle>;
   ListEmptyComponent?: React.ReactElement | null;
 };
@@ -63,11 +64,26 @@ export default function ReorderableItemList({
   onReorderWithChecked,
   onPressItem,
   onToggleItem,
+  onToggleSubItem,
   contentContainerStyle,
   ListEmptyComponent,
 }: ReorderableItemListProps) {
   const { colors, radii, spacing } = useTheme();
   const [rows, setRows] = useState<Row[]>(() => buildRows(items, moveDoneToBottom));
+
+  const [expandedIds, setExpandedIds] = useState<Set<string>>(() => new Set());
+
+  const toggleExpanded = useCallback((itemId: string) => {
+    setExpandedIds((current) => {
+      const next = new Set(current);
+      if (next.has(itemId)) {
+        next.delete(itemId);
+      } else {
+        next.add(itemId);
+      }
+      return next;
+    });
+  }, []);
 
   useEffect(() => {
     setRows(buildRows(items, moveDoneToBottom));
@@ -188,6 +204,9 @@ export default function ReorderableItemList({
             }
             onPress={() => onPressItem(row.item)}
             onToggle={() => onToggleItem(row.item.id)}
+            expanded={expandedIds.has(row.item.id)}
+            onToggleExpand={() => toggleExpanded(row.item.id)}
+            onToggleSubItem={(subId) => onToggleSubItem(row.item.id, subId)}
           />
           {showSeparator ? (
             <View style={[styles.itemSeparator, { backgroundColor: colors.border }]} />
@@ -201,13 +220,16 @@ export default function ReorderableItemList({
       colors.textSecondary,
       disabled,
       doneCount,
+      expandedIds,
       isItemDraggable,
       onPressItem,
       onToggleItem,
+      onToggleSubItem,
       radii.checkbox,
       rows,
       spacing.md,
       spacing.sm,
+      toggleExpanded,
     ],
   );
 
