@@ -54,6 +54,15 @@ export function configurePurchases(): void {
 
   mod.default.configure({ apiKey: getApiKey() });
   configured = true;
+
+  // RevenueCat logs expected setup problems on every launch — "billing
+  // unavailable" on emulators and "no products registered" until the dashboard
+  // offerings are configured. Silence that in development so it does not spam
+  // the Metro console; production keeps the default logging so real issues stay
+  // visible.
+  if (__DEV__) {
+    mod.default.setLogHandler(() => {});
+  }
 }
 
 /** Ties the subscription to the Firebase account (cross-device, reinstall-safe). */
