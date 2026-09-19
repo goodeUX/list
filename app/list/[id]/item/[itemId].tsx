@@ -13,9 +13,22 @@ import {
   View,
 } from 'react-native';
 import Animated from 'react-native-reanimated';
+import DraggableFlatList, {
+  type RenderItemParams,
+} from 'react-native-draggable-flatlist';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import ThemedTextInput from '@/components/ThemedTextInput';
+import {
+  addSubItem,
+  createSubItemId,
+  removeSubItem,
+  renameSubItem,
+  reorderSubItems,
+  sortSubItems,
+} from '@/lib/subItems';
+import { playToggleHaptic } from '@/lib/haptics';
+import type { SubItem } from '@/lib/types';
 import { useTheme } from '@/contexts/ThemeContext';
 import { showAppAlert } from '@/lib/appAlert';
 import { buttonLabelStyle, buttonLayoutStyle } from '@/lib/buttonStyles';
@@ -34,7 +47,8 @@ export default function ItemDetailScreen() {
   const resolvedItemId = typeof itemId === 'string' ? itemId : undefined;
   const { colors, radii, spacing } = useTheme();
   const insets = useSafeAreaInsets();
-  const { items, loading, updateItem, deleteItem } = useListItems(listId);
+  const { items, loading, updateItem, deleteItem, setSubItems, toggleSubItem } =
+    useListItems(listId);
 
   const item = items.find((entry) => entry.id === resolvedItemId);
   const { animatedStyle, goBack, isEnabled: slideTransitionEnabled } =
@@ -47,6 +61,9 @@ export default function ItemDetailScreen() {
   const [saving, setSaving] = useState(false);
   const [nameLimitError, setNameLimitError] = useState(false);
   const [linkError, setLinkError] = useState<string | null>(null);
+  const [newSubItemName, setNewSubItemName] = useState('');
+
+  const subItems = item ? sortSubItems(item.subItems) : [];
 
   useEffect(() => {
     if (!item) {
@@ -118,6 +135,67 @@ export default function ItemDetailScreen() {
         onPress: runDelete,
       },
     ]);
+  };
+
+  const handleAddSubItem = () => {
+    if (!item) {
+      return;
+    }
+    const next = addSubItem(item.subItems, newSubItemName, createSubItemId());
+    if (next === item.subItems) {
+      return;
+    }
+    setNewSubItemName('');
+    void setSubItems(item.id, next).catch(() => {
+      showAppAlert('Could not add sub-item', 'Please try again.');
+    });
+  };
+
+  const handleRenameSubItem = (subId: string, name: string) => {
+    if (!item) {
+      return;
+    }
+    const next = renameSubItem(item.subItems, subId, name);
+    if (next === item.subItems) {
+      return;
+    }
+    void setSubItems(item.id, next).catch(() => {
+      showAppAlert('Could not rename sub-item', 'Please try again.');
+    });
+  };
+
+  const handleRemoveSubItem = (subId: string) => {
+    if (!item) {
+      return;
+    }
+    void setSubItems(item.id, removeSubItem(item.subItems, subId)).catch(() => {
+      showAppAlert('Could not remove sub-item', 'Please try again.');
+    });
+  };
+
+  const handleToggleSubItem = (subId: string) => {
+    if (!item) {
+      return;
+    }
+    void toggleSubItem(item.id, subId).catch(() => {
+      showAppAlert('Could not update sub-item', 'Please try again.');
+    });
+  };
+
+  const handleReorderSubItems = (ordered: SubItem[]) => {
+    if (!item) {
+      return;
+    }
+    const next = reorderSubItems(
+      item.subItems,
+      ordered.map((entry) => entry.id),
+    );
+    if (Platform.OS !== 'web') {
+      playToggleHaptic();
+    }
+    void setSubItems(item.id, next).catch(() => {
+      showAppAlert('Could not reorder sub-items', 'Please try again.');
+    });
   };
 
   if (loading || !item) {
@@ -275,6 +353,110 @@ export default function ItemDetailScreen() {
             ) : null}
           </View>
 
+          <View style={styles.field}>
+            <Text style={[styles.label, { color: colors.textSecondary }]}>Sub-items</Text>
+
+            <DraggableFlatList
+              activationDistance={12}
+              data={subItems}
+              keyExtractor={(subItem) => subItem.id}
+              onDragEnd={({ data }) => handleReorderSubItems(data)}
+              renderItem={({ item: subItem, drag, isActive }: RenderItemParams<SubItem>) => (
+                <View
+                  style={[
+                    styles.subItemRow,
+                    {
+                      backgroundColor: isActive ? colors.surfaceMuted : 'transparent',
+                      borderRadius: radii.item,
+                    },
+                  ]}
+                >
+                  <Pressable
+                    accessibilityLabel={subItem.checked ? 'Mark incomplete' : 'Mark complete'}
+                    accessibilityRole="checkbox"
+                    accessibilityState={{ checked: subItem.checked }}
+                    disabled={saving}
+                    hitSlop={8}
+                    onPress={() => handleToggleSubItem(subItem.id)}
+                    style={[
+                      styles.subItemCheckbox,
+                      {
+                        backgroundColor: subItem.checked ? colors.success : 'transparent',
+                        borderColor: subItem.checked ? colors.success : colors.border,
+                        borderRadius: radii.checkbox,
+                      },
+                    ]}
+                  >
+                    {subItem.checked ? (
+                      <MaterialIcons color={colors.surface} name="check" size={12} />
+                    ) : null}
+                  </Pressable>
+
+                  <ThemedTextInput
+                    defaultValue={subItem.name}
+                    editable={!saving}
+                    onEndEditing={(event) =>
+                      handleRenameSubItem(subItem.id, event.nativeEvent.text)
+                    }
+                    style={styles.subItemInput}
+                    variant="plain"
+                  />
+
+                  <Pressable
+                    accessibilityLabel="Remove sub-item"
+                    accessibilityRole="button"
+                    disabled={saving}
+                    hitSlop={8}
+                    onPress={() => handleRemoveSubItem(subItem.id)}
+                    style={styles.subItemAction}
+                  >
+                    <MaterialIcons color={colors.textSecondary} name="close" size={18} />
+                  </Pressable>
+
+                  <Pressable
+                    accessibilityLabel="Drag to reorder"
+                    accessibilityRole="button"
+                    delayLongPress={150}
+                    disabled={saving}
+                    onLongPress={drag}
+                    style={styles.subItemAction}
+                  >
+                    <MaterialIcons color={colors.textSecondary} name="drag-indicator" size={20} />
+                  </Pressable>
+                </View>
+              )}
+            />
+
+            <View style={styles.subItemAddRow}>
+              <ThemedTextInput
+                editable={!saving}
+                onChangeText={setNewSubItemName}
+                onSubmitEditing={handleAddSubItem}
+                placeholder="Add a sub-item"
+                returnKeyType="done"
+                style={styles.subItemInput}
+                value={newSubItemName}
+              />
+              <Pressable
+                accessibilityLabel="Add sub-item"
+                accessibilityRole="button"
+                disabled={saving || !newSubItemName.trim()}
+                hitSlop={8}
+                onPress={handleAddSubItem}
+                style={[
+                  styles.subItemAddButton,
+                  {
+                    backgroundColor: colors.accent,
+                    borderRadius: radii.checkbox,
+                    opacity: newSubItemName.trim() ? 1 : 0.5,
+                  },
+                ]}
+              >
+                <MaterialIcons color={colors.surface} name="add" size={20} />
+              </Pressable>
+            </View>
+          </View>
+
           <Pressable
             disabled={saving}
             onPress={handleSave}
@@ -384,6 +566,42 @@ const styles = StyleSheet.create({
     fontFamily: 'NunitoSans_600SemiBold',
     fontSize: 14,
     marginTop: 4,
+  },
+  subItemRow: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: 8,
+    paddingVertical: 4,
+  },
+  subItemCheckbox: {
+    alignItems: 'center',
+    borderWidth: 1.5,
+    height: 20,
+    justifyContent: 'center',
+    width: 20,
+  },
+  subItemInput: {
+    flex: 1,
+    fontFamily: 'NunitoSans_400Regular',
+    fontSize: 16,
+    paddingVertical: 6,
+  },
+  subItemAction: {
+    alignItems: 'center',
+    height: 32,
+    justifyContent: 'center',
+    width: 32,
+  },
+  subItemAddRow: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: 8,
+  },
+  subItemAddButton: {
+    alignItems: 'center',
+    height: 36,
+    justifyContent: 'center',
+    width: 36,
   },
   saveButton: {
     minHeight: 52,
