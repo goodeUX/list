@@ -69,4 +69,40 @@ describe('parseItemEntries', () => {
       { name: 'packs sausages', quantity: { kind: 'count', base: 2 } },
     ]);
   });
+
+  it('parses cooking units attached to the number', () => {
+    expect(parseItemEntries('2cups Flour')).toEqual([
+      { name: 'Flour', quantity: { kind: 'cup', base: 2 } },
+    ]);
+    expect(parseItemEntries('1tbsp Oil')).toEqual([
+      { name: 'Oil', quantity: { kind: 'tbsp', base: 1 } },
+    ]);
+  });
+
+  it('parses a leading fraction as a quantity (the /4cups bug)', () => {
+    expect(parseItemEntries('3/4cups Sugar')).toEqual([
+      { name: 'Sugar', quantity: { kind: 'cup', base: 0.75 } },
+    ]);
+    expect(parseItemEntries('1/2tsp Salt')).toEqual([
+      { name: 'Salt', quantity: { kind: 'tsp', base: 0.5 } },
+    ]);
+  });
+
+  it('combines duplicate fractional cooking quantities', () => {
+    expect(parseItemEntries('1/2tsp Salt, 1/4tsp Salt')).toEqual([
+      { name: 'Salt', quantity: { kind: 'tsp', base: 0.75 } },
+    ]);
+    expect(parseItemEntries('3/4cups Flour, 1/4cups Flour')).toEqual([
+      { name: 'Flour', quantity: { kind: 'cup', base: 1 } },
+    ]);
+  });
+
+  it('parses a space-separated cooking unit and a mixed number', () => {
+    expect(parseItemEntries('3/4 cups Sugar')).toEqual([
+      { name: 'Sugar', quantity: { kind: 'cup', base: 0.75 } },
+    ]);
+    expect(parseItemEntries('1 1/2 cups Milk')).toEqual([
+      { name: 'Milk', quantity: { kind: 'cup', base: 1.5 } },
+    ]);
+  });
 });

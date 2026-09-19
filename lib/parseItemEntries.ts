@@ -1,6 +1,8 @@
 import { itemMatchKey } from './itemName';
 import {
   combineItemQuantities,
+  KNOWN_UNIT_TOKENS,
+  parseNumber,
   parseQuantity,
   type Quantity,
 } from './quantity';
@@ -10,23 +12,26 @@ export interface ParsedEntry {
   quantity: Quantity | null;
 }
 
-const KNOWN_UNITS = new Set(['mg', 'g', 'kg', 'ml', 'cl', 'l']);
+// A leading number: a mixed number ("1 1/2"), a simple fraction ("3/4"), or a
+// plain integer/decimal ("250", "2.5"). Ordered longest-match first.
+const LEADING_NUMBER = String.raw`\d+\s+\d+\/\d+|\d+\/\d+|\d+(?:\.\d+)?`;
+const LEADING_QUANTITY = new RegExp(`^(${LEADING_NUMBER})([a-zA-Z]*)(.*)$`);
 
 export function extractLeadingQuantity(entry: string): ParsedEntry {
   const trimmed = entry.trim();
-  const match = trimmed.match(/^(\d+(?:\.\d+)?)([a-zA-Z]*)(.*)$/);
+  const match = trimmed.match(LEADING_QUANTITY);
   if (!match) {
     return { name: trimmed, quantity: null };
   }
 
   const [, numberStr, attachedUnit, remainder] = match;
 
-  // Unit attached to the number, e.g. "250g Chicken" or "2.5l Water".
+  // Unit attached to the number, e.g. "250g Chicken", "3/4cups sugar".
   if (attachedUnit) {
-    if (KNOWN_UNITS.has(attachedUnit.toLowerCase())) {
+    if (KNOWN_UNIT_TOKENS.has(attachedUnit.toLowerCase())) {
       return {
         name: remainder.trim(),
-        quantity: parseQuantity(numberStr + attachedUnit),
+        quantity: parseQuantity(`${numberStr}${attachedUnit}`),
       };
     }
     // Letters after the number that are not a unit (e.g. "3rd shelf") — the
@@ -36,12 +41,12 @@ export function extractLeadingQuantity(entry: string): ParsedEntry {
 
   const rest = remainder.trim();
 
-  // Unit as a separate word, e.g. "250 g Chicken".
+  // Unit as a separate word, e.g. "250 g Chicken", "3/4 cups sugar".
   const firstWord = rest.match(/^([a-zA-Z]+)\b\s*(.*)$/);
-  if (firstWord && KNOWN_UNITS.has(firstWord[1].toLowerCase())) {
+  if (firstWord && KNOWN_UNIT_TOKENS.has(firstWord[1].toLowerCase())) {
     return {
       name: firstWord[2].trim(),
-      quantity: parseQuantity(numberStr + firstWord[1]),
+      quantity: parseQuantity(`${numberStr}${firstWord[1]}`),
     };
   }
 
@@ -51,7 +56,12 @@ export function extractLeadingQuantity(entry: string): ParsedEntry {
     return { name: trimmed, quantity: null };
   }
 
-  return { name: rest, quantity: { kind: 'count', base: Number(numberStr) } };
+  const count = parseNumber(numberStr);
+  if (count === null) {
+    return { name: trimmed, quantity: null };
+  }
+
+  return { name: rest, quantity: { kind: 'count', base: count } };
 }
 
 function tryMergeInto(bucket: ParsedEntry[], incoming: ParsedEntry): boolean {

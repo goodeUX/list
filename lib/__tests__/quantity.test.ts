@@ -1,8 +1,31 @@
 import {
   addQuantities,
   formatQuantity,
+  parseNumber,
   parseQuantity,
 } from '@/lib/quantity';
+
+describe('parseNumber', () => {
+  it('parses integers and decimals', () => {
+    expect(parseNumber('3')).toBe(3);
+    expect(parseNumber('2.5')).toBe(2.5);
+  });
+
+  it('parses simple fractions', () => {
+    expect(parseNumber('1/2')).toBe(0.5);
+    expect(parseNumber('3/4')).toBe(0.75);
+  });
+
+  it('parses mixed numbers', () => {
+    expect(parseNumber('1 1/2')).toBe(1.5);
+  });
+
+  it('returns null for a zero denominator or non-numbers', () => {
+    expect(parseNumber('1/0')).toBeNull();
+    expect(parseNumber('abc')).toBeNull();
+    expect(parseNumber('')).toBeNull();
+  });
+});
 
 describe('parseQuantity', () => {
   it('parses a bare number as a count', () => {
@@ -21,8 +44,22 @@ describe('parseQuantity', () => {
     expect(parseQuantity('50cl')).toEqual({ kind: 'volume', base: 500 });
   });
 
+  it('parses cooking units as their own kinds', () => {
+    expect(parseQuantity('2cups')).toEqual({ kind: 'cup', base: 2 });
+    expect(parseQuantity('1cup')).toEqual({ kind: 'cup', base: 1 });
+    expect(parseQuantity('1tbsp')).toEqual({ kind: 'tbsp', base: 1 });
+    expect(parseQuantity('2tsp')).toEqual({ kind: 'tsp', base: 2 });
+  });
+
+  it('parses fractions with cooking units', () => {
+    expect(parseQuantity('1/2tsp')).toEqual({ kind: 'tsp', base: 0.5 });
+    expect(parseQuantity('3/4cups')).toEqual({ kind: 'cup', base: 0.75 });
+    expect(parseQuantity('1 1/2cups')).toEqual({ kind: 'cup', base: 1.5 });
+  });
+
   it('is case-insensitive and tolerates spaces', () => {
     expect(parseQuantity(' 1 KG ')).toEqual({ kind: 'mass', base: 1000 });
+    expect(parseQuantity('3/4 cups')).toEqual({ kind: 'cup', base: 0.75 });
   });
 
   it('returns null for non-numeric or unknown units', () => {
@@ -62,6 +99,27 @@ describe('formatQuantity', () => {
 
   it('formats sub-gram mass in milligrams', () => {
     expect(formatQuantity({ kind: 'mass', base: 0.5 })).toBe('500mg');
+  });
+
+  it('formats cooking units, pluralizing cups', () => {
+    expect(formatQuantity({ kind: 'cup', base: 1 })).toBe('1cup');
+    expect(formatQuantity({ kind: 'cup', base: 2 })).toBe('2cups');
+    expect(formatQuantity({ kind: 'cup', base: 0.75 })).toBe('0.75cups');
+    expect(formatQuantity({ kind: 'tbsp', base: 3 })).toBe('3tbsp');
+    expect(formatQuantity({ kind: 'tsp', base: 0.5 })).toBe('0.5tsp');
+  });
+});
+
+describe('addQuantities (cooking units)', () => {
+  it('sums the same cooking unit', () => {
+    expect(addQuantities({ kind: 'tsp', base: 0.5 }, { kind: 'tsp', base: 0.25 })).toEqual({
+      kind: 'tsp',
+      base: 0.75,
+    });
+  });
+
+  it('does not combine different cooking units', () => {
+    expect(addQuantities({ kind: 'cup', base: 1 }, { kind: 'tbsp', base: 1 })).toBeNull();
   });
 });
 
