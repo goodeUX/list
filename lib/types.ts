@@ -15,6 +15,13 @@ export interface AppList {
   updatedAt: Date;
 }
 
+export interface SubItem {
+  id: string;
+  name: string;
+  checked: boolean;
+  order: number;
+}
+
 export interface ListItem {
   id: string;
   name: string;
@@ -23,6 +30,7 @@ export interface ListItem {
   link: string | null;
   checked: boolean;
   order: number;
+  subItems: SubItem[];
   createdBy: string;
   createdAt: Date;
   updatedAt: Date;

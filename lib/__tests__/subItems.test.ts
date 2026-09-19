@@ -1,0 +1,117 @@
+import {
+  addSubItem,
+  parseSubItems,
+  removeSubItem,
+  renameSubItem,
+  reorderSubItems,
+  sortSubItems,
+  subItemProgress,
+  toggleSubItem,
+} from '@/lib/subItems';
+import type { SubItem } from '@/lib/types';
+
+function make(overrides: Partial<SubItem> & { id: string }): SubItem {
+  return { name: 'x', checked: false, order: 0, ...overrides };
+}
+
+describe('addSubItem', () => {
+  it('appends a normalized sub-item with the next order', () => {
+    const start = [make({ id: 'a', order: 0 })];
+    const next = addSubItem(start, '  Milk  ', 'b');
+    expect(next).toHaveLength(2);
+    expect(next[1]).toEqual({ id: 'b', name: 'Milk', checked: false, order: 1 });
+  });
+
+  it('ignores an empty name', () => {
+    const start = [make({ id: 'a' })];
+    expect(addSubItem(start, '   ', 'b')).toBe(start);
+  });
+});
+
+describe('removeSubItem', () => {
+  it('removes by id and resequences order', () => {
+    const start = [
+      make({ id: 'a', order: 0 }),
+      make({ id: 'b', order: 1 }),
+      make({ id: 'c', order: 2 }),
+    ];
+    const next = removeSubItem(start, 'b');
+    expect(next.map((s) => s.id)).toEqual(['a', 'c']);
+    expect(next.map((s) => s.order)).toEqual([0, 1]);
+  });
+});
+
+describe('renameSubItem', () => {
+  it('renames the matching sub-item, normalized', () => {
+    const start = [make({ id: 'a', name: 'old' })];
+    expect(renameSubItem(start, 'a', '  New  ')[0].name).toBe('New');
+  });
+
+  it('keeps the old name when the new name is blank', () => {
+    const start = [make({ id: 'a', name: 'old' })];
+    expect(renameSubItem(start, 'a', '   ')[0].name).toBe('old');
+  });
+});
+
+describe('toggleSubItem', () => {
+  it('flips checked for the matching id only', () => {
+    const start = [make({ id: 'a', checked: false }), make({ id: 'b', checked: false })];
+    const next = toggleSubItem(start, 'a');
+    expect(next[0].checked).toBe(true);
+    expect(next[1].checked).toBe(false);
+  });
+});
+
+describe('reorderSubItems', () => {
+  it('reorders by the given ids and resequences order', () => {
+    const start = [
+      make({ id: 'a', order: 0 }),
+      make({ id: 'b', order: 1 }),
+      make({ id: 'c', order: 2 }),
+    ];
+    const next = reorderSubItems(start, ['c', 'a', 'b']);
+    expect(next.map((s) => s.id)).toEqual(['c', 'a', 'b']);
+    expect(next.map((s) => s.order)).toEqual([0, 1, 2]);
+  });
+});
+
+describe('sortSubItems', () => {
+  it('sorts by order without mutating input', () => {
+    const start = [make({ id: 'b', order: 1 }), make({ id: 'a', order: 0 })];
+    expect(sortSubItems(start).map((s) => s.id)).toEqual(['a', 'b']);
+    expect(start.map((s) => s.id)).toEqual(['b', 'a']);
+  });
+});
+
+describe('subItemProgress', () => {
+  it('counts done and total', () => {
+    const start = [
+      make({ id: 'a', checked: true }),
+      make({ id: 'b', checked: false }),
+      make({ id: 'c', checked: true }),
+    ];
+    expect(subItemProgress(start)).toEqual({ done: 2, total: 3 });
+  });
+});
+
+describe('parseSubItems', () => {
+  it('returns [] for non-arrays', () => {
+    expect(parseSubItems(undefined)).toEqual([]);
+    expect(parseSubItems(null)).toEqual([]);
+    expect(parseSubItems('nope')).toEqual([]);
+  });
+
+  it('drops malformed entries and resequences order', () => {
+    const raw = [
+      { id: 'a', name: 'A', checked: true, order: 5 },
+      { id: 'b', name: 'B' },
+      { name: 'no id' },
+      null,
+      42,
+    ];
+    expect(parseSubItems(raw)).toEqual([
+      { id: 'a', name: 'A', checked: true, order: 0 },
+      { id: 'b', name: 'B', checked: false, order: 1 },
+    ]);
+  });
+});
