@@ -36,7 +36,6 @@ import { playToggleHaptic } from '@/lib/haptics';
 import type { SubItem } from '@/lib/types';
 import { useTheme } from '@/contexts/ThemeContext';
 import { showAppAlert } from '@/lib/appAlert';
-import { buttonLabelStyle, buttonLayoutStyle } from '@/lib/buttonStyles';
 import { useChildSlideTransition } from '@/hooks/useSlideTransition';
 import { useListItems } from '@/hooks/useListItems';
 import { isValidUrl, normalizeUrl } from '@/lib/urls';
@@ -102,18 +101,32 @@ export default function ItemDetailScreen() {
   );
 
   // Once the keyboard height has been applied as bottom padding (this runs
-  // after that re-render), scroll the focused add input above the keyboard.
-  // DraggableFlatList overrides onContentSizeChange, so this effect — not that
-  // prop — is what drives the reveal.
+  // after that re-render), scroll the focused input above the keyboard: the
+  // edited sub-item row, or the add input at the bottom. DraggableFlatList
+  // overrides onContentSizeChange, so this effect — not that prop — drives it.
   useEffect(() => {
-    if (keyboardHeight <= 0 || !addInputFocusedRef.current) {
+    if (keyboardHeight <= 0) {
       return;
     }
     const timer = setTimeout(() => {
-      subItemsListRef.current?.scrollToOffset({ offset: 100000, animated: true });
+      if (editingSubId) {
+        const index = subItems.findIndex((entry) => entry.id === editingSubId);
+        if (index >= 0) {
+          subItemsListRef.current?.scrollToIndex({
+            animated: true,
+            index,
+            viewPosition: 0,
+          });
+        }
+      } else if (addInputFocusedRef.current) {
+        subItemsListRef.current?.scrollToOffset({ offset: 100000, animated: true });
+      }
     }, 50);
     return () => clearTimeout(timer);
-  }, [keyboardHeight]);
+    // subItems is read fresh at run time; adding it would re-run this on every
+    // keystroke.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [keyboardHeight, editingSubId]);
 
   useEffect(() => {
     if (!item) {
@@ -350,7 +363,21 @@ export default function ItemDetailScreen() {
             <MaterialIcons color={colors.accent} name="chevron-left" size={24} />
           </Pressable>
           <Text style={[styles.headerTitle, { color: colors.text }]}>Edit item</Text>
-          <View style={styles.shareButton} />
+          <Pressable
+            accessibilityLabel="Delete item"
+            accessibilityRole="button"
+            hitSlop={8}
+            onPress={handleDelete}
+            style={({ pressed }) => [
+              styles.shareButton,
+              {
+                backgroundColor: colors.surface,
+                opacity: pressed ? 0.7 : 1,
+              },
+            ]}
+          >
+            <MaterialIcons color={colors.accent} name="delete-outline" size={22} />
+          </Pressable>
         </View>
 
         <DraggableFlatList
@@ -372,6 +399,12 @@ export default function ItemDetailScreen() {
           data={subItems}
           keyboardShouldPersistTaps="handled"
           keyExtractor={(subItem) => subItem.id}
+          onScrollToIndexFailed={({ index, averageItemLength }) => {
+            subItemsListRef.current?.scrollToOffset({
+              animated: true,
+              offset: averageItemLength * index,
+            });
+          }}
           ListHeaderComponent={
             <View style={{ gap: spacing.md, marginBottom: spacing.sm }}>
               <View style={styles.field}>
@@ -445,9 +478,8 @@ export default function ItemDetailScreen() {
             </View>
           }
           ListFooterComponent={
-            <View style={{ gap: spacing.md, marginTop: spacing.sm }}>
+            <View style={{ marginTop: spacing.sm }}>
               <ThemedTextInput
-                blurOnSubmit={false}
                 onBlur={() => {
                   addInputFocusedRef.current = false;
                 }}
@@ -459,24 +491,9 @@ export default function ItemDetailScreen() {
                 onSubmitEditing={handleAddSubItem}
                 placeholder="Add a sub-item"
                 returnKeyType="done"
+                submitBehavior="submit"
                 value={newSubItemName}
               />
-
-              <Pressable
-                onPress={handleDelete}
-                style={({ pressed }) => [
-                  styles.deleteButton,
-                  buttonLayoutStyle,
-                  {
-                    borderColor: colors.border,
-                    opacity: pressed ? 0.85 : 1,
-                  },
-                ]}
-              >
-                <Text style={[buttonLabelStyle(15), { color: colors.accent }]}>
-                  Delete item
-                </Text>
-              </Pressable>
             </View>
           }
           onDragEnd={({ data }) => handleReorderSubItems(data)}
@@ -679,9 +696,5 @@ const styles = StyleSheet.create({
     height: 32,
     justifyContent: 'center',
     width: 32,
-  },
-  deleteButton: {
-    borderWidth: 1,
-    minHeight: 48,
   },
 });
