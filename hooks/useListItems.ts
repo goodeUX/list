@@ -23,6 +23,8 @@ import { db } from '@/lib/firebase';
 import { handleFirestoreListenerError } from '@/lib/firestoreListenerErrors';
 import { usesCloudListData } from '@/lib/listIds';
 import { normalizeItemName } from '@/lib/itemName';
+import { parseItemEntries } from '@/lib/parseItemEntries';
+import { planItemMerges } from '@/lib/mergeItems';
 import { clearListItemsById } from '@/lib/listMutations';
 import {
   groupItemsWithDoneAtBottom,
@@ -582,6 +584,32 @@ export function useListItems(
     [listId, user],
   );
 
+  const addOrMergeItems = useCallback(
+    async (rawInput: string): Promise<string[]> => {
+      if (!listId) {
+        throw new Error('A valid list is required');
+      }
+
+      const entries = parseItemEntries(rawInput);
+      if (entries.length === 0) {
+        return [];
+      }
+
+      const actions = planItemMerges(entries, getPersistedItems(items));
+
+      for (const action of actions) {
+        if (action.type === 'update') {
+          await updateItem(action.id, { quantity: action.quantity });
+        } else {
+          await addItem(action.name, { quantity: action.quantity });
+        }
+      }
+
+      return entries.map((entry) => entry.name);
+    },
+    [addItem, items, listId, updateItem],
+  );
+
   const setSubItems = useCallback(
     async (itemId: string, next: SubItem[]) => {
       await updateItem(itemId, { subItems: next });
@@ -700,6 +728,7 @@ export function useListItems(
     items,
     loading,
     addItem,
+    addOrMergeItems,
     toggleItem,
     updateItem,
     deleteItem,

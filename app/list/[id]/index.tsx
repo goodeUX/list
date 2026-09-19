@@ -89,6 +89,7 @@ export default function ListDetailScreen() {
     items,
     loading,
     addItem,
+    addOrMergeItems,
     toggleItem,
     clearAllItems,
     reorderItems,
@@ -557,9 +558,11 @@ export default function ListDetailScreen() {
       setNewItemName('');
       refocusAddInput();
 
-      void addItem(nameToAdd)
-        .then(() => {
-          void recordName(nameToAdd);
+      void addOrMergeItems(nameToAdd)
+        .then((addedNames) => {
+          for (const addedName of addedNames) {
+            void recordName(addedName);
+          }
         })
         .catch(() => {
           newItemNameRef.current = nameToAdd;
@@ -567,7 +570,7 @@ export default function ListDetailScreen() {
           showAppAlert('Could not add item', 'Please try again.');
         });
     },
-    [addItem, listId, recordName, refocusAddInput],
+    [addOrMergeItems, listId, recordName, refocusAddInput],
   );
 
   const handleAddItem = useCallback(() => {
