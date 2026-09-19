@@ -1,4 +1,4 @@
-import { fetchAndParseRecipe } from '@/lib/recipeFetch';
+import { fetchAndParseRecipe, fetchPageTitle } from '@/lib/recipeFetch';
 
 describe('fetchAndParseRecipe', () => {
   const originalFetch = global.fetch;
@@ -29,5 +29,15 @@ describe('fetchAndParseRecipe', () => {
     }) as unknown as typeof fetch;
 
     await expect(fetchAndParseRecipe('https://example.com/missing')).rejects.toThrow();
+  });
+
+  it('fetchPageTitle returns the og:title', async () => {
+    const html = '<html><head><meta property="og:title" content="Page Title"></head></html>';
+    global.fetch = jest.fn().mockResolvedValue({
+      ok: true,
+      text: () => Promise.resolve(html),
+    }) as unknown as typeof fetch;
+
+    await expect(fetchPageTitle('https://example.com/p')).resolves.toBe('Page Title');
   });
 });

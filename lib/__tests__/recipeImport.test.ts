@@ -133,3 +133,63 @@ describe('ingredientToEntry', () => {
     });
   });
 });
+
+describe('parseRecipeFromHtml / parsePageTitleFromHtml edge cases', () => {
+  it('reads an og:title containing an apostrophe', () => {
+    expect(
+      parsePageTitleFromHtml('<meta property="og:title" content="Mom\'s Apple Pie">'),
+    ).toBe("Mom's Apple Pie");
+  });
+
+  it('reads an og:title with content before property', () => {
+    expect(
+      parsePageTitleFromHtml('<meta content="Reversed Title" property="og:title">'),
+    ).toBe('Reversed Title');
+  });
+
+  it('captures a microdata ingredient with nested markup', () => {
+    const html = `
+    <div itemscope itemtype="https://schema.org/Recipe">
+      <h1 itemprop="name">Nested Soup</h1>
+      <li itemprop="recipeIngredient"><span>2 cups</span> flour</li>
+    </div>`;
+    expect(parseRecipeFromHtml(html)).toEqual({
+      title: 'Nested Soup',
+      ingredients: ['2 cups flour'],
+    });
+  });
+
+  it('decodes HTML entities in ingredient text', () => {
+    const html = `
+    <div itemscope itemtype="https://schema.org/Recipe">
+      <li itemprop="recipeIngredient">salt &amp; pepper</li>
+      <li itemprop="recipeIngredient">&frac12; cup milk</li>
+    </div>`;
+    expect(parseRecipeFromHtml(html).ingredients).toEqual([
+      'salt & pepper',
+      '1/2 cup milk',
+    ]);
+  });
+
+  it('parses JSON-LD with a charset parameter on the script type', () => {
+    const html = `<script type="application/ld+json; charset=utf-8">
+      {"@type":"Recipe","name":"Charset Cake","recipeIngredient":["1 egg"]}</script>`;
+    expect(parseRecipeFromHtml(html)).toEqual({
+      title: 'Charset Cake',
+      ingredients: ['1 egg'],
+    });
+  });
+
+  it('falls through to microdata when JSON-LD Recipe has no ingredients', () => {
+    const html = `
+    <script type="application/ld+json">
+      {"@type":"Recipe","name":"JSON Name","recipeIngredient":[]}</script>
+    <div itemscope itemtype="https://schema.org/Recipe">
+      <li itemprop="recipeIngredient">1 onion</li>
+    </div>`;
+    expect(parseRecipeFromHtml(html)).toEqual({
+      title: 'JSON Name',
+      ingredients: ['1 onion'],
+    });
+  });
+});

@@ -38,7 +38,7 @@ function cleanText(text: string): string {
 function extractJsonLdNodes(html: string): Record<string, unknown>[] {
   const nodes: Record<string, unknown>[] = [];
   const regex =
-    /<script[^>]*type=["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>/gi;
+    /<script[^>]*type=["']application\/ld\+json[^"']*["'][^>]*>([\s\S]*?)<\/script>/gi;
   let match: RegExpExecArray | null;
 
   while ((match = regex.exec(html)) !== null) {
@@ -94,42 +94,57 @@ function toIngredientList(value: unknown): string[] {
 function parseRecipeFromMicrodata(html: string): ParsedRecipe {
   const ingredients: string[] = [];
   const regex =
-    /itemprop=["']recipeIngredient["'][^>]*>([\s\S]*?)<\//gi;
+    /<(\w+)[^>]*itemprop=["']recipeIngredient["'][^>]*>([\s\S]*?)<\/\1>/gi;
   let match: RegExpExecArray | null;
   while ((match = regex.exec(html)) !== null) {
-    const text = cleanText(match[1]);
+    const text = cleanText(match[2]);
     if (text) {
       ingredients.push(text);
     }
   }
 
   let title: string | null = null;
-  const nameMatch = html.match(/itemprop=["']name["'][^>]*>([\s\S]*?)<\//i);
+  const nameMatch = html.match(
+    /<(\w+)[^>]*itemprop=["']name["'][^>]*>([\s\S]*?)<\/\1>/i,
+  );
   if (nameMatch) {
-    title = cleanText(nameMatch[1]) || null;
+    title = cleanText(nameMatch[2]) || null;
   }
 
   return { title, ingredients };
 }
 
 export function parseRecipeFromHtml(html: string): ParsedRecipe {
+  let jsonLdTitle: string | null = null;
   for (const node of extractJsonLdNodes(html)) {
     if (isRecipeType(node['@type'])) {
       const ingredients = toIngredientList(node['recipeIngredient']);
       const name = typeof node['name'] === 'string' ? cleanText(node['name'] as string) : '';
-      return { title: name || null, ingredients };
+      if (ingredients.length > 0) {
+        return { title: name || null, ingredients };
+      }
+      if (!jsonLdTitle && name) {
+        jsonLdTitle = name;
+      }
     }
   }
-
-  return parseRecipeFromMicrodata(html);
+  const micro = parseRecipeFromMicrodata(html);
+  return { title: micro.title ?? jsonLdTitle, ingredients: micro.ingredients };
 }
 
 export function parsePageTitleFromHtml(html: string): string | null {
-  const og = html.match(
-    /<meta[^>]+(?:property|name)=["']og:title["'][^>]*content=["']([^"']+)["']/i,
-  );
-  if (og) {
-    return cleanText(og[1]) || null;
+  const metaTags = html.match(/<meta\b[^>]*>/gi) ?? [];
+  for (const tag of metaTags) {
+    if (!/(?:property|name)=["']og:title["']/i.test(tag)) {
+      continue;
+    }
+    const content = tag.match(/content=(["'])([\s\S]*?)\1/i);
+    if (content) {
+      const value = cleanText(content[2]);
+      if (value) {
+        return value;
+      }
+    }
   }
 
   const title = html.match(/<title[^>]*>([\s\S]*?)<\/title>/i);
