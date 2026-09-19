@@ -270,7 +270,7 @@ export default function ItemDetailScreen() {
         ]}
       >
       <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         style={styles.flex}
       >
         <View
@@ -303,6 +303,7 @@ export default function ItemDetailScreen() {
           <View style={styles.shareButton} />
         </View>
 
+        <View style={styles.flex}>
         <DraggableFlatList
           activationDistance={12}
           contentContainerStyle={[styles.content, { padding: spacing.lg }]}
@@ -382,32 +383,22 @@ export default function ItemDetailScreen() {
             </View>
           }
           ListFooterComponent={
-            <View style={{ gap: spacing.md, marginTop: spacing.sm }}>
-              <ThemedTextInput
-                blurOnSubmit={false}
-                onChangeText={setNewSubItemName}
-                onSubmitEditing={handleAddSubItem}
-                placeholder="Add a sub-item"
-                returnKeyType="done"
-                value={newSubItemName}
-              />
-
-              <Pressable
-                onPress={handleDelete}
-                style={({ pressed }) => [
-                  styles.deleteButton,
-                  buttonLayoutStyle,
-                  {
-                    borderColor: colors.border,
-                    opacity: pressed ? 0.85 : 1,
-                  },
-                ]}
-              >
-                <Text style={[buttonLabelStyle(15), { color: colors.accent }]}>
-                  Delete item
-                </Text>
-              </Pressable>
-            </View>
+            <Pressable
+              onPress={handleDelete}
+              style={({ pressed }) => [
+                styles.deleteButton,
+                buttonLayoutStyle,
+                {
+                  borderColor: colors.border,
+                  marginTop: spacing.md,
+                  opacity: pressed ? 0.85 : 1,
+                },
+              ]}
+            >
+              <Text style={[buttonLabelStyle(15), { color: colors.accent }]}>
+                Delete item
+              </Text>
+            </Pressable>
           }
           onDragEnd={({ data }) => handleReorderSubItems(data)}
           renderItem={({ item: subItem, drag, isActive }: RenderItemParams<SubItem>) => {
@@ -505,6 +496,28 @@ export default function ItemDetailScreen() {
             );
           }}
         />
+        </View>
+
+        <View
+          style={[
+            styles.addBar,
+            {
+              backgroundColor: colors.bg,
+              borderTopColor: colors.border,
+              paddingHorizontal: spacing.lg,
+              paddingVertical: spacing.sm,
+            },
+          ]}
+        >
+          <ThemedTextInput
+            blurOnSubmit={false}
+            onChangeText={setNewSubItemName}
+            onSubmitEditing={handleAddSubItem}
+            placeholder="Add a sub-item"
+            returnKeyType="done"
+            value={newSubItemName}
+          />
+        </View>
       </KeyboardAvoidingView>
       </View>
     </Animated.View>
@@ -613,5 +626,8 @@ const styles = StyleSheet.create({
   deleteButton: {
     borderWidth: 1,
     minHeight: 48,
+  },
+  addBar: {
+    borderTopWidth: 1,
   },
 });
