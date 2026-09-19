@@ -1,4 +1,4 @@
-import { InteractionManager, Platform, type TextInput } from 'react-native';
+import { Platform, type TextInput } from 'react-native';
 
 import { resolveTextInputElement } from '@/lib/textInputElement';
 
@@ -27,7 +27,7 @@ export function scheduleTextInputFocus(input: TextInput | null | undefined) {
 
   const focus = () => invokeFocus(input);
 
-  InteractionManager.runAfterInteractions(() => {
+  requestAnimationFrame(() => {
     if (Platform.OS === 'web') {
       requestAnimationFrame(focus);
       return;

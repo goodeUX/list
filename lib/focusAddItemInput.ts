@@ -1,4 +1,4 @@
-import { InteractionManager, Platform, type TextInput } from 'react-native';
+import { Platform, type TextInput } from 'react-native';
 
 import { focusTextInputNow } from '@/lib/focusTextInput';
 import { hasKeyboardProxy, transferKeyboardFocus } from '@/lib/keyboardProxy';
@@ -50,7 +50,7 @@ export function scheduleAddItemInputFocus(
   const delays =
     Platform.OS === 'web' ? WEB_FOCUS_DELAYS_MS : NATIVE_FOCUS_DELAYS_MS;
 
-  InteractionManager.runAfterInteractions(() => {
+  requestAnimationFrame(() => {
     for (const delay of delays) {
       setTimeout(tryFocus, delay);
     }
