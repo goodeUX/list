@@ -19,7 +19,7 @@ import {
   ThemeProvider as NavigationThemeProvider,
 } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { LogBox, Platform, StyleSheet, View } from 'react-native';
+import { Platform, StyleSheet, View } from 'react-native';
 import { absoluteFill } from '@/lib/absoluteFill';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
@@ -44,12 +44,6 @@ import {
   OPENING_ZOOM_MS,
   useOpeningTransitionReady,
 } from '@/lib/splash';
-
-// Suppress a deprecation warning emitted by dependencies that still call the
-// InteractionManager API deprecated in React Native 0.86 (react-native-
-// draggable-flatlist and expo-router's vendored navigation stack). Our own code
-// no longer uses it.
-LogBox.ignoreLogs(['InteractionManager has been deprecated']);
 
 export {
   // Catch any errors thrown by the Layout component.
