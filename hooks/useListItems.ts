@@ -23,6 +23,8 @@ import { db } from '@/lib/firebase';
 import { handleFirestoreListenerError } from '@/lib/firestoreListenerErrors';
 import { usesCloudListData } from '@/lib/listIds';
 import { normalizeItemName } from '@/lib/itemName';
+import { parseItemEntries } from '@/lib/parseItemEntries';
+import { planItemMerges } from '@/lib/mergeItems';
 import { clearListItemsById } from '@/lib/listMutations';
 import {
   groupItemsWithDoneAtBottom,
@@ -86,6 +88,7 @@ function createOptimisticItem(
   fields: NewItemFields,
   existingItems: ListItem[],
   createdBy: string,
+  order?: number,
 ): ListItem {
   const now = new Date();
   const persistedItems = getPersistedItems(existingItems);
@@ -97,7 +100,7 @@ function createOptimisticItem(
     description: fields.description ?? null,
     link: fields.link ?? null,
     checked: false,
-    order: nextItemOrder(persistedItems),
+    order: order ?? nextItemOrder(persistedItems),
     subItems: [],
     createdBy,
     createdAt: now,
@@ -126,6 +129,7 @@ export async function addItemToList(
   name: string,
   fields: NewItemFields = {},
   existingItems: ListItem[] = [],
+  explicitOrder?: number,
 ): Promise<void> {
   const trimmedName = normalizeItemName(name);
   if (!trimmedName) {
@@ -133,12 +137,12 @@ export async function addItemToList(
   }
 
   if (!usesCloudListData(user, listId)) {
-    await addLocalItem(listId, trimmedName, fields);
+    await addLocalItem(listId, trimmedName, fields, explicitOrder);
     return;
   }
 
-  let order = nextItemOrder(existingItems);
-  if (existingItems.length === 0) {
+  let order = explicitOrder ?? nextItemOrder(existingItems);
+  if (explicitOrder === undefined && existingItems.length === 0) {
     // No local snapshot to go on (e.g. adding before the listener has primed),
     // so read the stored orders rather than assuming the list is empty.
     const snapshot = await getDocs(
@@ -420,7 +424,7 @@ export function useListItems(
   }, [applyServerItems, listId, user]);
 
   const addItem = useCallback(
-    async (name: string, fields: NewItemFields = {}) => {
+    async (name: string, fields: NewItemFields = {}, order?: number) => {
       if (!listId) {
         throw new Error('A valid list is required');
       }
@@ -436,6 +440,7 @@ export function useListItems(
         fields,
         persistedItems,
         user?.uid ?? 'local',
+        order,
       );
       optimisticItemsRef.current = [...optimisticItemsRef.current, optimisticItem];
       setItems((current) =>
@@ -444,11 +449,11 @@ export function useListItems(
 
       try {
         if (!usesCloudListData(user, listId)) {
-          await addLocalItem(listId, trimmedName, fields);
+          await addLocalItem(listId, trimmedName, fields, order);
           return;
         }
 
-        await addItemToList(listId, user, trimmedName, fields, persistedItems);
+        await addItemToList(listId, user, trimmedName, fields, persistedItems, order);
       } catch (error) {
         optimisticItemsRef.current = optimisticItemsRef.current.filter(
           (item) => item.id !== optimisticItem.id,
@@ -582,6 +587,58 @@ export function useListItems(
     [listId, user],
   );
 
+  const addOrMergeItems = useCallback(
+    async (rawInput: string): Promise<string[]> => {
+      if (!listId) {
+        throw new Error('A valid list is required');
+      }
+
+      const entries = parseItemEntries(rawInput);
+      if (entries.length === 0) {
+        return [];
+      }
+
+      const actions = planItemMerges(entries, getPersistedItems(items));
+
+      // Compute add orders once so a batch keeps typed order top-to-bottom.
+      // `base` (= nextItemOrder, i.e. min-1) is the topmost slot for a single
+      // add; the last typed add takes `base` and earlier ones step below it,
+      // so `Milk, Eggs, Bread` lands Milk (lowest order) → Bread in that order.
+      // When the local snapshot hasn't primed yet on a cloud list, probe the
+      // stored orders (mirroring addItemToList) so items still land at the top
+      // rather than at 0/bottom.
+      const persisted = getPersistedItems(items);
+      let base: number;
+      if (persisted.length === 0 && usesCloudListData(user, listId)) {
+        const snapshot = await getDocs(
+          query(collection(db, 'lists', listId, 'items'), orderBy('order'), limit(1)),
+        );
+        const lowestStored = snapshot.docs[0]?.data().order as number | undefined;
+        base = lowestStored === undefined ? 0 : Math.min(lowestStored, 0) - 1;
+      } else {
+        base = nextItemOrder(persisted);
+      }
+      const addCount = actions.reduce(
+        (count, action) => (action.type === 'add' ? count + 1 : count),
+        0,
+      );
+      let addIndex = 0;
+
+      for (const action of actions) {
+        if (action.type === 'update') {
+          await updateItem(action.id, { quantity: action.quantity });
+        } else {
+          const order = base - (addCount - 1 - addIndex);
+          addIndex += 1;
+          await addItem(action.name, { quantity: action.quantity }, order);
+        }
+      }
+
+      return entries.map((entry) => normalizeItemName(entry.name));
+    },
+    [addItem, items, listId, updateItem, user],
+  );
+
   const setSubItems = useCallback(
     async (itemId: string, next: SubItem[]) => {
       await updateItem(itemId, { subItems: next });
@@ -700,6 +757,7 @@ export function useListItems(
     items,
     loading,
     addItem,
+    addOrMergeItems,
     toggleItem,
     updateItem,
     deleteItem,
