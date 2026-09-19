@@ -55,6 +55,16 @@ module.exports = () => {
     googleIosUrlScheme
       ? ['@react-native-google-signin/google-signin', { iosUrlScheme: googleIosUrlScheme }]
       : '@react-native-google-signin/google-signin',
+    [
+      'expo-share-intent',
+      {
+        // v1 scope: Android only, receive shared plain text / URLs from the
+        // system share sheet. iOS needs an app group + share extension, which
+        // is deferred, so it is disabled here to keep iOS builds unchanged.
+        androidIntentFilters: ['text/plain'],
+        disableIOS: true,
+      },
+    ],
   ];
 
   return { expo };
