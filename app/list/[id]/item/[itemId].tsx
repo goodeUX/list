@@ -5,7 +5,6 @@ import { useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   FlatList,
-  Keyboard,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -13,7 +12,12 @@ import {
   Text,
   View,
 } from 'react-native';
-import Animated from 'react-native-reanimated';
+import Animated, {
+  KeyboardState,
+  runOnJS,
+  useAnimatedKeyboard,
+  useAnimatedReaction,
+} from 'react-native-reanimated';
 import DraggableFlatList, {
   type RenderItemParams,
 } from 'react-native-draggable-flatlist';
@@ -78,27 +82,23 @@ export default function ItemDetailScreen() {
     });
   };
 
-  // Track the keyboard height so the list gains enough bottom padding to
-  // scroll its footer above the keyboard, and scroll there once it opens.
-  useEffect(() => {
-    const showEvent = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
-    const hideEvent = Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
-
-    const showSub = Keyboard.addListener(showEvent, (event) => {
-      setKeyboardHeight(event.endCoordinates?.height ?? 0);
-      if (addInputFocusedRef.current) {
-        scrollAddInputIntoView();
+  // Read the keyboard from Reanimated (window insets), which stays reliable
+  // under Android edge-to-edge where the RN Keyboard events report height 0.
+  // Bridge its height to state so the list can pad its bottom accordingly.
+  const keyboard = useAnimatedKeyboard();
+  useAnimatedReaction(
+    () => keyboard.state.value,
+    (state, previous) => {
+      if (state === previous) {
+        return;
       }
-    });
-    const hideSub = Keyboard.addListener(hideEvent, () => {
-      setKeyboardHeight(0);
-    });
-
-    return () => {
-      showSub.remove();
-      hideSub.remove();
-    };
-  }, []);
+      if (state === KeyboardState.OPEN) {
+        runOnJS(setKeyboardHeight)(keyboard.height.value);
+      } else if (state === KeyboardState.CLOSED) {
+        runOnJS(setKeyboardHeight)(0);
+      }
+    },
+  );
 
   // Once the keyboard height has been applied as bottom padding (this runs
   // after that re-render), scroll the focused add input above the keyboard.
