@@ -604,7 +604,20 @@ export function useListItems(
       // `base` (= nextItemOrder, i.e. min-1) is the topmost slot for a single
       // add; the last typed add takes `base` and earlier ones step below it,
       // so `Milk, Eggs, Bread` lands Milk (lowest order) → Bread in that order.
-      const base = nextItemOrder(getPersistedItems(items));
+      // When the local snapshot hasn't primed yet on a cloud list, probe the
+      // stored orders (mirroring addItemToList) so items still land at the top
+      // rather than at 0/bottom.
+      const persisted = getPersistedItems(items);
+      let base: number;
+      if (persisted.length === 0 && usesCloudListData(user, listId)) {
+        const snapshot = await getDocs(
+          query(collection(db, 'lists', listId, 'items'), orderBy('order'), limit(1)),
+        );
+        const lowestStored = snapshot.docs[0]?.data().order as number | undefined;
+        base = lowestStored === undefined ? 0 : Math.min(lowestStored, 0) - 1;
+      } else {
+        base = nextItemOrder(persisted);
+      }
       const addCount = actions.reduce(
         (count, action) => (action.type === 'add' ? count + 1 : count),
         0,
@@ -623,7 +636,7 @@ export function useListItems(
 
       return entries.map((entry) => normalizeItemName(entry.name));
     },
-    [addItem, items, listId, updateItem],
+    [addItem, items, listId, updateItem, user],
   );
 
   const setSubItems = useCallback(
