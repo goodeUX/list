@@ -1,9 +1,10 @@
 import { useLocalSearchParams } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
 import * as WebBrowser from 'expo-web-browser';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
+  FlatList,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -61,8 +62,17 @@ export default function ItemDetailScreen() {
   const [linkError, setLinkError] = useState<string | null>(null);
   const [newSubItemName, setNewSubItemName] = useState('');
   const [editingSubId, setEditingSubId] = useState<string | null>(null);
+  const subItemsListRef = useRef<FlatList<SubItem> | null>(null);
 
   const subItems = item ? sortSubItems(item.subItems) : [];
+
+  // Bring the add-sub-item input (the list footer) above the keyboard once it
+  // has opened, and again after the list grows from an add.
+  const scrollAddInputIntoView = () => {
+    setTimeout(() => {
+      subItemsListRef.current?.scrollToEnd({ animated: true });
+    }, 150);
+  };
 
   useEffect(() => {
     if (!item) {
@@ -169,9 +179,11 @@ export default function ItemDetailScreen() {
       return;
     }
     setNewSubItemName('');
-    void setSubItems(item.id, next).catch(() => {
-      showAppAlert('Could not add sub-item', 'Please try again.');
-    });
+    void setSubItems(item.id, next)
+      .then(scrollAddInputIntoView)
+      .catch(() => {
+        showAppAlert('Could not add sub-item', 'Please try again.');
+      });
   };
 
   const handleRenameSubItem = (subId: string, nextName: string) => {
@@ -303,8 +315,15 @@ export default function ItemDetailScreen() {
           <View style={styles.shareButton} />
         </View>
 
-        <View style={styles.flex}>
         <DraggableFlatList
+          // DraggableFlatList forwards its ref to a gesture-handler FlatList,
+          // whose instance still exposes RN FlatList's scrollToEnd. A callback
+          // ref bridges the two FlatList component types.
+          ref={(instance) => {
+            subItemsListRef.current = (instance ?? null) as unknown as
+              | FlatList<SubItem>
+              | null;
+          }}
           activationDistance={12}
           contentContainerStyle={[styles.content, { padding: spacing.lg }]}
           data={subItems}
@@ -383,22 +402,33 @@ export default function ItemDetailScreen() {
             </View>
           }
           ListFooterComponent={
-            <Pressable
-              onPress={handleDelete}
-              style={({ pressed }) => [
-                styles.deleteButton,
-                buttonLayoutStyle,
-                {
-                  borderColor: colors.border,
-                  marginTop: spacing.md,
-                  opacity: pressed ? 0.85 : 1,
-                },
-              ]}
-            >
-              <Text style={[buttonLabelStyle(15), { color: colors.accent }]}>
-                Delete item
-              </Text>
-            </Pressable>
+            <View style={{ gap: spacing.md, marginTop: spacing.sm }}>
+              <ThemedTextInput
+                blurOnSubmit={false}
+                onChangeText={setNewSubItemName}
+                onFocus={scrollAddInputIntoView}
+                onSubmitEditing={handleAddSubItem}
+                placeholder="Add a sub-item"
+                returnKeyType="done"
+                value={newSubItemName}
+              />
+
+              <Pressable
+                onPress={handleDelete}
+                style={({ pressed }) => [
+                  styles.deleteButton,
+                  buttonLayoutStyle,
+                  {
+                    borderColor: colors.border,
+                    opacity: pressed ? 0.85 : 1,
+                  },
+                ]}
+              >
+                <Text style={[buttonLabelStyle(15), { color: colors.accent }]}>
+                  Delete item
+                </Text>
+              </Pressable>
+            </View>
           }
           onDragEnd={({ data }) => handleReorderSubItems(data)}
           renderItem={({ item: subItem, drag, isActive }: RenderItemParams<SubItem>) => {
@@ -496,28 +526,6 @@ export default function ItemDetailScreen() {
             );
           }}
         />
-        </View>
-
-        <View
-          style={[
-            styles.addBar,
-            {
-              backgroundColor: colors.bg,
-              borderTopColor: colors.border,
-              paddingHorizontal: spacing.lg,
-              paddingVertical: spacing.sm,
-            },
-          ]}
-        >
-          <ThemedTextInput
-            blurOnSubmit={false}
-            onChangeText={setNewSubItemName}
-            onSubmitEditing={handleAddSubItem}
-            placeholder="Add a sub-item"
-            returnKeyType="done"
-            value={newSubItemName}
-          />
-        </View>
       </KeyboardAvoidingView>
       </View>
     </Animated.View>
@@ -626,8 +634,5 @@ const styles = StyleSheet.create({
   deleteButton: {
     borderWidth: 1,
     minHeight: 48,
-  },
-  addBar: {
-    borderTopWidth: 1,
   },
 });
