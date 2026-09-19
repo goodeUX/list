@@ -41,7 +41,8 @@ import {
   toggleLocalItem,
   updateLocalItem,
 } from '@/lib/localStore';
-import type { ListItem, NewItemFields } from '@/lib/types';
+import { parseSubItems, toggleSubItem as toggleSubItemInList } from '@/lib/subItems';
+import type { ListItem, NewItemFields, SubItem } from '@/lib/types';
 
 function toDate(value: unknown): Date {
   if (value instanceof Timestamp) {
@@ -59,6 +60,7 @@ function docToListItem(id: string, data: Record<string, unknown>): ListItem {
     link: (data.link as string | null) ?? null,
     checked: (data.checked as boolean) ?? false,
     order: (data.order as number) ?? 0,
+    subItems: parseSubItems(data.subItems),
     createdBy: (data.createdBy as string) ?? '',
     createdAt: toDate(data.createdAt),
     updatedAt: toDate(data.updatedAt),
@@ -92,6 +94,7 @@ function createOptimisticItem(
     link: fields.link ?? null,
     checked: false,
     order: nextItemOrder(persistedItems),
+    subItems: [],
     createdBy,
     createdAt: now,
     updatedAt: now,
@@ -148,6 +151,7 @@ export async function addItemToList(
     link: fields.link ?? null,
     checked: false,
     order,
+    subItems: [],
     createdBy: user.uid,
     createdAt: serverTimestamp(),
     updatedAt: serverTimestamp(),
@@ -527,7 +531,10 @@ export function useListItems(
     async (
       id: string,
       updates: Partial<
-        Pick<ListItem, 'name' | 'quantity' | 'description' | 'link' | 'checked' | 'order'>
+        Pick<
+          ListItem,
+          'name' | 'quantity' | 'description' | 'link' | 'checked' | 'order' | 'subItems'
+        >
       >,
     ) => {
       if (!listId) {
@@ -561,10 +568,34 @@ export function useListItems(
       if (updates.order !== undefined) {
         payload.order = updates.order;
       }
+      if (updates.subItems !== undefined) {
+        payload.subItems = updates.subItems;
+      }
 
       await updateDoc(doc(db, 'lists', listId, 'items', id), payload);
     },
     [listId, user],
+  );
+
+  const setSubItems = useCallback(
+    async (itemId: string, next: SubItem[]) => {
+      await updateItem(itemId, { subItems: next });
+    },
+    [updateItem],
+  );
+
+  const toggleSubItem = useCallback(
+    async (itemId: string, subId: string) => {
+      const item = items.find((entry) => entry.id === itemId);
+      if (!item) {
+        return;
+      }
+
+      await updateItem(itemId, {
+        subItems: toggleSubItemInList(item.subItems, subId),
+      });
+    },
+    [items, updateItem],
   );
 
   const deleteItem = useCallback(
@@ -667,6 +698,8 @@ export function useListItems(
     toggleItem,
     updateItem,
     deleteItem,
+    setSubItems,
+    toggleSubItem,
     clearAllItems,
     reorderItems,
     applyItemLayout,

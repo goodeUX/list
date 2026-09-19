@@ -10,6 +10,7 @@ function makeItem(id: string, order: number): ListItem {
     link: null,
     checked: false,
     order,
+    subItems: [],
     createdBy: 'local',
     createdAt: new Date('2026-01-01T00:00:00Z'),
     updatedAt: new Date('2026-01-01T00:00:00Z'),
