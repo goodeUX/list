@@ -559,9 +559,9 @@ export default function ListDetailScreen() {
       refocusAddInput();
 
       void addOrMergeItems(nameToAdd)
-        .then((addedNames) => {
-          for (const addedName of addedNames) {
-            void recordName(addedName);
+        .then((recordedNames) => {
+          for (const recordedName of recordedNames) {
+            void recordName(recordedName);
           }
         })
         .catch(() => {

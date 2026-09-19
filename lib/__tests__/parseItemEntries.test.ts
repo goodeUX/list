@@ -7,6 +7,12 @@ describe('parseItemEntries', () => {
     ]);
   });
 
+  it('parses a space-separated unit', () => {
+    expect(parseItemEntries('250 g Chicken')).toEqual([
+      { name: 'Chicken', quantity: { kind: 'mass', base: 250 } },
+    ]);
+  });
+
   it('treats a leading bare number as a count', () => {
     expect(parseItemEntries('3 Oranges')).toEqual([
       { name: 'Oranges', quantity: { kind: 'count', base: 3 } },

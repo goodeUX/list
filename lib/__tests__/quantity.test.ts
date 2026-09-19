@@ -18,6 +18,7 @@ describe('parseQuantity', () => {
   it('parses volume units to millilitres', () => {
     expect(parseQuantity('500ml')).toEqual({ kind: 'volume', base: 500 });
     expect(parseQuantity('2.5l')).toEqual({ kind: 'volume', base: 2500 });
+    expect(parseQuantity('50cl')).toEqual({ kind: 'volume', base: 500 });
   });
 
   it('is case-insensitive and tolerates spaces', () => {

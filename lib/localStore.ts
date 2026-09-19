@@ -198,6 +198,7 @@ export async function addLocalItem(
   listId: string,
   name: string,
   fields: NewItemFields = {},
+  order?: number,
 ): Promise<void> {
   const trimmedName = normalizeItemName(name);
   if (!trimmedName) {
@@ -220,7 +221,7 @@ export async function addLocalItem(
     description: fields.description ?? null,
     link: fields.link ?? null,
     checked: false,
-    order: nextItemOrder(items),
+    order: order ?? nextItemOrder(items),
     subItems: [],
     createdBy: 'local',
     createdAt: now,
