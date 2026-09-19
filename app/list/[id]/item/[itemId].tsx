@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   FlatList,
+  Keyboard,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -62,17 +63,42 @@ export default function ItemDetailScreen() {
   const [linkError, setLinkError] = useState<string | null>(null);
   const [newSubItemName, setNewSubItemName] = useState('');
   const [editingSubId, setEditingSubId] = useState<string | null>(null);
+  const [keyboardHeight, setKeyboardHeight] = useState(0);
   const subItemsListRef = useRef<FlatList<SubItem> | null>(null);
+  const addInputFocusedRef = useRef(false);
 
   const subItems = item ? sortSubItems(item.subItems) : [];
 
-  // Bring the add-sub-item input (the list footer) above the keyboard once it
-  // has opened, and again after the list grows from an add.
+  // Scroll the add-sub-item input (the list footer) to the bottom of the
+  // scroll area. Combined with the keyboard-height bottom padding below, this
+  // lifts it above the keyboard.
   const scrollAddInputIntoView = () => {
-    setTimeout(() => {
+    requestAnimationFrame(() => {
       subItemsListRef.current?.scrollToEnd({ animated: true });
-    }, 150);
+    });
   };
+
+  // Track the keyboard height so the list gains enough bottom padding to
+  // scroll its footer above the keyboard, and scroll there once it opens.
+  useEffect(() => {
+    const showEvent = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
+    const hideEvent = Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
+
+    const showSub = Keyboard.addListener(showEvent, (event) => {
+      setKeyboardHeight(event.endCoordinates?.height ?? 0);
+      if (addInputFocusedRef.current) {
+        scrollAddInputIntoView();
+      }
+    });
+    const hideSub = Keyboard.addListener(hideEvent, () => {
+      setKeyboardHeight(0);
+    });
+
+    return () => {
+      showSub.remove();
+      hideSub.remove();
+    };
+  }, []);
 
   useEffect(() => {
     if (!item) {
@@ -281,10 +307,7 @@ export default function ItemDetailScreen() {
           },
         ]}
       >
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        style={styles.flex}
-      >
+      <KeyboardAvoidingView behavior={undefined} style={styles.flex}>
         <View
           style={[
             styles.header,
@@ -325,7 +348,10 @@ export default function ItemDetailScreen() {
               | null;
           }}
           activationDistance={12}
-          contentContainerStyle={[styles.content, { padding: spacing.lg }]}
+          contentContainerStyle={[
+            styles.content,
+            { padding: spacing.lg, paddingBottom: spacing.lg + keyboardHeight },
+          ]}
           data={subItems}
           keyboardShouldPersistTaps="handled"
           keyExtractor={(subItem) => subItem.id}
@@ -405,8 +431,14 @@ export default function ItemDetailScreen() {
             <View style={{ gap: spacing.md, marginTop: spacing.sm }}>
               <ThemedTextInput
                 blurOnSubmit={false}
+                onBlur={() => {
+                  addInputFocusedRef.current = false;
+                }}
                 onChangeText={setNewSubItemName}
-                onFocus={scrollAddInputIntoView}
+                onFocus={() => {
+                  addInputFocusedRef.current = true;
+                  scrollAddInputIntoView();
+                }}
                 onSubmitEditing={handleAddSubItem}
                 placeholder="Add a sub-item"
                 returnKeyType="done"
