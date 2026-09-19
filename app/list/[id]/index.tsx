@@ -1,5 +1,4 @@
-import { router, useLocalSearchParams } from 'expo-router';
-import { useFocusEffect } from '@react-navigation/native';
+import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useCallback, useEffect, useMemo, useRef, useState, type ElementRef } from 'react';
 import {
@@ -12,6 +11,7 @@ import {
   View,
   type ImageSourcePropType,
 } from 'react-native';
+import { absoluteFill } from '@/lib/absoluteFill';
 import Animated, {
   Easing,
   useAnimatedStyle,
@@ -1016,7 +1016,7 @@ export default function ListDetailScreen() {
 
 const styles = StyleSheet.create({
   screen: {
-    ...StyleSheet.absoluteFillObject,
+    ...absoluteFill,
   },
   screenMenuOpen: {
     overflow: 'visible',
@@ -1035,7 +1035,7 @@ const styles = StyleSheet.create({
     zIndex: 10,
   },
   menuBackdrop: {
-    ...StyleSheet.absoluteFillObject,
+    ...absoluteFill,
     backgroundColor: 'transparent',
     zIndex: 5,
   },

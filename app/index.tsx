@@ -1,6 +1,5 @@
 // @refresh reset
-import { router } from 'expo-router';
-import { useFocusEffect } from '@react-navigation/native';
+import { router, useFocusEffect } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import {

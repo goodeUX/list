@@ -59,7 +59,9 @@
         {
           "faceIDPermission": "Allow List Kitty to use Face ID to unlock the app."
         }
-      ]
+      ],
+      "expo-status-bar",
+      "expo-web-browser"
     ],
     "experiments": {
       "typedRoutes": true

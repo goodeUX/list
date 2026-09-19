@@ -15,7 +15,7 @@ import {
   writeBatch,
 } from 'firebase/firestore';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { useIsFocused } from '@react-navigation/native';
+import { useIsFocused } from 'expo-router';
 import type { User } from 'firebase/auth';
 
 import { useAuth } from '@/contexts/AuthContext';

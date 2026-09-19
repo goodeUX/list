@@ -12,6 +12,7 @@ import {
   View,
   type EmitterSubscription,
 } from 'react-native';
+import { absoluteFill } from '@/lib/absoluteFill';
 import Animated, {
   cancelAnimation,
   Easing,
@@ -483,7 +484,7 @@ export default function ListFormModal({
 
 const styles = StyleSheet.create({
   modalShell: {
-    ...StyleSheet.absoluteFillObject,
+    ...absoluteFill,
     alignItems: 'center',
     justifyContent: 'flex-start',
     paddingBottom: 24,
@@ -491,7 +492,7 @@ const styles = StyleSheet.create({
     zIndex: 100,
   },
   modalBackdrop: {
-    ...StyleSheet.absoluteFillObject,
+    ...absoluteFill,
     backgroundColor: 'rgba(44, 36, 23, 0.35)',
   },
   modalDialog: {

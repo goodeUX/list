@@ -17,9 +17,10 @@ import {
   DarkTheme,
   DefaultTheme,
   ThemeProvider as NavigationThemeProvider,
-} from '@react-navigation/native';
+} from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Platform, StyleSheet, View } from 'react-native';
+import { absoluteFill } from '@/lib/absoluteFill';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import Reanimated, {
@@ -255,7 +256,7 @@ const styles = StyleSheet.create({
     zIndex: 2,
   },
   openingLayer: {
-    ...StyleSheet.absoluteFillObject,
+    ...absoluteFill,
     elevation: 3,
     overflow: 'hidden',
     zIndex: 3,

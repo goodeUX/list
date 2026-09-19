@@ -1,6 +1,6 @@
-import { usePreventRemove, useNavigation } from '@react-navigation/native';
-import { useRouter } from 'expo-router';
-import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { useFocusEffect, useRouter } from 'expo-router';
+import { useCallback, useLayoutEffect, useRef } from 'react';
+import { BackHandler } from 'react-native';
 import {
   runOnJS,
   useAnimatedStyle,
@@ -8,7 +8,6 @@ import {
   withTiming,
   type AnimatedStyle,
 } from 'react-native-reanimated';
-import type { NavigationAction } from '@react-navigation/native';
 
 import {
   SLIDE_IN_EASING,
@@ -29,60 +28,23 @@ type SlideTransition = {
   isEnabled: boolean;
 };
 
-type SlideExitState = {
-  isAnimating: boolean;
-  action: NavigationAction | null;
-};
-
-const IDLE_SLIDE_EXIT: SlideExitState = {
-  isAnimating: false,
-  action: null,
-};
-
+/**
+ * Slides a child screen in on mount and back out before it leaves.
+ *
+ * expo-router 57 no longer exposes React Navigation's `usePreventRemove`, so the
+ * exit is driven from `goBack()` (the in-app back controls) and the Android
+ * hardware back button rather than by intercepting every navigation removal.
+ * The iOS edge-swipe gesture falls back to the native pop.
+ */
 export function useChildSlideTransition(
   options: SlideTransitionOptions = {},
 ): SlideTransition {
   const { ready = true } = options;
   const router = useRouter();
-  const navigation = useNavigation();
   const isEnabled = isSlideTransitionEnabled();
   const slideDistance = getSlideDistance();
   const translateX = useSharedValue(isEnabled ? slideDistance : 0);
-  const [shouldPreventRemove, setShouldPreventRemove] = useState(isEnabled);
-  const [slideExit, setSlideExit] = useState<SlideExitState>(IDLE_SLIDE_EXIT);
-  const isStartingExitRef = useRef(false);
-
-  useEffect(() => {
-    if (!slideExit.isAnimating) {
-      isStartingExitRef.current = false;
-    }
-  }, [slideExit.isAnimating]);
-
-  const handleExitAnimationEnd = useCallback(
-    (finished: boolean) => {
-      setSlideExit((current) => {
-        if (!current.isAnimating) {
-          return current;
-        }
-
-        if (!finished) {
-          return IDLE_SLIDE_EXIT;
-        }
-
-        const action = current.action;
-        if (action) {
-          setShouldPreventRemove(false);
-          requestAnimationFrame(() => {
-            navigation.dispatch(action);
-            setShouldPreventRemove(true);
-          });
-        }
-
-        return IDLE_SLIDE_EXIT;
-      });
-    },
-    [navigation],
-  );
+  const isExitingRef = useRef(false);
 
   useLayoutEffect(() => {
     if (!isEnabled) {
@@ -100,41 +62,68 @@ export function useChildSlideTransition(
     });
   }, [isEnabled, ready, slideDistance, translateX]);
 
-  usePreventRemove(
-    isEnabled && shouldPreventRemove,
-    ({ data }) => {
-      if (isStartingExitRef.current) {
+  const finishExit = useCallback(
+    (finished: boolean) => {
+      if (finished) {
+        router.back();
+      } else {
+        // Animation was interrupted; allow another attempt.
+        isExitingRef.current = false;
+      }
+    },
+    [router],
+  );
+
+  const goBack = useCallback(() => {
+    if (!isEnabled) {
+      router.back();
+      return;
+    }
+
+    if (isExitingRef.current) {
+      return;
+    }
+    isExitingRef.current = true;
+
+    translateX.value = withTiming(
+      slideDistance,
+      {
+        duration: SLIDE_OUT_MS,
+        easing: SLIDE_OUT_EASING,
+      },
+      (finished) => {
+        'worklet';
+        runOnJS(finishExit)(finished ?? false);
+      },
+    );
+  }, [finishExit, isEnabled, router, slideDistance, translateX]);
+
+  // While this screen is focused, animate out on Android hardware back.
+  useFocusEffect(
+    useCallback(() => {
+      if (!isEnabled) {
         return;
       }
 
-      isStartingExitRef.current = true;
-      setSlideExit({ isAnimating: true, action: data.action });
-
-      translateX.value = withTiming(
-        slideDistance,
-        {
-          duration: SLIDE_OUT_MS,
-          easing: SLIDE_OUT_EASING,
-        },
-        (finished) => {
-          'worklet';
-          runOnJS(handleExitAnimationEnd)(finished ?? false);
+      const subscription = BackHandler.addEventListener(
+        'hardwareBackPress',
+        () => {
+          goBack();
+          return true;
         },
       );
-    },
+
+      return () => subscription.remove();
+    }, [goBack, isEnabled]),
   );
 
   const animatedStyle = useAnimatedStyle(() => ({
     transform: [{ translateX: translateX.value }],
   }));
 
-  const goBack = useCallback(() => {
-    router.back();
-  }, [router]);
-
   return {
     animatedStyle,
     goBack,
     isEnabled,
   };
-};
+}

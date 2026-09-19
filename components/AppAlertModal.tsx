@@ -8,6 +8,7 @@ import {
   useWindowDimensions,
   View,
 } from 'react-native';
+import { absoluteFill } from '@/lib/absoluteFill';
 import Animated, {
   Easing,
   useAnimatedStyle,
@@ -154,14 +155,14 @@ export default function AppAlertModal({
 
 const styles = StyleSheet.create({
   shell: {
-    ...StyleSheet.absoluteFillObject,
+    ...absoluteFill,
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: 12,
     zIndex: 200,
   },
   backdrop: {
-    ...StyleSheet.absoluteFillObject,
+    ...absoluteFill,
     backgroundColor: 'rgba(44, 36, 23, 0.35)',
   },
   dialog: {

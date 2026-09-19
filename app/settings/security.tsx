@@ -10,6 +10,7 @@ import {
   Text,
   View,
 } from 'react-native';
+import { absoluteFill } from '@/lib/absoluteFill';
 import Animated from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -281,7 +282,7 @@ export default function SecurityScreen() {
 
 const styles = StyleSheet.create({
   screen: {
-    ...StyleSheet.absoluteFillObject,
+    ...absoluteFill,
   },
   flex: {
     flex: 1,

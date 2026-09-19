@@ -9,6 +9,7 @@ import {
   View,
 } from 'react-native';
 
+import { absoluteFill } from '@/lib/absoluteFill';
 import Button from '@/components/Button';
 import { useTheme } from '@/contexts/ThemeContext';
 import { showAppAlert } from '@/lib/appAlert';
@@ -162,14 +163,14 @@ export default function ChooseEditableListsModal({
 
 const styles = StyleSheet.create({
   shell: {
-    ...StyleSheet.absoluteFillObject,
+    ...absoluteFill,
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: 12,
     zIndex: 100,
   },
   backdrop: {
-    ...StyleSheet.absoluteFillObject,
+    ...absoluteFill,
     backgroundColor: 'rgba(44, 36, 23, 0.35)',
   },
   dialog: {

@@ -14,6 +14,7 @@ import {
   type NativeScrollEvent,
   type NativeSyntheticEvent,
 } from 'react-native';
+import { absoluteFill } from '@/lib/absoluteFill';
 import Animated, {
   runOnJS,
   useAnimatedStyle,
@@ -443,7 +444,7 @@ export default function EmojiPickerSheet({
 
 const styles = StyleSheet.create({
   layer: {
-    ...StyleSheet.absoluteFillObject,
+    ...absoluteFill,
     justifyContent: 'flex-end',
     // Above the list modal shell (zIndex 100) it sits over.
     zIndex: 101,
