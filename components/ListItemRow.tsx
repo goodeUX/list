@@ -373,6 +373,7 @@ const styles = StyleSheet.create({
   },
   subItems: {
     gap: 2,
-    paddingBottom: 4,
+    marginTop: -6,
+    paddingBottom: 14,
   },
 });
