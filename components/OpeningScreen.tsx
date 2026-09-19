@@ -60,7 +60,7 @@ function getWelcomeName(
 
 export default function OpeningScreen({ fontsLoaded, onComplete }: OpeningScreenProps) {
   const insets = useSafeAreaInsets();
-  const { width: windowWidth, height: windowHeight } = useWindowDimensions();
+  const { width: windowWidth } = useWindowDimensions();
   const layoutWidth = Math.min(windowWidth, CONTENT_MAX_WIDTH);
   const { user, loading } = useAuth();
   const { colors, colorScheme } = useTheme();
@@ -139,12 +139,7 @@ export default function OpeningScreen({ fontsLoaded, onComplete }: OpeningScreen
   const openingImage = colorScheme === 'dark' ? openingDarkImage : openingLightImage;
 
   return (
-    <View
-      style={[
-        styles.screen,
-        { backgroundColor: colors.bg, height: windowHeight, width: windowWidth },
-      ]}
-    >
+    <View style={[styles.screen, { backgroundColor: colors.bg }]}>
       <View style={[styles.frame, { width: layoutWidth }]}>
         <View
           style={[
@@ -214,6 +209,7 @@ export default function OpeningScreen({ fontsLoaded, onComplete }: OpeningScreen
 const styles = StyleSheet.create({
   screen: {
     alignItems: 'center',
+    flex: 1,
     overflow: 'hidden',
   },
   frame: {
