@@ -10,6 +10,7 @@ import {
   Pressable,
   StyleSheet,
   Text,
+  TextInput,
   View,
 } from 'react-native';
 import Animated, {
@@ -68,6 +69,7 @@ export default function ItemDetailScreen() {
   const [editingSubId, setEditingSubId] = useState<string | null>(null);
   const [keyboardHeight, setKeyboardHeight] = useState(0);
   const subItemsListRef = useRef<FlatList<SubItem> | null>(null);
+  const addInputRef = useRef<TextInput>(null);
   const addInputFocusedRef = useRef(false);
 
   const subItems = item ? sortSubItems(item.subItems) : [];
@@ -233,6 +235,9 @@ export default function ItemDetailScreen() {
       return;
     }
     setNewSubItemName('');
+    // Keep the keyboard up so several can be added in a row; the list re-render
+    // after the write can drop focus, so re-focus explicitly.
+    requestAnimationFrame(() => addInputRef.current?.focus());
     void setSubItems(item.id, next)
       .then(scrollAddInputToBottom)
       .catch(() => {
@@ -480,6 +485,7 @@ export default function ItemDetailScreen() {
           ListFooterComponent={
             <View style={{ marginTop: spacing.sm }}>
               <ThemedTextInput
+                ref={addInputRef}
                 onBlur={() => {
                   addInputFocusedRef.current = false;
                 }}
