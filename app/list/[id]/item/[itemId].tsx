@@ -75,10 +75,11 @@ export default function ItemDetailScreen() {
 
   // Scroll the add-sub-item input (the list footer) to the bottom of the
   // scroll area. Combined with the keyboard-height bottom padding below, this
-  // lifts it above the keyboard.
-  const scrollAddInputIntoView = () => {
+  // lifts it above the keyboard. scrollToOffset (a large offset clamps to the
+  // end) is used because scrollToEnd is a no-op on this wrapped list ref.
+  const scrollAddInputToBottom = () => {
     requestAnimationFrame(() => {
-      subItemsListRef.current?.scrollToEnd({ animated: true });
+      subItemsListRef.current?.scrollToOffset({ offset: 100000, animated: true });
     });
   };
 
@@ -109,7 +110,7 @@ export default function ItemDetailScreen() {
       return;
     }
     const timer = setTimeout(() => {
-      subItemsListRef.current?.scrollToEnd({ animated: true });
+      subItemsListRef.current?.scrollToOffset({ offset: 100000, animated: true });
     }, 50);
     return () => clearTimeout(timer);
   }, [keyboardHeight]);
@@ -220,7 +221,7 @@ export default function ItemDetailScreen() {
     }
     setNewSubItemName('');
     void setSubItems(item.id, next)
-      .then(scrollAddInputIntoView)
+      .then(scrollAddInputToBottom)
       .catch(() => {
         showAppAlert('Could not add sub-item', 'Please try again.');
       });
@@ -354,14 +355,16 @@ export default function ItemDetailScreen() {
 
         <DraggableFlatList
           // DraggableFlatList forwards its ref to a gesture-handler FlatList,
-          // whose instance still exposes RN FlatList's scrollToEnd. A callback
-          // ref bridges the two FlatList component types.
+          // whose instance still exposes RN FlatList's scrollToOffset. A
+          // callback ref bridges the two FlatList component types.
           ref={(instance) => {
             subItemsListRef.current = (instance ?? null) as unknown as
               | FlatList<SubItem>
               | null;
           }}
           activationDistance={12}
+          containerStyle={styles.flex}
+          style={styles.flex}
           contentContainerStyle={[
             styles.content,
             { padding: spacing.lg, paddingBottom: spacing.lg + keyboardHeight },
@@ -451,7 +454,7 @@ export default function ItemDetailScreen() {
                 onChangeText={setNewSubItemName}
                 onFocus={() => {
                   addInputFocusedRef.current = true;
-                  scrollAddInputIntoView();
+                  scrollAddInputToBottom();
                 }}
                 onSubmitEditing={handleAddSubItem}
                 placeholder="Add a sub-item"
