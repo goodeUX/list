@@ -7,7 +7,6 @@ import {
   KeyboardAvoidingView,
   Platform,
   Pressable,
-  ScrollView,
   StyleSheet,
   Text,
   View,
@@ -279,220 +278,218 @@ export default function ItemDetailScreen() {
           <View style={styles.shareButton} />
         </View>
 
-        <ScrollView
-          contentContainerStyle={[
-            styles.content,
-            { gap: spacing.md, padding: spacing.lg },
-          ]}
+        <DraggableFlatList
+          activationDistance={12}
+          contentContainerStyle={[styles.content, { padding: spacing.lg }]}
+          data={subItems}
           keyboardShouldPersistTaps="handled"
-        >
-          <View style={styles.field}>
-            <Text style={[styles.label, { color: colors.textSecondary }]}>Name</Text>
-            <ThemedTextInput
-              editable={!saving}
-              invalid={nameLimitError}
-              onChangeText={(text) => {
-                const { limitReached, value } = getItemNameInputUpdate(text);
-                setNameLimitError(limitReached);
-                setName(value);
-              }}
-              style={styles.nameInput}
-              value={name}
-            />
-            {nameLimitError ? (
-              <Text style={[styles.limitError, { color: colors.accent }]}>
-                {ITEM_NAME_LIMIT_MESSAGE}
-              </Text>
-            ) : null}
-          </View>
+          keyExtractor={(subItem) => subItem.id}
+          ListHeaderComponent={
+            <View style={{ gap: spacing.md, marginBottom: spacing.sm }}>
+              <View style={styles.field}>
+                <Text style={[styles.label, { color: colors.textSecondary }]}>Name</Text>
+                <ThemedTextInput
+                  editable={!saving}
+                  invalid={nameLimitError}
+                  onChangeText={(text) => {
+                    const { limitReached, value } = getItemNameInputUpdate(text);
+                    setNameLimitError(limitReached);
+                    setName(value);
+                  }}
+                  style={styles.nameInput}
+                  value={name}
+                />
+                {nameLimitError ? (
+                  <Text style={[styles.limitError, { color: colors.accent }]}>
+                    {ITEM_NAME_LIMIT_MESSAGE}
+                  </Text>
+                ) : null}
+              </View>
 
-          <View style={styles.field}>
-            <Text style={[styles.label, { color: colors.textSecondary }]}>Quantity</Text>
-            <ThemedTextInput
-              editable={!saving}
-              onChangeText={setQuantity}
-              placeholder="e.g. 2 lbs, 1 pack"
-              value={quantity}
-            />
-          </View>
+              <View style={styles.field}>
+                <Text style={[styles.label, { color: colors.textSecondary }]}>Quantity</Text>
+                <ThemedTextInput
+                  editable={!saving}
+                  onChangeText={setQuantity}
+                  placeholder="e.g. 2 lbs, 1 pack"
+                  value={quantity}
+                />
+              </View>
 
-          <View style={styles.field}>
-            <Text style={[styles.label, { color: colors.textSecondary }]}>Description</Text>
-            <ThemedTextInput
-              editable={!saving}
-              multiline
-              onChangeText={setDescription}
-              placeholder="Notes or details"
-              style={styles.textArea}
-              value={description}
-            />
-          </View>
+              <View style={styles.field}>
+                <Text style={[styles.label, { color: colors.textSecondary }]}>Description</Text>
+                <ThemedTextInput
+                  editable={!saving}
+                  multiline
+                  onChangeText={setDescription}
+                  placeholder="Notes or details"
+                  style={styles.textArea}
+                  value={description}
+                />
+              </View>
 
-          <View style={styles.field}>
-            <Text style={[styles.label, { color: colors.textSecondary }]}>Link</Text>
-            <ThemedTextInput
-              autoCapitalize="none"
-              autoCorrect={false}
-              editable={!saving}
-              invalid={Boolean(linkError)}
-              keyboardType="url"
-              onChangeText={(value) => {
-                setLink(value);
-                setLinkError(null);
-              }}
-              placeholder="https://..."
-              value={link}
-            />
-            {linkError ? (
-              <Text style={[styles.error, { color: colors.accent }]}>{linkError}</Text>
-            ) : null}
-            {link.trim() && isValidUrl(link) ? (
-              <Pressable onPress={handleOpenLink}>
-                <Text style={[styles.openLink, { color: colors.accent }]}>Open link</Text>
-              </Pressable>
-            ) : null}
-          </View>
+              <View style={styles.field}>
+                <Text style={[styles.label, { color: colors.textSecondary }]}>Link</Text>
+                <ThemedTextInput
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  editable={!saving}
+                  invalid={Boolean(linkError)}
+                  keyboardType="url"
+                  onChangeText={(value) => {
+                    setLink(value);
+                    setLinkError(null);
+                  }}
+                  placeholder="https://..."
+                  value={link}
+                />
+                {linkError ? (
+                  <Text style={[styles.error, { color: colors.accent }]}>{linkError}</Text>
+                ) : null}
+                {link.trim() && isValidUrl(link) ? (
+                  <Pressable onPress={handleOpenLink}>
+                    <Text style={[styles.openLink, { color: colors.accent }]}>Open link</Text>
+                  </Pressable>
+                ) : null}
+              </View>
 
-          <View style={styles.field}>
-            <Text style={[styles.label, { color: colors.textSecondary }]}>Sub-items</Text>
-
-            <DraggableFlatList
-              activationDistance={12}
-              data={subItems}
-              keyExtractor={(subItem) => subItem.id}
-              onDragEnd={({ data }) => handleReorderSubItems(data)}
-              renderItem={({ item: subItem, drag, isActive }: RenderItemParams<SubItem>) => (
-                <View
+              <Text style={[styles.label, { color: colors.textSecondary }]}>Sub-items</Text>
+            </View>
+          }
+          ListFooterComponent={
+            <View style={{ gap: spacing.md, marginTop: spacing.sm }}>
+              <View style={styles.subItemAddRow}>
+                <ThemedTextInput
+                  editable={!saving}
+                  onChangeText={setNewSubItemName}
+                  onSubmitEditing={handleAddSubItem}
+                  placeholder="Add a sub-item"
+                  returnKeyType="done"
+                  style={styles.subItemInput}
+                  value={newSubItemName}
+                />
+                <Pressable
+                  accessibilityLabel="Add sub-item"
+                  accessibilityRole="button"
+                  disabled={saving || !newSubItemName.trim()}
+                  hitSlop={8}
+                  onPress={handleAddSubItem}
                   style={[
-                    styles.subItemRow,
+                    styles.subItemAddButton,
                     {
-                      backgroundColor: isActive ? colors.surfaceMuted : 'transparent',
-                      borderRadius: radii.item,
+                      backgroundColor: colors.accent,
+                      borderRadius: radii.checkbox,
+                      opacity: newSubItemName.trim() ? 1 : 0.5,
                     },
                   ]}
                 >
-                  <Pressable
-                    accessibilityLabel={subItem.checked ? 'Mark incomplete' : 'Mark complete'}
-                    accessibilityRole="checkbox"
-                    accessibilityState={{ checked: subItem.checked }}
-                    disabled={saving}
-                    hitSlop={8}
-                    onPress={() => handleToggleSubItem(subItem.id)}
-                    style={[
-                      styles.subItemCheckbox,
-                      {
-                        backgroundColor: subItem.checked ? colors.success : 'transparent',
-                        borderColor: subItem.checked ? colors.success : colors.border,
-                        borderRadius: radii.checkbox,
-                      },
-                    ]}
-                  >
-                    {subItem.checked ? (
-                      <MaterialIcons color={colors.surface} name="check" size={12} />
-                    ) : null}
-                  </Pressable>
+                  <MaterialIcons color={colors.surface} name="add" size={20} />
+                </Pressable>
+              </View>
 
-                  <ThemedTextInput
-                    defaultValue={subItem.name}
-                    editable={!saving}
-                    onEndEditing={(event) =>
-                      handleRenameSubItem(subItem.id, event.nativeEvent.text)
-                    }
-                    style={styles.subItemInput}
-                    variant="plain"
-                  />
-
-                  <Pressable
-                    accessibilityLabel="Remove sub-item"
-                    accessibilityRole="button"
-                    disabled={saving}
-                    hitSlop={8}
-                    onPress={() => handleRemoveSubItem(subItem.id)}
-                    style={styles.subItemAction}
-                  >
-                    <MaterialIcons color={colors.textSecondary} name="close" size={18} />
-                  </Pressable>
-
-                  <Pressable
-                    accessibilityLabel="Drag to reorder"
-                    accessibilityRole="button"
-                    delayLongPress={150}
-                    disabled={saving}
-                    onLongPress={drag}
-                    style={styles.subItemAction}
-                  >
-                    <MaterialIcons color={colors.textSecondary} name="drag-indicator" size={20} />
-                  </Pressable>
-                </View>
-              )}
-            />
-
-            <View style={styles.subItemAddRow}>
-              <ThemedTextInput
-                editable={!saving}
-                onChangeText={setNewSubItemName}
-                onSubmitEditing={handleAddSubItem}
-                placeholder="Add a sub-item"
-                returnKeyType="done"
-                style={styles.subItemInput}
-                value={newSubItemName}
-              />
               <Pressable
-                accessibilityLabel="Add sub-item"
-                accessibilityRole="button"
-                disabled={saving || !newSubItemName.trim()}
-                hitSlop={8}
-                onPress={handleAddSubItem}
-                style={[
-                  styles.subItemAddButton,
+                disabled={saving}
+                onPress={handleSave}
+                style={({ pressed }) => [
+                  styles.saveButton,
+                  buttonLayoutStyle,
                   {
                     backgroundColor: colors.accent,
-                    borderRadius: radii.checkbox,
-                    opacity: newSubItemName.trim() ? 1 : 0.5,
+                    opacity: pressed || saving ? 0.85 : 1,
                   },
                 ]}
               >
-                <MaterialIcons color={colors.surface} name="add" size={20} />
+                {saving ? (
+                  <ActivityIndicator color={colors.surface} />
+                ) : (
+                  <Text style={[buttonLabelStyle(16), { color: colors.surface }]}>Save</Text>
+                )}
+              </Pressable>
+
+              <Pressable
+                disabled={saving}
+                onPress={handleDelete}
+                style={({ pressed }) => [
+                  styles.deleteButton,
+                  buttonLayoutStyle,
+                  {
+                    borderColor: colors.border,
+                    opacity: pressed || saving ? 0.85 : 1,
+                  },
+                ]}
+              >
+                <Text style={[buttonLabelStyle(15), { color: colors.accent }]}>
+                  Delete item
+                </Text>
               </Pressable>
             </View>
-          </View>
+          }
+          onDragEnd={({ data }) => handleReorderSubItems(data)}
+          renderItem={({ item: subItem, drag, isActive }: RenderItemParams<SubItem>) => (
+            <View
+              style={[
+                styles.subItemRow,
+                {
+                  backgroundColor: isActive ? colors.surfaceMuted : 'transparent',
+                  borderRadius: radii.item,
+                },
+              ]}
+            >
+              <Pressable
+                accessibilityLabel={subItem.checked ? 'Mark incomplete' : 'Mark complete'}
+                accessibilityRole="checkbox"
+                accessibilityState={{ checked: subItem.checked }}
+                disabled={saving}
+                hitSlop={8}
+                onPress={() => handleToggleSubItem(subItem.id)}
+                style={[
+                  styles.subItemCheckbox,
+                  {
+                    backgroundColor: subItem.checked ? colors.success : 'transparent',
+                    borderColor: subItem.checked ? colors.success : colors.border,
+                    borderRadius: radii.checkbox,
+                  },
+                ]}
+              >
+                {subItem.checked ? (
+                  <MaterialIcons color={colors.surface} name="check" size={12} />
+                ) : null}
+              </Pressable>
 
-          <Pressable
-            disabled={saving}
-            onPress={handleSave}
-            style={({ pressed }) => [
-              styles.saveButton,
-              buttonLayoutStyle,
-              {
-                backgroundColor: colors.accent,
-                opacity: pressed || saving ? 0.85 : 1,
-              },
-            ]}
-          >
-            {saving ? (
-              <ActivityIndicator color={colors.surface} />
-            ) : (
-              <Text style={[buttonLabelStyle(16), { color: colors.surface }]}>Save</Text>
-            )}
-          </Pressable>
+              <ThemedTextInput
+                defaultValue={subItem.name}
+                editable={!saving}
+                onEndEditing={(event) =>
+                  handleRenameSubItem(subItem.id, event.nativeEvent.text)
+                }
+                style={styles.subItemInput}
+                variant="plain"
+              />
 
-          <Pressable
-            disabled={saving}
-            onPress={handleDelete}
-            style={({ pressed }) => [
-              styles.deleteButton,
-              buttonLayoutStyle,
-              {
-                borderColor: colors.border,
-                opacity: pressed || saving ? 0.85 : 1,
-              },
-            ]}
-          >
-            <Text style={[buttonLabelStyle(15), { color: colors.accent }]}>
-              Delete item
-            </Text>
-          </Pressable>
-        </ScrollView>
+              <Pressable
+                accessibilityLabel="Remove sub-item"
+                accessibilityRole="button"
+                disabled={saving}
+                hitSlop={8}
+                onPress={() => handleRemoveSubItem(subItem.id)}
+                style={styles.subItemAction}
+              >
+                <MaterialIcons color={colors.textSecondary} name="close" size={18} />
+              </Pressable>
+
+              <Pressable
+                accessibilityLabel="Drag to reorder"
+                accessibilityRole="button"
+                delayLongPress={150}
+                disabled={saving}
+                onLongPress={drag}
+                style={styles.subItemAction}
+              >
+                <MaterialIcons color={colors.textSecondary} name="drag-indicator" size={20} />
+              </Pressable>
+            </View>
+          )}
+        />
       </KeyboardAvoidingView>
       </View>
     </Animated.View>
