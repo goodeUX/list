@@ -63,3 +63,39 @@ describe('formatQuantity', () => {
     expect(formatQuantity({ kind: 'mass', base: 0.5 })).toBe('500mg');
   });
 });
+
+import { combineItemQuantities } from '@/lib/quantity';
+
+describe('combineItemQuantities', () => {
+  it('sums two counts', () => {
+    expect(
+      combineItemQuantities({ kind: 'count', base: 3 }, { kind: 'count', base: 2 }),
+    ).toEqual({ merged: true, quantity: { kind: 'count', base: 5 } });
+  });
+
+  it('treats a blank as count 1 when combining with a count', () => {
+    expect(combineItemQuantities(null, { kind: 'count', base: 2 })).toEqual({
+      merged: true,
+      quantity: { kind: 'count', base: 3 },
+    });
+  });
+
+  it('treats two blanks as count 2', () => {
+    expect(combineItemQuantities(null, null)).toEqual({
+      merged: true,
+      quantity: { kind: 'count', base: 2 },
+    });
+  });
+
+  it('does not merge a blank (count 1) with a measurement', () => {
+    expect(combineItemQuantities(null, { kind: 'mass', base: 250 })).toEqual({
+      merged: false,
+    });
+  });
+
+  it('does not merge incompatible measurements', () => {
+    expect(
+      combineItemQuantities({ kind: 'mass', base: 250 }, { kind: 'volume', base: 250 }),
+    ).toEqual({ merged: false });
+  });
+});

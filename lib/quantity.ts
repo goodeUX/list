@@ -86,3 +86,22 @@ export function formatQuantity(quantity: Quantity): string {
   const smallest = units[units.length - 1];
   return `${trimNumber(quantity.base / smallest.factor)}${smallest.unit}`;
 }
+
+export type CombineResult =
+  | { merged: true; quantity: Quantity }
+  | { merged: false };
+
+function asCombinable(quantity: Quantity | null): Quantity {
+  return quantity ?? { kind: 'count', base: 1 };
+}
+
+export function combineItemQuantities(
+  a: Quantity | null,
+  b: Quantity | null,
+): CombineResult {
+  const combined = addQuantities(asCombinable(a), asCombinable(b));
+  if (!combined) {
+    return { merged: false };
+  }
+  return { merged: true, quantity: combined };
+}
