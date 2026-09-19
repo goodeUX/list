@@ -1,7 +1,7 @@
 import { SymbolView } from 'expo-symbols';
 import { useEffect, useState, type ReactNode } from 'react';
 import { MaterialIcons } from '@expo/vector-icons';
-import { Platform, Pressable, StyleSheet, View, type TextStyle } from 'react-native';
+import { Platform, Pressable, StyleSheet, Text, View, type TextStyle } from 'react-native';
 import Animated, {
   useAnimatedStyle,
   useSharedValue,
@@ -9,9 +9,11 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 
+import SubItemRow from '@/components/SubItemRow';
 import { useTheme } from '@/contexts/ThemeContext';
 import { playToggleHaptic } from '@/lib/haptics';
 import { formatItemNameForDisplay } from '@/lib/itemName';
+import { subItemProgress, sortSubItems } from '@/lib/subItems';
 import type { ListItem } from '@/lib/types';
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
@@ -82,6 +84,9 @@ type ListItemRowProps = {
   onLongPress?: () => void;
   isActive?: boolean;
   dragHandle?: ReactNode;
+  expanded?: boolean;
+  onToggleExpand?: () => void;
+  onToggleSubItem?: (subId: string) => void;
 };
 
 export default function ListItemRow({
@@ -92,8 +97,13 @@ export default function ListItemRow({
   onLongPress,
   isActive = false,
   dragHandle,
+  expanded = false,
+  onToggleExpand,
+  onToggleSubItem,
 }: ListItemRowProps) {
   const { colors, radii, spacing } = useTheme();
+  const { done, total } = subItemProgress(item.subItems);
+  const hasSubItems = total > 0;
   const checkScale = useSharedValue(1);
   const textOpacity = useSharedValue(item.checked ? COMPLETED_OPACITY : 1);
   const [hovered, setHovered] = useState(false);
@@ -127,6 +137,7 @@ export default function ListItemRow({
   };
 
   return (
+    <View>
     <Pressable
       accessibilityState={{ disabled }}
       delayLongPress={250}
@@ -242,6 +253,35 @@ export default function ListItemRow({
         ) : null}
       </View>
 
+      {hasSubItems ? (
+        <Pressable
+          accessibilityLabel={expanded ? 'Collapse sub-items' : 'Expand sub-items'}
+          accessibilityRole="button"
+          hitSlop={8}
+          onPress={(event) => {
+            event.stopPropagation?.();
+            onToggleExpand?.();
+          }}
+          style={styles.subItemsToggle}
+        >
+          <View
+            style={[
+              styles.progressBadge,
+              { backgroundColor: colors.surfaceMuted, borderRadius: radii.checkbox },
+            ]}
+          >
+            <Text style={[styles.progressText, { color: colors.textSecondary }]}>
+              {done}/{total}
+            </Text>
+          </View>
+          <MaterialIcons
+            color={colors.textSecondary}
+            name={expanded ? 'expand-less' : 'expand-more'}
+            size={22}
+          />
+        </Pressable>
+      ) : null}
+
       {dragHandle ? (
         <View
           style={[
@@ -259,6 +299,19 @@ export default function ListItemRow({
         </View>
       ) : null}
     </Pressable>
+      {hasSubItems && expanded ? (
+        <View style={[styles.subItems, { paddingLeft: spacing.lg + 12 }]}>
+          {sortSubItems(item.subItems).map((subItem) => (
+            <SubItemRow
+              key={subItem.id}
+              disabled={disabled}
+              onToggle={() => onToggleSubItem?.(subItem.id)}
+              subItem={subItem}
+            />
+          ))}
+        </View>
+      ) : null}
+    </View>
   );
 }
 
@@ -324,5 +377,28 @@ const styles = StyleSheet.create({
     fontFamily: 'NunitoSans_600SemiBold',
     fontSize: 12,
     lineHeight: 16,
+  },
+  subItemsToggle: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    flexShrink: 0,
+    gap: 2,
+  },
+  progressBadge: {
+    alignItems: 'center',
+    height: 20,
+    justifyContent: 'center',
+    minWidth: 28,
+    paddingHorizontal: 6,
+  },
+  progressText: {
+    fontFamily: 'NunitoSans_600SemiBold',
+    fontSize: 12,
+    lineHeight: 14,
+    textAlign: 'center',
+  },
+  subItems: {
+    gap: 2,
+    paddingBottom: 4,
   },
 });
