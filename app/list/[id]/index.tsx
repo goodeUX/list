@@ -94,6 +94,7 @@ export default function ListDetailScreen() {
     reorderItems,
     applyItemLayout,
     groupDoneItemsAtBottom,
+    toggleSubItem,
   } = useListItems(listId, { moveDoneToBottom });
   const { readOnly } = useListAccess(listId);
   const hasTitle = Boolean(paramName || listName);
@@ -675,6 +676,14 @@ export default function ListDetailScreen() {
     [blurAddInput, readOnly, toggleItem],
   );
 
+  const handleToggleSubItem = useCallback(
+    (itemId: string, subId: string) => {
+      if (readOnly) return;
+      void toggleSubItem(itemId, subId);
+    },
+    [readOnly, toggleSubItem],
+  );
+
   const handleReorder = useCallback(
     async (orderedItems: ListItem[]) => {
       try {
@@ -975,6 +984,7 @@ export default function ListDetailScreen() {
             onReorder={handleReorder}
             onReorderWithChecked={handleReorderWithChecked}
             onToggleItem={handleToggleItem}
+            onToggleSubItem={handleToggleSubItem}
           />
         </Pressable>
       </Animated.View>
