@@ -44,10 +44,6 @@ import { dismissKeyboard } from '@/lib/dismissKeyboard';
 import { focusTextInputNow } from '@/lib/focusTextInput';
 import { isLocalListId, usesCloudListData } from '@/lib/listIds';
 import { FREE_LIST_LIMIT } from '@/lib/listLimits';
-import {
-  ITEM_NAME_MAX_LENGTH,
-  limitItemNameLength,
-} from '@/lib/itemName';
 import { deleteListById, leaveListById, setListMoveDoneToBottom, updateListDetails } from '@/lib/listMutations';
 import { consumePendingAddInputFocus } from '@/lib/pendingAddInputFocus';
 import { isPurchasesAvailable } from '@/lib/purchases';
@@ -529,9 +525,8 @@ export default function ListDetailScreen() {
   };
 
   const handleChangeNewItemName = (text: string) => {
-    const limitedText = limitItemNameLength(text);
-    newItemNameRef.current = limitedText;
-    setNewItemName(limitedText);
+    newItemNameRef.current = text;
+    setNewItemName(text);
   };
 
   const submitItemName = useCallback(
@@ -896,11 +891,7 @@ export default function ListDetailScreen() {
           onPress={focusAddInput}
           style={[
             styles.addInputRow,
-            getThemedInputContainerStyle(
-              colors,
-              isAddInputFocused,
-              newItemName.length >= ITEM_NAME_MAX_LENGTH,
-            ),
+            getThemedInputContainerStyle(colors, isAddInputFocused),
             {
               borderRadius: radii.item,
               marginHorizontal: spacing.lg,
@@ -926,21 +917,6 @@ export default function ListDetailScreen() {
               value={newItemName}
               variant="plain"
             />
-            {isAddInputFocused ? (
-              <Text
-                style={[
-                  styles.charCounter,
-                  {
-                    color:
-                      newItemName.length >= ITEM_NAME_MAX_LENGTH
-                        ? colors.accent
-                        : colors.textSecondary,
-                  },
-                ]}
-              >
-                {newItemName.length}/{ITEM_NAME_MAX_LENGTH}
-              </Text>
-            ) : null}
             <Pressable
               accessibilityLabel="Add item"
               accessibilityRole="button"
@@ -1069,12 +1045,6 @@ const styles = StyleSheet.create({
     fontFamily: 'Fraunces_600SemiBold',
     fontSize: 24,
     lineHeight: 30,
-  },
-  charCounter: {
-    flexShrink: 0,
-    fontFamily: 'NunitoSans_400Regular',
-    fontSize: 14,
-    lineHeight: 20,
   },
   addInputRow: {
     alignItems: 'center',
