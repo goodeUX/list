@@ -132,6 +132,57 @@ describe('ingredientToEntry', () => {
       quantity: null,
     });
   });
+
+  it('strips parentheticals from the name', () => {
+    expect(ingredientToEntry('2 cups long grain rice (rinsed and drained)')).toEqual({
+      name: 'long grain rice',
+      quantity: { kind: 'cup', base: 2 },
+    });
+    // Unclosed parenthesis (cut off by the old comma-trim) is dropped entirely.
+    expect(ingredientToEntry('2 cups chicken stock (about')).toEqual({
+      name: 'chicken stock',
+      quantity: { kind: 'cup', base: 2 },
+    });
+  });
+
+  it('keeps the metric weight when metric and imperial are both given', () => {
+    expect(ingredientToEntry('500g / 1 lb chicken thighs (boneless)')).toEqual({
+      name: 'chicken thighs',
+      quantity: { kind: 'mass', base: 500 },
+    });
+    expect(ingredientToEntry('150g / 5oz shiitake mushrooms')).toEqual({
+      name: 'shiitake mushrooms',
+      quantity: { kind: 'mass', base: 150 },
+    });
+  });
+
+  it('prefers the weight when two quantities of different kinds are given', () => {
+    // "20g / 1 1/2 tbsp oil" -> just the weight.
+    expect(ingredientToEntry('20g / 1 1/2 tbsp oil')).toEqual({
+      name: 'oil',
+      quantity: { kind: 'mass', base: 20 },
+    });
+    // Weight wins even when it is the second token.
+    expect(ingredientToEntry('2 cups / 250g flour')).toEqual({
+      name: 'flour',
+      quantity: { kind: 'mass', base: 250 },
+    });
+  });
+
+  it('converts an imperial-only weight to metric', () => {
+    // 1 lb -> 454 g (rounded).
+    expect(ingredientToEntry('1 lb ground beef')).toEqual({
+      name: 'ground beef',
+      quantity: { kind: 'mass', base: 454 },
+    });
+  });
+
+  it('strips leading bullets/dashes and keeps a bare count', () => {
+    expect(ingredientToEntry('- 4 green onion stems (white parts)')).toEqual({
+      name: 'green onion stems',
+      quantity: { kind: 'count', base: 4 },
+    });
+  });
 });
 
 describe('parseRecipeFromHtml / parsePageTitleFromHtml edge cases', () => {

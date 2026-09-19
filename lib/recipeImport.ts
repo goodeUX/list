@@ -1,4 +1,10 @@
-import { extractLeadingQuantity, type ParsedEntry } from './parseItemEntries';
+import { type ParsedEntry } from './parseItemEntries';
+import {
+  KNOWN_UNIT_TOKENS,
+  parseNumber,
+  parseQuantity,
+  type Quantity,
+} from './quantity';
 
 export interface ParsedRecipe {
   title: string | null;
@@ -199,9 +205,142 @@ function normalizeVulgarFractions(text: string): string {
   return out;
 }
 
+// Imperial mass units -> grams per unit, for converting to metric on display.
+const IMPERIAL_MASS: Record<string, number> = {
+  lb: 453.592,
+  lbs: 453.592,
+  pound: 453.592,
+  pounds: 453.592,
+  oz: 28.3495,
+  ounce: 28.3495,
+  ounces: 28.3495,
+};
+
+// Leading junk on an ingredient line: bullets, dashes, slashes, commas, spaces.
+const LEADING_JUNK = /^[\s/,–—\-•*]+/;
+
+// Remove parenthetical notes, e.g. "rice (rinsed, drained)" -> "rice". Repeats
+// to handle nesting, and drops any unclosed "(" through to the end of the line.
+function stripParentheticals(text: string): string {
+  let previous: string;
+  let out = text;
+  do {
+    previous = out;
+    out = out.replace(/\([^()]*\)/g, ' ');
+  } while (out !== previous);
+
+  const open = out.indexOf('(');
+  if (open !== -1) {
+    out = out.slice(0, open);
+  }
+  return out.replace(/\)/g, ' ').replace(/\s+/g, ' ').trim();
+}
+
+interface QuantityCandidate {
+  quantity: Quantity;
+  imperial: boolean;
+}
+
+// Prefer weight over everything, metric weight over imperial, then volume,
+// then cooking units, then a bare count.
+function candidateRank(candidate: QuantityCandidate): number {
+  const { kind } = candidate.quantity;
+  if (kind === 'mass') {
+    return candidate.imperial ? 4 : 5;
+  }
+  if (kind === 'volume') {
+    return 3;
+  }
+  if (kind === 'cup' || kind === 'tbsp' || kind === 'tsp') {
+    return 2;
+  }
+  return 1; // count
+}
+
+const LEADING_NUMBER = String.raw`\d+\s+\d+\/\d+|\d+\/\d+|\d+(?:\.\d+)?`;
+const QUANTITY_TOKEN = new RegExp(`^(${LEADING_NUMBER})(\\s*)([a-zA-Z]+)?`);
+
+/**
+ * Read one or more "/"-separated quantity tokens from the front of an
+ * ingredient line and pick the best (weight/metric preferred). Imperial
+ * weights are converted to grams. Returns the chosen quantity and the leftover
+ * name text.
+ */
+function extractIngredientQuantity(text: string): {
+  quantity: Quantity | null;
+  name: string;
+} {
+  let rest = text.replace(LEADING_JUNK, '');
+  const candidates: QuantityCandidate[] = [];
+  let first = true;
+
+  while (rest.length > 0) {
+    if (!first) {
+      const separator = rest.match(/^\s*[/,]\s*/);
+      if (!separator) {
+        break;
+      }
+      rest = rest.slice(separator[0].length);
+    }
+
+    const match = rest.match(QUANTITY_TOKEN);
+    if (!match) {
+      break;
+    }
+
+    const value = parseNumber(match[1]);
+    if (value === null) {
+      break;
+    }
+
+    const spaced = match[2].length > 0;
+    const unit = (match[3] ?? '').toLowerCase();
+
+    if (!unit) {
+      candidates.push({ quantity: { kind: 'count', base: value }, imperial: false });
+      rest = rest.slice(match[0].length);
+    } else if (KNOWN_UNIT_TOKENS.has(unit)) {
+      const quantity = parseQuantity(`${match[1]}${unit}`);
+      if (!quantity) {
+        break;
+      }
+      candidates.push({ quantity, imperial: false });
+      rest = rest.slice(match[0].length);
+    } else if (IMPERIAL_MASS[unit] !== undefined) {
+      candidates.push({
+        quantity: { kind: 'mass', base: Math.round(value * IMPERIAL_MASS[unit]) },
+        imperial: true,
+      });
+      rest = rest.slice(match[0].length);
+    } else if (spaced) {
+      // Unknown word after the number (e.g. "5 slices") — treat the number as a
+      // count and leave the word as part of the name.
+      candidates.push({ quantity: { kind: 'count', base: value }, imperial: false });
+      rest = rest.slice(match[1].length + match[2].length);
+      break;
+    } else {
+      // Letters attached to the number that aren't a unit (e.g. "3rd") — not a
+      // quantity; the whole remaining text is the name.
+      break;
+    }
+
+    first = false;
+  }
+
+  let chosen: QuantityCandidate | null = null;
+  for (const candidate of candidates) {
+    if (!chosen || candidateRank(candidate) > candidateRank(chosen)) {
+      chosen = candidate;
+    }
+  }
+
+  return { quantity: chosen?.quantity ?? null, name: rest.trim() };
+}
+
 export function ingredientToEntry(line: string): ParsedEntry {
   const normalized = normalizeVulgarFractions(cleanText(line));
-  const { name, quantity } = extractLeadingQuantity(normalized);
-  const trimmedName = name.split(',')[0].trim();
+  const withoutNotes = stripParentheticals(normalized);
+  const { quantity, name } = extractIngredientQuantity(withoutNotes);
+  const trimmedName = name.split(',')[0].replace(LEADING_JUNK, '').trim();
   return { name: trimmedName, quantity };
 }
