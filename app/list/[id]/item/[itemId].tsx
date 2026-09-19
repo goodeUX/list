@@ -361,9 +361,9 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
   nameInput: {
-    fontFamily: 'Fraunces_600SemiBold',
-    fontSize: 24,
-    lineHeight: 30,
+    fontFamily: 'NunitoSans_400Regular',
+    fontSize: 16,
+    lineHeight: 22,
   },
   textArea: {
     minHeight: 100,
