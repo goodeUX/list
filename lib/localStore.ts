@@ -4,6 +4,7 @@ import type { AppList, ListItem, NewItemFields } from '@/lib/types';
 import { normalizeItemName } from '@/lib/itemName';
 import { nextItemOrder } from '@/lib/listItemOrdering';
 import { normalizeListName } from '@/lib/listName';
+import { parseSubItems } from '@/lib/subItems';
 
 const STORAGE_KEY = 'list_app_local_data_v1';
 const LEGACY_STORAGE_KEY = 'sage_local_data_v1';
@@ -63,6 +64,7 @@ function normalizeList(list: AppList): AppList {
 function normalizeItem(item: ListItem): ListItem {
   return {
     ...item,
+    subItems: parseSubItems(item.subItems),
     createdAt: coerceDate(item.createdAt),
     updatedAt: coerceDate(item.updatedAt),
   };
@@ -219,6 +221,7 @@ export async function addLocalItem(
     link: fields.link ?? null,
     checked: false,
     order: nextItemOrder(items),
+    subItems: [],
     createdBy: 'local',
     createdAt: now,
     updatedAt: now,
@@ -288,7 +291,10 @@ export async function updateLocalItem(
   listId: string,
   itemId: string,
   updates: Partial<
-    Pick<ListItem, 'name' | 'quantity' | 'description' | 'link' | 'checked' | 'order'>
+    Pick<
+      ListItem,
+      'name' | 'quantity' | 'description' | 'link' | 'checked' | 'order' | 'subItems'
+    >
   >,
 ): Promise<void> {
   const data = await readDatabase();
