@@ -108,6 +108,28 @@ export function reorderSubItems(
   return reordered;
 }
 
+export function subItemsEqual(a: SubItem[], b: SubItem[]): boolean {
+  if (a === b) {
+    return true;
+  }
+  if (a.length !== b.length) {
+    return false;
+  }
+  for (let index = 0; index < a.length; index += 1) {
+    const left = a[index];
+    const right = b[index];
+    if (
+      left.id !== right.id ||
+      left.name !== right.name ||
+      left.checked !== right.checked ||
+      left.order !== right.order
+    ) {
+      return false;
+    }
+  }
+  return true;
+}
+
 export function subItemProgress(subItems: SubItem[]): {
   done: number;
   total: number;

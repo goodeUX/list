@@ -41,7 +41,11 @@ import {
   toggleLocalItem,
   updateLocalItem,
 } from '@/lib/localStore';
-import { parseSubItems, toggleSubItem as toggleSubItemInList } from '@/lib/subItems';
+import {
+  parseSubItems,
+  subItemsEqual,
+  toggleSubItem as toggleSubItemInList,
+} from '@/lib/subItems';
 import type { ListItem, NewItemFields, SubItem } from '@/lib/types';
 
 function toDate(value: unknown): Date {
@@ -332,7 +336,8 @@ export function useListItems(
             item.name === nextItem.name &&
             item.quantity === nextItem.quantity &&
             item.description === nextItem.description &&
-            item.link === nextItem.link
+            item.link === nextItem.link &&
+            subItemsEqual(item.subItems, nextItem.subItems)
           );
         })
       ) {

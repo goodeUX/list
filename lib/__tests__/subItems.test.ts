@@ -6,6 +6,7 @@ import {
   reorderSubItems,
   sortSubItems,
   subItemProgress,
+  subItemsEqual,
   toggleSubItem,
 } from '@/lib/subItems';
 import type { SubItem } from '@/lib/types';
@@ -80,6 +81,30 @@ describe('sortSubItems', () => {
     const start = [make({ id: 'b', order: 1 }), make({ id: 'a', order: 0 })];
     expect(sortSubItems(start).map((s) => s.id)).toEqual(['a', 'b']);
     expect(start.map((s) => s.id)).toEqual(['b', 'a']);
+  });
+});
+
+describe('subItemsEqual', () => {
+  it('is true for the same reference and for equal contents', () => {
+    const list = [make({ id: 'a', name: 'A', checked: true, order: 0 })];
+    expect(subItemsEqual(list, list)).toBe(true);
+    expect(
+      subItemsEqual(list, [make({ id: 'a', name: 'A', checked: true, order: 0 })]),
+    ).toBe(true);
+  });
+
+  it('is false when length, order, name, or checked differ', () => {
+    const base = [make({ id: 'a', name: 'A', checked: false, order: 0 })];
+    expect(subItemsEqual(base, [])).toBe(false);
+    expect(
+      subItemsEqual(base, [make({ id: 'a', name: 'B', checked: false, order: 0 })]),
+    ).toBe(false);
+    expect(
+      subItemsEqual(base, [make({ id: 'a', name: 'A', checked: true, order: 0 })]),
+    ).toBe(false);
+    expect(
+      subItemsEqual(base, [make({ id: 'a', name: 'A', checked: false, order: 1 })]),
+    ).toBe(false);
   });
 });
 
