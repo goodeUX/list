@@ -84,8 +84,6 @@ type ListItemRowProps = {
   onLongPress?: () => void;
   isActive?: boolean;
   dragHandle?: ReactNode;
-  expanded?: boolean;
-  onToggleExpand?: () => void;
   onToggleSubItem?: (subId: string) => void;
 };
 
@@ -97,8 +95,6 @@ export default function ListItemRow({
   onLongPress,
   isActive = false,
   dragHandle,
-  expanded = false,
-  onToggleExpand,
   onToggleSubItem,
 }: ListItemRowProps) {
   const { colors, radii, spacing } = useTheme();
@@ -254,32 +250,16 @@ export default function ListItemRow({
       </View>
 
       {hasSubItems ? (
-        <Pressable
-          accessibilityLabel={expanded ? 'Collapse sub-items' : 'Expand sub-items'}
-          accessibilityRole="button"
-          hitSlop={8}
-          onPress={(event) => {
-            event.stopPropagation?.();
-            onToggleExpand?.();
-          }}
-          style={styles.subItemsToggle}
+        <View
+          style={[
+            styles.progressBadge,
+            { backgroundColor: colors.surfaceMuted, borderRadius: radii.checkbox },
+          ]}
         >
-          <View
-            style={[
-              styles.progressBadge,
-              { backgroundColor: colors.surfaceMuted, borderRadius: radii.checkbox },
-            ]}
-          >
-            <Text style={[styles.progressText, { color: colors.textSecondary }]}>
-              {done}/{total}
-            </Text>
-          </View>
-          <MaterialIcons
-            color={colors.textSecondary}
-            name={expanded ? 'expand-less' : 'expand-more'}
-            size={22}
-          />
-        </Pressable>
+          <Text style={[styles.progressText, { color: colors.textSecondary }]}>
+            {done}/{total}
+          </Text>
+        </View>
       ) : null}
 
       {dragHandle ? (
@@ -299,7 +279,7 @@ export default function ListItemRow({
         </View>
       ) : null}
     </Pressable>
-      {hasSubItems && expanded ? (
+      {hasSubItems ? (
         <View style={[styles.subItems, { paddingLeft: spacing.lg + 12 }]}>
           {sortSubItems(item.subItems).map((subItem) => (
             <SubItemRow
@@ -377,12 +357,6 @@ const styles = StyleSheet.create({
     fontFamily: 'NunitoSans_600SemiBold',
     fontSize: 12,
     lineHeight: 16,
-  },
-  subItemsToggle: {
-    alignItems: 'center',
-    flexDirection: 'row',
-    flexShrink: 0,
-    gap: 2,
   },
   progressBadge: {
     alignItems: 'center',

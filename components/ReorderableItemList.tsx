@@ -71,20 +71,6 @@ export default function ReorderableItemList({
   const { colors, radii, spacing } = useTheme();
   const [rows, setRows] = useState<Row[]>(() => buildRows(items, moveDoneToBottom));
 
-  const [expandedIds, setExpandedIds] = useState<Set<string>>(() => new Set());
-
-  const toggleExpanded = useCallback((itemId: string) => {
-    setExpandedIds((current) => {
-      const next = new Set(current);
-      if (next.has(itemId)) {
-        next.delete(itemId);
-      } else {
-        next.add(itemId);
-      }
-      return next;
-    });
-  }, []);
-
   useEffect(() => {
     setRows(buildRows(items, moveDoneToBottom));
   }, [items, moveDoneToBottom]);
@@ -204,8 +190,6 @@ export default function ReorderableItemList({
             }
             onPress={() => onPressItem(row.item)}
             onToggle={() => onToggleItem(row.item.id)}
-            expanded={expandedIds.has(row.item.id)}
-            onToggleExpand={() => toggleExpanded(row.item.id)}
             onToggleSubItem={(subId) => onToggleSubItem(row.item.id, subId)}
           />
           {showSeparator ? (
@@ -220,7 +204,6 @@ export default function ReorderableItemList({
       colors.textSecondary,
       disabled,
       doneCount,
-      expandedIds,
       isItemDraggable,
       onPressItem,
       onToggleItem,
@@ -229,7 +212,6 @@ export default function ReorderableItemList({
       rows,
       spacing.md,
       spacing.sm,
-      toggleExpanded,
     ],
   );
 

@@ -95,17 +95,14 @@ Sub-items render **inside the parent's cell**, never as separate rows, so
 `ReorderableItemList`'s `DraggableFlatList` data stays top-level and the reorder
 machinery, done-divider, and counts are unchanged.
 
-- `ListItemRow` gains, when `item.subItems.length > 0`:
-  - a **progress badge** (`done/total`) and a **chevron** as its own hit target
-    that expands/collapses the sub-items;
-  - below the parent, when expanded, an indented list of `SubItemRow`s.
+- `ListItemRow`, when `item.subItems.length > 0`, shows a **progress badge**
+  (`done/total`) and, below the parent, an **always-visible** indented list of
+  `SubItemRow`s. There is no collapse/expand — sub-items are shown by default.
 - New **`SubItemRow`** component: a smaller checkbox + name, indented under the
   parent's text column, independent toggle, strikethrough when checked (reuse the
   existing completed-text treatment). No drag and no delete in the list view.
-- Expansion state is **ephemeral** (collapsed on each visit), held as a
-  `Set<string>` of expanded item ids in `ReorderableItemList`.
 - Tapping the parent body still opens the Edit screen; the parent checkbox still
-  toggles the parent. Only the chevron/badge toggles expansion.
+  toggles the parent.
 
 ## Edit item screen — "Sub-items" section
 
