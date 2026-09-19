@@ -355,6 +355,14 @@ export default function ItemDetailScreen() {
           data={subItems}
           keyboardShouldPersistTaps="handled"
           keyExtractor={(subItem) => subItem.id}
+          onContentSizeChange={() => {
+            // Fires once the keyboard-height padding (or a newly added row) has
+            // grown the content, which is the right moment to reveal the footer
+            // input above the keyboard.
+            if (addInputFocusedRef.current) {
+              subItemsListRef.current?.scrollToEnd({ animated: true });
+            }
+          }}
           ListHeaderComponent={
             <View style={{ gap: spacing.md, marginBottom: spacing.sm }}>
               <View style={styles.field}>
