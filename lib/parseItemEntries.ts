@@ -75,12 +75,11 @@ function tryMergeInto(bucket: ParsedEntry[], incoming: ParsedEntry): boolean {
   return false;
 }
 
-export function parseItemEntries(input: string): ParsedEntry[] {
+export function mergeEntries(entries: ParsedEntry[]): ParsedEntry[] {
   const order: string[] = [];
   const groups = new Map<string, ParsedEntry[]>();
 
-  for (const part of input.split(',')) {
-    const parsed = extractLeadingQuantity(part);
+  for (const parsed of entries) {
     if (!parsed.name) {
       continue;
     }
@@ -103,4 +102,8 @@ export function parseItemEntries(input: string): ParsedEntry[] {
     result.push(...groups.get(key)!);
   }
   return result;
+}
+
+export function parseItemEntries(input: string): ParsedEntry[] {
+  return mergeEntries(input.split(',').map(extractLeadingQuantity));
 }

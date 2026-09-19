@@ -39,6 +39,7 @@ import { PlanProvider } from '@/contexts/PlanContext';
 import { ThemeProvider, useTheme } from '@/contexts/ThemeContext';
 import { useShouldSkipOpening } from '@/hooks/useShouldSkipOpening';
 import { useResumePendingInvite } from '@/hooks/useResumePendingInvite';
+import { useRecipeShareIntent } from '@/hooks/useRecipeShareIntent';
 import {
   OPENING_DISPLAY_MS,
   OPENING_ZOOM_MS,
@@ -194,6 +195,8 @@ export default function RootLayout() {
 function RootLayoutNav() {
   const { colorScheme, colors } = useTheme();
   useResumePendingInvite();
+  // Routes an inbound Android share (recipe URL) to the import screen.
+  useRecipeShareIntent();
 
   const navigationTheme = useMemo(() => {
     const base = colorScheme === 'dark' ? DarkTheme : DefaultTheme;
@@ -231,6 +234,7 @@ function RootLayoutNav() {
             }}
           >
             <Stack.Screen name="index" />
+            <Stack.Screen name="import/index" />
             <Stack.Screen name="settings" options={listScreenOptions} />
             <Stack.Screen name="list/[id]" options={listScreenOptions} />
             <Stack.Screen name="join/[listId]" />

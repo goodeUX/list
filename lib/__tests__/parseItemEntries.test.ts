@@ -1,4 +1,29 @@
 import { parseItemEntries } from '@/lib/parseItemEntries';
+import { mergeEntries } from '@/lib/parseItemEntries';
+
+describe('mergeEntries', () => {
+  it('combines compatible duplicates and drops nameless entries', () => {
+    expect(
+      mergeEntries([
+        { name: 'Flour', quantity: { kind: 'cup', base: 0.75 } },
+        { name: '', quantity: null },
+        { name: 'flour', quantity: { kind: 'cup', base: 0.25 } },
+      ]),
+    ).toEqual([{ name: 'Flour', quantity: { kind: 'cup', base: 1 } }]);
+  });
+
+  it('keeps incompatible same-name entries separate', () => {
+    expect(
+      mergeEntries([
+        { name: 'Oranges', quantity: { kind: 'count', base: 2 } },
+        { name: 'Oranges', quantity: { kind: 'mass', base: 500 } },
+      ]),
+    ).toEqual([
+      { name: 'Oranges', quantity: { kind: 'count', base: 2 } },
+      { name: 'Oranges', quantity: { kind: 'mass', base: 500 } },
+    ]);
+  });
+});
 
 describe('parseItemEntries', () => {
   it('splits a single entry into name and quantity', () => {
