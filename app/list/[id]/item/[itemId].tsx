@@ -57,10 +57,10 @@ export default function ItemDetailScreen() {
   const [quantity, setQuantity] = useState('');
   const [description, setDescription] = useState('');
   const [link, setLink] = useState('');
-  const [saving, setSaving] = useState(false);
   const [nameLimitError, setNameLimitError] = useState(false);
   const [linkError, setLinkError] = useState<string | null>(null);
   const [newSubItemName, setNewSubItemName] = useState('');
+  const [editingSubId, setEditingSubId] = useState<string | null>(null);
 
   const subItems = item ? sortSubItems(item.subItems) : [];
 
@@ -76,36 +76,60 @@ export default function ItemDetailScreen() {
     setLinkError(null);
   }, [item]);
 
-  const handleSave = async () => {
-    if (!item || !listId || saving) {
+  const reportSaveError = () => {
+    showAppAlert('Could not save', 'Please try again.');
+  };
+
+  // Every field auto-saves when it loses focus — there is no Save button.
+  const commitName = () => {
+    if (!item) {
       return;
     }
-
-    const trimmedName = normalizeItemName(name);
-    if (!trimmedName) {
-      showAppAlert('Name required', 'Please enter an item name.');
+    const trimmed = normalizeItemName(name);
+    if (!trimmed) {
+      // An item must keep a name; restore the last saved value.
+      setName(item.name);
+      setNameLimitError(false);
       return;
     }
+    if (trimmed !== item.name) {
+      void updateItem(item.id, { name: trimmed }).catch(reportSaveError);
+    }
+  };
 
-    const trimmedLink = link.trim();
-    if (trimmedLink && !isValidUrl(trimmedLink)) {
+  const commitQuantity = () => {
+    if (!item) {
+      return;
+    }
+    const value = quantity.trim() || null;
+    if (value !== (item.quantity ?? null)) {
+      void updateItem(item.id, { quantity: value }).catch(reportSaveError);
+    }
+  };
+
+  const commitDescription = () => {
+    if (!item) {
+      return;
+    }
+    const value = description.trim() || null;
+    if (value !== (item.description ?? null)) {
+      void updateItem(item.id, { description: value }).catch(reportSaveError);
+    }
+  };
+
+  const commitLink = () => {
+    if (!item) {
+      return;
+    }
+    const trimmed = link.trim();
+    if (trimmed && !isValidUrl(trimmed)) {
       setLinkError('Please enter a valid URL.');
       return;
     }
-
-    setSaving(true);
-    try {
-      await updateItem(item.id, {
-        name: trimmedName,
-        quantity: quantity.trim() || null,
-        description: description.trim() || null,
-        link: trimmedLink ? normalizeUrl(trimmedLink) : null,
-      });
-      goBack();
-    } catch {
-      showAppAlert('Could not save', 'Please try again.');
-    } finally {
-      setSaving(false);
+    setLinkError(null);
+    const value = trimmed ? normalizeUrl(trimmed) : null;
+    if (value !== (item.link ?? null)) {
+      void updateItem(item.id, { link: value }).catch(reportSaveError);
     }
   };
 
@@ -118,7 +142,7 @@ export default function ItemDetailScreen() {
   };
 
   const handleDelete = () => {
-    if (!item || saving) {
+    if (!item) {
       return;
     }
 
@@ -150,11 +174,11 @@ export default function ItemDetailScreen() {
     });
   };
 
-  const handleRenameSubItem = (subId: string, name: string) => {
+  const handleRenameSubItem = (subId: string, nextName: string) => {
     if (!item) {
       return;
     }
-    const next = renameSubItem(item.subItems, subId, name);
+    const next = renameSubItem(item.subItems, subId, nextName);
     if (next === item.subItems) {
       return;
     }
@@ -167,6 +191,7 @@ export default function ItemDetailScreen() {
     if (!item) {
       return;
     }
+    setEditingSubId((current) => (current === subId ? null : current));
     void setSubItems(item.id, removeSubItem(item.subItems, subId)).catch(() => {
       showAppAlert('Could not remove sub-item', 'Please try again.');
     });
@@ -289,8 +314,8 @@ export default function ItemDetailScreen() {
               <View style={styles.field}>
                 <Text style={[styles.label, { color: colors.textSecondary }]}>Name</Text>
                 <ThemedTextInput
-                  editable={!saving}
                   invalid={nameLimitError}
+                  onBlur={commitName}
                   onChangeText={(text) => {
                     const { limitReached, value } = getItemNameInputUpdate(text);
                     setNameLimitError(limitReached);
@@ -309,7 +334,7 @@ export default function ItemDetailScreen() {
               <View style={styles.field}>
                 <Text style={[styles.label, { color: colors.textSecondary }]}>Quantity</Text>
                 <ThemedTextInput
-                  editable={!saving}
+                  onBlur={commitQuantity}
                   onChangeText={setQuantity}
                   placeholder="e.g. 2 lbs, 1 pack"
                   value={quantity}
@@ -319,8 +344,8 @@ export default function ItemDetailScreen() {
               <View style={styles.field}>
                 <Text style={[styles.label, { color: colors.textSecondary }]}>Description</Text>
                 <ThemedTextInput
-                  editable={!saving}
                   multiline
+                  onBlur={commitDescription}
                   onChangeText={setDescription}
                   placeholder="Notes or details"
                   style={styles.textArea}
@@ -333,9 +358,9 @@ export default function ItemDetailScreen() {
                 <ThemedTextInput
                   autoCapitalize="none"
                   autoCorrect={false}
-                  editable={!saving}
                   invalid={Boolean(linkError)}
                   keyboardType="url"
+                  onBlur={commitLink}
                   onChangeText={(value) => {
                     setLink(value);
                     setLinkError(null);
@@ -358,63 +383,23 @@ export default function ItemDetailScreen() {
           }
           ListFooterComponent={
             <View style={{ gap: spacing.md, marginTop: spacing.sm }}>
-              <View style={styles.subItemAddRow}>
-                <ThemedTextInput
-                  editable={!saving}
-                  onChangeText={setNewSubItemName}
-                  onSubmitEditing={handleAddSubItem}
-                  placeholder="Add a sub-item"
-                  returnKeyType="done"
-                  style={styles.subItemInput}
-                  value={newSubItemName}
-                />
-                <Pressable
-                  accessibilityLabel="Add sub-item"
-                  accessibilityRole="button"
-                  disabled={saving || !newSubItemName.trim()}
-                  hitSlop={8}
-                  onPress={handleAddSubItem}
-                  style={[
-                    styles.subItemAddButton,
-                    {
-                      backgroundColor: colors.accent,
-                      borderRadius: radii.checkbox,
-                      opacity: newSubItemName.trim() ? 1 : 0.5,
-                    },
-                  ]}
-                >
-                  <MaterialIcons color={colors.surface} name="add" size={20} />
-                </Pressable>
-              </View>
+              <ThemedTextInput
+                blurOnSubmit={false}
+                onChangeText={setNewSubItemName}
+                onSubmitEditing={handleAddSubItem}
+                placeholder="Add a sub-item"
+                returnKeyType="done"
+                value={newSubItemName}
+              />
 
               <Pressable
-                disabled={saving}
-                onPress={handleSave}
-                style={({ pressed }) => [
-                  styles.saveButton,
-                  buttonLayoutStyle,
-                  {
-                    backgroundColor: colors.accent,
-                    opacity: pressed || saving ? 0.85 : 1,
-                  },
-                ]}
-              >
-                {saving ? (
-                  <ActivityIndicator color={colors.surface} />
-                ) : (
-                  <Text style={[buttonLabelStyle(16), { color: colors.surface }]}>Save</Text>
-                )}
-              </Pressable>
-
-              <Pressable
-                disabled={saving}
                 onPress={handleDelete}
                 style={({ pressed }) => [
                   styles.deleteButton,
                   buttonLayoutStyle,
                   {
                     borderColor: colors.border,
-                    opacity: pressed || saving ? 0.85 : 1,
+                    opacity: pressed ? 0.85 : 1,
                   },
                 ]}
               >
@@ -425,70 +410,100 @@ export default function ItemDetailScreen() {
             </View>
           }
           onDragEnd={({ data }) => handleReorderSubItems(data)}
-          renderItem={({ item: subItem, drag, isActive }: RenderItemParams<SubItem>) => (
-            <View
-              style={[
-                styles.subItemRow,
-                {
-                  backgroundColor: isActive ? colors.surfaceMuted : 'transparent',
-                  borderRadius: radii.item,
-                },
-              ]}
-            >
+          renderItem={({ item: subItem, drag, isActive }: RenderItemParams<SubItem>) => {
+            const editing = editingSubId === subItem.id;
+
+            return (
               <Pressable
-                accessibilityLabel={subItem.checked ? 'Mark incomplete' : 'Mark complete'}
-                accessibilityRole="checkbox"
-                accessibilityState={{ checked: subItem.checked }}
-                disabled={saving}
-                hitSlop={8}
-                onPress={() => handleToggleSubItem(subItem.id)}
+                delayLongPress={250}
+                onLongPress={
+                  editing
+                    ? undefined
+                    : () => {
+                        if (Platform.OS !== 'web') {
+                          playToggleHaptic();
+                        }
+                        drag();
+                      }
+                }
+                onPress={() => {
+                  if (!editing) {
+                    setEditingSubId(subItem.id);
+                  }
+                }}
                 style={[
-                  styles.subItemCheckbox,
+                  styles.subItemRow,
                   {
-                    backgroundColor: subItem.checked ? colors.success : 'transparent',
-                    borderColor: subItem.checked ? colors.success : colors.border,
-                    borderRadius: radii.checkbox,
+                    backgroundColor: isActive ? colors.surfaceMuted : 'transparent',
+                    borderRadius: radii.item,
                   },
                 ]}
               >
-                {subItem.checked ? (
-                  <MaterialIcons color={colors.surface} name="check" size={12} />
+                <Pressable
+                  accessibilityLabel={subItem.checked ? 'Mark incomplete' : 'Mark complete'}
+                  accessibilityRole="checkbox"
+                  accessibilityState={{ checked: subItem.checked }}
+                  hitSlop={8}
+                  onPress={() => handleToggleSubItem(subItem.id)}
+                  style={[
+                    styles.subItemCheckbox,
+                    {
+                      backgroundColor: subItem.checked ? colors.success : 'transparent',
+                      borderColor: subItem.checked ? colors.success : colors.border,
+                      borderRadius: radii.checkbox,
+                    },
+                  ]}
+                >
+                  {subItem.checked ? (
+                    <MaterialIcons color={colors.surface} name="check" size={12} />
+                  ) : null}
+                </Pressable>
+
+                {editing ? (
+                  <ThemedTextInput
+                    autoFocus
+                    defaultValue={subItem.name}
+                    onBlur={() =>
+                      setEditingSubId((current) =>
+                        current === subItem.id ? null : current,
+                      )
+                    }
+                    onEndEditing={(event) =>
+                      handleRenameSubItem(subItem.id, event.nativeEvent.text)
+                    }
+                    returnKeyType="done"
+                    style={styles.subItemInput}
+                    variant="plain"
+                  />
+                ) : (
+                  <Text
+                    numberOfLines={1}
+                    style={[
+                      styles.subItemLabel,
+                      {
+                        color: subItem.checked ? colors.textSecondary : colors.text,
+                        textDecorationLine: subItem.checked ? 'line-through' : 'none',
+                      },
+                    ]}
+                  >
+                    {subItem.name}
+                  </Text>
+                )}
+
+                {editing ? (
+                  <Pressable
+                    accessibilityLabel="Delete sub-item"
+                    accessibilityRole="button"
+                    hitSlop={8}
+                    onPress={() => handleRemoveSubItem(subItem.id)}
+                    style={styles.subItemAction}
+                  >
+                    <MaterialIcons color={colors.accent} name="delete-outline" size={20} />
+                  </Pressable>
                 ) : null}
               </Pressable>
-
-              <ThemedTextInput
-                defaultValue={subItem.name}
-                editable={!saving}
-                onEndEditing={(event) =>
-                  handleRenameSubItem(subItem.id, event.nativeEvent.text)
-                }
-                style={styles.subItemInput}
-                variant="plain"
-              />
-
-              <Pressable
-                accessibilityLabel="Remove sub-item"
-                accessibilityRole="button"
-                disabled={saving}
-                hitSlop={8}
-                onPress={() => handleRemoveSubItem(subItem.id)}
-                style={styles.subItemAction}
-              >
-                <MaterialIcons color={colors.textSecondary} name="close" size={18} />
-              </Pressable>
-
-              <Pressable
-                accessibilityLabel="Drag to reorder"
-                accessibilityRole="button"
-                delayLongPress={150}
-                disabled={saving}
-                onLongPress={drag}
-                style={styles.subItemAction}
-              >
-                <MaterialIcons color={colors.textSecondary} name="drag-indicator" size={20} />
-              </Pressable>
-            </View>
-          )}
+            );
+          }}
         />
       </KeyboardAvoidingView>
       </View>
@@ -567,8 +582,8 @@ const styles = StyleSheet.create({
   subItemRow: {
     alignItems: 'center',
     flexDirection: 'row',
-    gap: 8,
-    paddingVertical: 4,
+    gap: 10,
+    paddingVertical: 8,
   },
   subItemCheckbox: {
     alignItems: 'center',
@@ -576,6 +591,12 @@ const styles = StyleSheet.create({
     height: 20,
     justifyContent: 'center',
     width: 20,
+  },
+  subItemLabel: {
+    flex: 1,
+    fontFamily: 'NunitoSans_400Regular',
+    fontSize: 16,
+    lineHeight: 22,
   },
   subItemInput: {
     flex: 1,
@@ -588,21 +609,6 @@ const styles = StyleSheet.create({
     height: 32,
     justifyContent: 'center',
     width: 32,
-  },
-  subItemAddRow: {
-    alignItems: 'center',
-    flexDirection: 'row',
-    gap: 8,
-  },
-  subItemAddButton: {
-    alignItems: 'center',
-    height: 36,
-    justifyContent: 'center',
-    width: 36,
-  },
-  saveButton: {
-    minHeight: 52,
-    marginTop: 8,
   },
   deleteButton: {
     borderWidth: 1,
