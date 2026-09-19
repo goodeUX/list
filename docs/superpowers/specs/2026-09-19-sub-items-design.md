@@ -109,20 +109,30 @@ machinery, done-divider, and counts are unchanged.
 
 ## Edit item screen — "Sub-items" section
 
-A new section after **Link** and before **Save**:
+The screen has **no Save button** — every field auto-saves — and the sub-items
+list is the screen's single scroll container (a `DraggableFlatList` whose
+`ListHeaderComponent` holds the Name/Quantity/Description/Link fields and whose
+`ListFooterComponent` holds the add-sub-item input and the Delete-item button).
+This avoids nesting a `VirtualizedList` inside a `ScrollView`.
 
-- A `DraggableFlatList` (dependency already present) of the current sub-items,
-  each row: drag handle, inline-editable name (commits on blur via
-  `renameSubItem`), a checkbox (checking here is allowed — same data), and a
-  delete (✕) control.
-- An **"Add sub-item"** input + add button appended at the bottom.
+- **Main fields (Name/Quantity/Description/Link)** auto-save on blur via
+  `updateItem`. Name reverts to the last saved value if blurred empty; Link
+  validates on blur and only saves when valid.
+- **Each sub-item row** mirrors the list-view interaction:
+  - the **checkbox** toggles complete/incomplete;
+  - **tapping the label** opens it for inline editing (an autofocused input);
+    while editing, a **trash icon** is shown to delete that sub-item, and the
+    rename commits on blur via `renameSubItem`;
+  - **long-pressing anywhere on the line** starts a drag to reorder (no separate
+    drag handle).
+- **Adding**: the "Add a sub-item" input adds on the Enter/return key (no "+"
+  button) and keeps focus so several can be added in a row, matching the list's
+  add flow.
 - All sub-item mutations persist **immediately** through `setSubItems` /
-  `toggleSubItem`, always derived from the live `item.subItems` — never deferred
-  to the screen's Save — so they cannot clobber a concurrent check from the list
-  view. The **Save** button continues to cover only name/quantity/description/link.
-- Sub-items are driven directly from `item.subItems` (live), not copied into
-  local component state. Local state holds only the "add sub-item" input text and
-  any inline rename draft.
+  `toggleSubItem`, always derived from the live `item.subItems`, so they cannot
+  clobber a concurrent check from the list view. Sub-items are driven directly
+  from `item.subItems` (live); local component state holds only the add-input
+  text and which sub-item id is being edited.
 
 ## Explicitly out of scope
 
