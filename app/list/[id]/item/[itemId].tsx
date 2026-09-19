@@ -88,7 +88,13 @@ export default function ItemDetailScreen() {
   // Read the keyboard from Reanimated (window insets), which stays reliable
   // under Android edge-to-edge where the RN Keyboard events report height 0.
   // Bridge its height to state so the list can pad its bottom accordingly.
-  const keyboard = useAnimatedKeyboard();
+  // Without these, useAnimatedKeyboard takes over the Android window insets and
+  // makes the status/navigation bars opaque (white bars) and shifts the header.
+  // Keeping the bars translucent preserves the app's edge-to-edge layout.
+  const keyboard = useAnimatedKeyboard({
+    isNavigationBarTranslucentAndroid: true,
+    isStatusBarTranslucentAndroid: true,
+  });
   useAnimatedReaction(
     () => keyboard.state.value,
     (state, previous) => {
