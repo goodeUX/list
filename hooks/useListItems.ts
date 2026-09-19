@@ -57,7 +57,7 @@ function toDate(value: unknown): Date {
   return new Date();
 }
 
-function docToListItem(id: string, data: Record<string, unknown>): ListItem {
+export function docToListItem(id: string, data: Record<string, unknown>): ListItem {
   return {
     id,
     name: (data.name as string) ?? '',

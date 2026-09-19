@@ -2,7 +2,6 @@ import {
   collection,
   doc,
   getDocs,
-  limit,
   orderBy,
   query,
   serverTimestamp,
@@ -11,15 +10,21 @@ import {
 import type { User } from 'firebase/auth';
 
 import { db } from '@/lib/firebase';
-import { addItemToList } from '@/hooks/useListItems';
+import {
+  addItemToList,
+  docToListItem,
+  isOptimisticListItem,
+} from '@/hooks/useListItems';
+import { planImportWrites, type ImportWrite } from '@/lib/importPlan';
 import { normalizeItemName } from '@/lib/itemName';
-import { nextItemOrder } from '@/lib/listItemOrdering';
 import { usesCloudListData } from '@/lib/listIds';
 import { getLocalItems, updateLocalItem } from '@/lib/localStore';
-import { planItemMerges } from '@/lib/mergeItems';
 import { mergeEntries } from '@/lib/parseItemEntries';
 import type { ParsedEntry } from '@/lib/parseItemEntries';
 import type { ListItem } from '@/lib/types';
+
+export { planImportWrites };
+export type { ImportWrite };
 
 async function readListItems(listId: string, user: User | null): Promise<ListItem[]> {
   if (!usesCloudListData(user, listId)) {
@@ -28,22 +33,7 @@ async function readListItems(listId: string, user: User | null): Promise<ListIte
   const snapshot = await getDocs(
     query(collection(db, 'lists', listId, 'items'), orderBy('order')),
   );
-  return snapshot.docs.map((docSnap) => {
-    const data = docSnap.data();
-    return {
-      id: docSnap.id,
-      name: (data.name as string) ?? '',
-      quantity: (data.quantity as string | null) ?? null,
-      description: (data.description as string | null) ?? null,
-      link: (data.link as string | null) ?? null,
-      checked: (data.checked as boolean) ?? false,
-      order: (data.order as number) ?? 0,
-      subItems: [],
-      createdBy: (data.createdBy as string) ?? '',
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    };
-  });
+  return snapshot.docs.map((docSnap) => docToListItem(docSnap.id, docSnap.data()));
 }
 
 /**
@@ -56,42 +46,36 @@ export async function applyEntriesToList(
   user: User | null,
   rawEntries: ParsedEntry[],
 ): Promise<string[]> {
-  const entries = mergeEntries(rawEntries);
-  if (entries.length === 0) {
+  const merged = mergeEntries(rawEntries);
+  if (merged.length === 0) {
     return [];
   }
 
   const existing = (await readListItems(listId, user)).filter(
-    (item) => !item.id.startsWith('optimistic:'),
+    (item) => !isOptimisticListItem(item),
   );
-  const actions = planItemMerges(entries, existing);
+  const writes = planImportWrites(merged, existing);
 
-  const base = nextItemOrder(existing);
-  const addCount = actions.filter((action) => action.type === 'add').length;
-  let addIndex = 0;
-
-  for (const action of actions) {
-    if (action.type === 'update') {
+  for (const write of writes) {
+    if (write.type === 'update') {
       if (!usesCloudListData(user, listId)) {
-        await updateLocalItem(listId, action.id, { quantity: action.quantity });
+        await updateLocalItem(listId, write.id, { quantity: write.quantity });
       } else {
-        await updateDoc(doc(db, 'lists', listId, 'items', action.id), {
-          quantity: action.quantity,
+        await updateDoc(doc(db, 'lists', listId, 'items', write.id), {
+          quantity: write.quantity,
           updatedAt: serverTimestamp(),
         });
       }
       continue;
     }
 
-    const order = base - (addCount - 1 - addIndex);
-    addIndex += 1;
     await addItemToList(
       listId,
       user,
-      action.name,
-      { quantity: action.quantity },
+      write.name,
+      { quantity: write.quantity },
       existing,
-      order,
+      write.order,
     );
   }
 
@@ -99,5 +83,5 @@ export async function applyEntriesToList(
     await updateDoc(doc(db, 'lists', listId), { updatedAt: serverTimestamp() });
   }
 
-  return entries.map((entry) => normalizeItemName(entry.name));
+  return merged.map((entry) => normalizeItemName(entry.name));
 }
