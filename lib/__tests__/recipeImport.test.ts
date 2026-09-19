@@ -1,5 +1,6 @@
 import { extractSharedUrl } from '@/lib/recipeImport';
 import { parseRecipeFromHtml, parsePageTitleFromHtml } from '@/lib/recipeImport';
+import { ingredientToEntry } from '@/lib/recipeImport';
 
 const jsonLdRecipe = `
 <html><head>
@@ -92,5 +93,43 @@ describe('parsePageTitleFromHtml', () => {
 
   it('returns null when nothing is present', () => {
     expect(parsePageTitleFromHtml('<html><body>x</body></html>')).toBeNull();
+  });
+});
+
+describe('ingredientToEntry', () => {
+  it('splits quantity from name and trims prep notes after a comma', () => {
+    expect(ingredientToEntry('2 cups flour, sifted')).toEqual({
+      name: 'flour',
+      quantity: { kind: 'cup', base: 2 },
+    });
+    expect(ingredientToEntry('1 onion, finely chopped')).toEqual({
+      name: 'onion',
+      quantity: { kind: 'count', base: 1 },
+    });
+  });
+
+  it('handles ASCII fractions and cooking units', () => {
+    expect(ingredientToEntry('1/2 tsp salt')).toEqual({
+      name: 'salt',
+      quantity: { kind: 'tsp', base: 0.5 },
+    });
+  });
+
+  it('normalizes unicode vulgar fractions', () => {
+    expect(ingredientToEntry('½ tsp vanilla')).toEqual({
+      name: 'vanilla',
+      quantity: { kind: 'tsp', base: 0.5 },
+    });
+    expect(ingredientToEntry('1½ cups milk')).toEqual({
+      name: 'milk',
+      quantity: { kind: 'cup', base: 1.5 },
+    });
+  });
+
+  it('keeps a name with no quantity', () => {
+    expect(ingredientToEntry('salt and pepper to taste')).toEqual({
+      name: 'salt and pepper to taste',
+      quantity: null,
+    });
   });
 });

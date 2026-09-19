@@ -148,3 +148,45 @@ export function parsePageTitleFromHtml(html: string): string | null {
 
   return null;
 }
+
+const VULGAR_FRACTIONS: Record<string, string> = {
+  '½': '1/2',
+  '⅓': '1/3',
+  '⅔': '2/3',
+  '¼': '1/4',
+  '¾': '3/4',
+  '⅕': '1/5',
+  '⅖': '2/5',
+  '⅗': '3/5',
+  '⅘': '4/5',
+  '⅙': '1/6',
+  '⅚': '5/6',
+  '⅛': '1/8',
+  '⅜': '3/8',
+  '⅝': '5/8',
+  '⅞': '7/8',
+};
+
+function normalizeVulgarFractions(text: string): string {
+  let out = '';
+  for (const char of text) {
+    const replacement = VULGAR_FRACTIONS[char];
+    if (replacement) {
+      // "1½" -> "1 1/2" so it reads as a mixed number.
+      if (out.length > 0 && /\d/.test(out[out.length - 1])) {
+        out += ' ';
+      }
+      out += replacement;
+    } else {
+      out += char;
+    }
+  }
+  return out;
+}
+
+export function ingredientToEntry(line: string): ParsedEntry {
+  const normalized = normalizeVulgarFractions(cleanText(line));
+  const { name, quantity } = extractLeadingQuantity(normalized);
+  const trimmedName = name.split(',')[0].trim();
+  return { name: trimmedName, quantity };
+}
