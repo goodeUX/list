@@ -97,7 +97,7 @@ export default function ListItemRow({
   dragHandle,
   onToggleSubItem,
 }: ListItemRowProps) {
-  const { colors, radii, spacing } = useTheme();
+  const { colors, radii, radius, spacing, typography } = useTheme();
   const { done, total } = subItemProgress(item.subItems);
   const hasSubItems = total > 0;
   const checkScale = useSharedValue(1);
@@ -151,7 +151,7 @@ export default function ListItemRow({
         isActive
           ? {
               backgroundColor: colors.surface,
-              borderRadius: radii.item,
+              borderRadius: radius.md,
               paddingHorizontal: spacing.sm,
             }
           : null,
@@ -169,8 +169,8 @@ export default function ListItemRow({
           style={[
             styles.checkbox,
             {
-              backgroundColor: item.checked ? colors.success : 'transparent',
-              borderColor: item.checked ? colors.success : colors.border,
+              backgroundColor: item.checked ? colors.primary : 'transparent',
+              borderColor: item.checked ? colors.primary : colors.border,
               borderRadius: radii.checkbox,
             },
           ]}
@@ -189,9 +189,9 @@ export default function ListItemRow({
         <CompletedText
           animatedStyle={completedTextStyle}
           checked={item.checked}
-          color={colors.text}
+          color={item.checked ? colors.textMuted : colors.text}
           numberOfLines={1}
-          style={styles.name}
+          style={typography.body}
         >
           {formatItemNameForDisplay(item.name)}
         </CompletedText>
@@ -334,11 +334,6 @@ const styles = StyleSheet.create({
     position: 'absolute',
     right: 0,
     top: '50%',
-  },
-  name: {
-    fontFamily: 'NunitoSans_400Regular',
-    fontSize: 18,
-    lineHeight: 24,
   },
   meta: {
     flexDirection: 'row',
