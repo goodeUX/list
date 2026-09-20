@@ -30,7 +30,7 @@ const PERIOD_LABEL: Record<PremiumPackage['period'], string> = {
 };
 
 export default function PaywallScreen() {
-  const { colors, radii, spacing } = useTheme();
+  const { colors, radius, space, typography } = useTheme();
   const { plan } = usePlan();
   const params = useLocalSearchParams<{ redirect?: string; from?: string }>();
   const resolvedRedirect = parseAuthRedirect(params.redirect);
@@ -120,10 +120,12 @@ export default function PaywallScreen() {
 
   return (
     <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.bg }]}>
-      <View style={[styles.container, { padding: spacing.lg, gap: spacing.md }]}>
+      <View style={[styles.container, { padding: space[6], gap: space[4] }]}>
         <View style={styles.header}>
-          <Text style={[styles.title, { color: colors.text }]}>Go Premium</Text>
-          <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
+          <Text style={[typography.display, styles.title, { color: colors.text }]}>
+            Go Premium
+          </Text>
+          <Text style={[typography.bodyL, styles.subtitle, { color: colors.textSecondary }]}>
             Unlimited lists. Cancel anytime.
           </Text>
         </View>
@@ -131,11 +133,11 @@ export default function PaywallScreen() {
         {packages === null ? (
           <ActivityIndicator color={colors.primary} size="large" />
         ) : packages.length === 0 ? (
-          <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
+          <Text style={[typography.bodyL, styles.subtitle, { color: colors.textSecondary }]}>
             Plans aren't available right now. Please try again later.
           </Text>
         ) : (
-          <View style={{ gap: spacing.sm }}>
+          <View style={{ gap: space[2] }}>
             {packages.map((pkg) => {
               const selected = pkg.identifier === selectedId;
               return (
@@ -150,16 +152,16 @@ export default function PaywallScreen() {
                     {
                       backgroundColor: selected ? colors.primarySoft : colors.surface,
                       borderColor: selected ? colors.primary : colors.border,
-                      borderRadius: radii.item,
+                      borderRadius: radius.md,
                       opacity: pressed ? 0.85 : 1,
-                      padding: spacing.md,
+                      padding: space[4],
                     },
                   ]}
                 >
-                  <Text style={[styles.packageLabel, { color: colors.text }]}>
+                  <Text style={[typography.label, styles.packageLabel, { color: colors.text }]}>
                     {PERIOD_LABEL[pkg.period]}
                   </Text>
-                  <Text style={[styles.packagePrice, { color: colors.text }]}>
+                  <Text style={[typography.h1, styles.packagePrice, { color: colors.text }]}>
                     {pkg.priceString}
                     <Text style={{ color: colors.textSecondary }}>
                       {pkg.period === 'annual'
@@ -178,7 +180,7 @@ export default function PaywallScreen() {
           </View>
         )}
 
-        <View style={{ gap: spacing.sm }}>
+        <View style={{ gap: space[2] }}>
           {packages !== null && packages.length > 0 ? (
             <Button
               disabled={busy !== null || selectedId === null}
@@ -203,14 +205,14 @@ export default function PaywallScreen() {
             {busy === 'restore' ? (
               <ActivityIndicator color={colors.textSecondary} size="small" />
             ) : (
-              <Text style={[styles.restoreText, { color: colors.primary }]}>
+              <Text style={[typography.label, styles.restoreText, { color: colors.primary }]}>
                 Restore purchases
               </Text>
             )}
           </Pressable>
         </View>
 
-        <Text style={[styles.legal, { color: colors.textSecondary }]}>
+        <Text style={[typography.caption, styles.legal, { color: colors.textSecondary }]}>
           Subscriptions renew automatically until cancelled in your app store
           settings. Prices are shown in your local currency.
         </Text>
@@ -230,16 +232,10 @@ const styles = StyleSheet.create({
   },
   header: { alignItems: 'center' },
   title: {
-    fontFamily: 'Fraunces_600SemiBold',
-    fontSize: 32,
-    lineHeight: 40,
     marginBottom: 8,
     textAlign: 'center',
   },
   subtitle: {
-    fontFamily: 'NunitoSans_400Regular',
-    fontSize: 16,
-    lineHeight: 24,
     textAlign: 'center',
   },
   packageRow: {
@@ -249,14 +245,9 @@ const styles = StyleSheet.create({
     gap: 10,
     justifyContent: 'space-between',
   },
-  packageLabel: {
-    fontFamily: 'NunitoSans_600SemiBold',
-    fontSize: 16,
-  },
+  packageLabel: {},
   packagePrice: {
     flex: 1,
-    fontFamily: 'NunitoSans_600SemiBold',
-    fontSize: 16,
     textAlign: 'right',
   },
   restoreButton: {
@@ -264,14 +255,8 @@ const styles = StyleSheet.create({
     minHeight: 32,
     justifyContent: 'center',
   },
-  restoreText: {
-    fontFamily: 'NunitoSans_600SemiBold',
-    fontSize: 15,
-  },
+  restoreText: {},
   legal: {
-    fontFamily: 'NunitoSans_400Regular',
-    fontSize: 12,
-    lineHeight: 17,
     textAlign: 'center',
   },
 });
