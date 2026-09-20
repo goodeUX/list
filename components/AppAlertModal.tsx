@@ -52,7 +52,7 @@ export default function AppAlertModal({
   onPressButton,
   onDismiss,
 }: AppAlertModalProps) {
-  const { colors, radii, spacing } = useTheme();
+  const { colors, radius, space, typography, elevation } = useTheme();
   const { height: windowHeight } = useWindowDimensions();
   const backdropOpacity = useSharedValue(0);
   const dialogOpacity = useSharedValue(0);
@@ -109,30 +109,28 @@ export default function AppAlertModal({
       <AnimatedPressable
         accessibilityLabel="Dismiss"
         onPress={onDismiss}
-        style={[styles.backdrop, backdropStyle]}
+        style={[styles.backdrop, { backgroundColor: colors.scrim }, backdropStyle]}
       />
       <Animated.View
         style={[
           styles.dialog,
           dialogStyle,
+          elevation.e3,
           {
             backgroundColor: colors.surface,
             borderColor: colors.border,
-            borderRadius: radii.card,
-            gap: spacing.lg,
-            padding: spacing.lg,
-            ...(Platform.OS === 'web'
-              ? { boxShadow: '0 12px 40px rgba(44, 36, 23, 0.2)' }
-              : null),
+            borderRadius: radius.xl,
+            gap: space[6],
+            padding: space[6],
           },
         ]}
       >
         <View style={styles.header}>
-          <Text style={[styles.title, { color: colors.text }]}>
+          <Text style={[typography.h2, { color: colors.text }]}>
             {request?.title}
           </Text>
           {request?.message ? (
-            <Text style={[styles.message, { color: colors.textSecondary }]}>
+            <Text style={[typography.body, { color: colors.textSecondary }]}>
               {request.message}
             </Text>
           ) : null}
@@ -163,7 +161,6 @@ const styles = StyleSheet.create({
   },
   backdrop: {
     ...absoluteFill,
-    backgroundColor: 'rgba(44, 36, 23, 0.35)',
   },
   dialog: {
     borderWidth: 1,
@@ -173,16 +170,6 @@ const styles = StyleSheet.create({
   },
   header: {
     gap: 8,
-  },
-  title: {
-    fontFamily: 'Fraunces_600SemiBold',
-    fontSize: 22,
-    lineHeight: 30,
-  },
-  message: {
-    fontFamily: 'NunitoSans_400Regular',
-    fontSize: 16,
-    lineHeight: 24,
   },
   buttonGroup: {
     gap: 8,
