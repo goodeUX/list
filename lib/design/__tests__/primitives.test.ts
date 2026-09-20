@@ -24,7 +24,7 @@ describe('primitives', () => {
 
   it('exposes the spacing, radius and font-family scales', () => {
     expect(space[4]).toBe(16);
-    expect(radius.md).toBe(14);
+    expect(radius.md).toBe(12);
     expect(radius.full).toBe(999);
     expect(fontFamily.displayBold).toBe('Fredoka_700Bold');
     expect(fontFamily.bodyRegular).toBe('NunitoSans_400Regular');

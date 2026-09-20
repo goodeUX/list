@@ -114,10 +114,10 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   largeButton: {
-    minHeight: 54,
+    minHeight: 48,
   },
   ghostButton: {
-    minHeight: 44,
+    minHeight: 48,
   },
   labelOnly: {
     width: '100%',

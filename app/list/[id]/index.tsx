@@ -1047,7 +1047,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: 8,
     paddingLeft: 15,
-    paddingVertical: 6,
+    paddingVertical: 4,
   },
   // Lifts the suggestion panel above the item list that follows it, and no
   // higher: the menu backdrop (5) and the header's options menu (10) must

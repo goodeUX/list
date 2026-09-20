@@ -86,7 +86,7 @@ const styles = StyleSheet.create({
   },
   button: {
     borderWidth: 1,
-    minHeight: 52,
+    minHeight: 48,
     width: '100%',
   },
   row: {

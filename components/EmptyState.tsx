@@ -89,6 +89,6 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   createListButton: {
-    minHeight: 54,
+    minHeight: 48,
   },
 });
