@@ -8,6 +8,7 @@ import {
   View,
 } from 'react-native';
 
+import Button from '@/components/Button';
 import SocialAuthButtons from '@/components/auth/SocialAuthButtons';
 import ThemedTextInput from '@/components/ThemedTextInput';
 import {
@@ -21,7 +22,6 @@ import {
   getLastAccountHint,
   type AuthJourneyMode,
 } from '@/lib/authLocalState';
-import { buttonLabelStyle, buttonLayoutStyle } from '@/lib/buttonStyles';
 import {
   isAppleSignInAvailable,
   isGoogleSignInAvailable,
@@ -52,7 +52,7 @@ export default function AuthJourney({
   onSkip,
   labelBackgroundColor,
 }: AuthJourneyProps) {
-  const { colors, radii, spacing } = useTheme();
+  const { colors, space, typography } = useTheme();
   const {
     signIn,
     signUp,
@@ -226,8 +226,8 @@ export default function AuthJourney({
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <Text style={[styles.title, { color: colors.text }]}>{title}</Text>
-        <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
+        <Text style={[typography.h1, styles.title, { color: colors.text }]}>{title}</Text>
+        <Text style={[typography.body, styles.subtitle, { color: colors.textSecondary }]}>
           {subtitle}
         </Text>
       </View>
@@ -255,38 +255,26 @@ export default function AuthJourney({
             <Text
               accessibilityLiveRegion="polite"
               accessibilityRole="alert"
-              style={[styles.error, { color: colors.primary }]}
+              style={[typography.bodyS, styles.error, { color: colors.primary }]}
             >
               {error}
             </Text>
           ) : null}
 
-          <Pressable
+          <Button
             disabled={disabled}
+            label="Continue"
+            loading={busy === 'continue'}
             onPress={() => void handleContinue()}
-            style={({ pressed }) => [
-              styles.primaryButton,
-              buttonLayoutStyle,
-              {
-                backgroundColor: colors.primary,
-                opacity: pressed || disabled ? 0.85 : 1,
-              },
-            ]}
-          >
-            {busy === 'continue' ? (
-              <ActivityIndicator color={colors.surface} />
-            ) : (
-              <Text style={[buttonLabelStyle(16), { color: colors.surface }]}>
-                Continue
-              </Text>
-            )}
-          </Pressable>
+            style={styles.primaryButton}
+            variant="primary"
+          />
 
           {showGoogle || showApple ? (
             <>
               <View style={styles.dividerRow}>
                 <View style={[styles.dividerLine, { backgroundColor: colors.border }]} />
-                <Text style={[styles.dividerText, { color: colors.textSecondary }]}>
+                <Text style={[typography.bodyS, styles.dividerText, { color: colors.textSecondary }]}>
                   or
                 </Text>
                 <View style={[styles.dividerLine, { backgroundColor: colors.border }]} />
@@ -314,7 +302,7 @@ export default function AuthJourney({
             style={styles.backRow}
           >
             <MaterialIcons color={colors.textSecondary} name="chevron-left" size={20} />
-            <Text style={[styles.backRowText, { color: colors.textSecondary }]}>
+            <Text style={[typography.label, styles.backRowText, { color: colors.textSecondary }]}>
               {email.trim()}
             </Text>
           </Pressable>
@@ -353,7 +341,7 @@ export default function AuthJourney({
             <Text
               accessibilityLiveRegion="polite"
               accessibilityRole="alert"
-              style={[styles.error, { color: colors.primary }]}
+              style={[typography.bodyS, styles.error, { color: colors.primary }]}
             >
               {error}
             </Text>
@@ -361,32 +349,20 @@ export default function AuthJourney({
           {resetSent ? (
             <Text
               accessibilityLiveRegion="polite"
-              style={[styles.resetNote, { color: colors.textSecondary }]}
+              style={[typography.bodyS, styles.resetNote, { color: colors.textSecondary }]}
             >
               If an account exists for {email.trim()}, a reset link is on its way.
             </Text>
           ) : null}
 
-          <Pressable
+          <Button
             disabled={disabled}
+            label={isSignUp ? 'Create account' : 'Log in'}
+            loading={busy === 'submit'}
             onPress={() => void handleSubmitDetails()}
-            style={({ pressed }) => [
-              styles.primaryButton,
-              buttonLayoutStyle,
-              {
-                backgroundColor: colors.primary,
-                opacity: pressed || disabled ? 0.85 : 1,
-              },
-            ]}
-          >
-            {busy === 'submit' ? (
-              <ActivityIndicator color={colors.surface} />
-            ) : (
-              <Text style={[buttonLabelStyle(16), { color: colors.surface }]}>
-                {isSignUp ? 'Create account' : 'Log in'}
-              </Text>
-            )}
-          </Pressable>
+            style={styles.primaryButton}
+            variant="primary"
+          />
 
           {!isSignUp ? (
             <Pressable
@@ -398,7 +374,7 @@ export default function AuthJourney({
               {busy === 'reset' ? (
                 <ActivityIndicator color={colors.textSecondary} size="small" />
               ) : (
-                <Text style={[styles.link, { color: colors.primary }]}>
+                <Text style={[typography.label, styles.link, { color: colors.primary }]}>
                   Forgot password?
                 </Text>
               )}
@@ -407,31 +383,25 @@ export default function AuthJourney({
         </View>
       )}
 
-      <View style={[styles.footer, { marginTop: spacing.lg }]}>
-        <Text style={[styles.footerText, { color: colors.textSecondary }]}>
+      <View style={[styles.footer, { marginTop: space[6] }]}>
+        <Text style={[typography.body, styles.footerText, { color: colors.textSecondary }]}>
           {isSignUp ? 'Already have an account? ' : `New to ${APP_NAME}? `}
         </Text>
         <Pressable accessibilityRole="link" disabled={disabled} onPress={handleSwitchMode}>
-          <Text style={[styles.link, { color: colors.primary }]}>
+          <Text style={[typography.label, styles.link, { color: colors.primary }]}>
             {isSignUp ? 'Log in' : 'Create an account'}
           </Text>
         </Pressable>
       </View>
 
       {onSkip ? (
-        <Pressable
-          accessibilityRole="button"
+        <Button
           disabled={disabled}
+          label="Skip for now"
           onPress={onSkip}
-          style={({ pressed }) => [
-            styles.skipButton,
-            { opacity: pressed || disabled ? 0.7 : 1 },
-          ]}
-        >
-          <Text style={[buttonLabelStyle(15), { color: colors.textSecondary }]}>
-            Skip for now
-          </Text>
-        </Pressable>
+          style={styles.skipButton}
+          variant="ghost"
+        />
       ) : null}
     </View>
   );
@@ -447,16 +417,10 @@ const styles = StyleSheet.create({
     marginBottom: 24,
   },
   title: {
-    fontFamily: 'Fraunces_600SemiBold',
-    fontSize: 32,
-    lineHeight: 40,
     marginBottom: 8,
     textAlign: 'center',
   },
   subtitle: {
-    fontFamily: 'NunitoSans_400Regular',
-    fontSize: 16,
-    lineHeight: 24,
     textAlign: 'center',
   },
   form: {
@@ -468,23 +432,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: 2,
   },
-  backRowText: {
-    fontFamily: 'NunitoSans_600SemiBold',
-    fontSize: 14,
-  },
-  error: {
-    fontFamily: 'NunitoSans_400Regular',
-    fontSize: 14,
-    lineHeight: 20,
-  },
-  resetNote: {
-    fontFamily: 'NunitoSans_400Regular',
-    fontSize: 14,
-    lineHeight: 20,
-  },
-  primaryButton: {
-    minHeight: 52,
-  },
+  backRowText: {},
+  error: {},
+  resetNote: {},
+  primaryButton: {},
   dividerRow: {
     alignItems: 'center',
     flexDirection: 'row',
@@ -494,10 +445,7 @@ const styles = StyleSheet.create({
     flex: 1,
     height: StyleSheet.hairlineWidth,
   },
-  dividerText: {
-    fontFamily: 'NunitoSans_400Regular',
-    fontSize: 13,
-  },
+  dividerText: {},
   forgotButton: {
     alignItems: 'center',
     minHeight: 24,
@@ -507,18 +455,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'center',
   },
-  footerText: {
-    fontFamily: 'NunitoSans_400Regular',
-    fontSize: 15,
-  },
-  link: {
-    fontFamily: 'NunitoSans_600SemiBold',
-    fontSize: 15,
-  },
+  footerText: {},
+  link: {},
   skipButton: {
-    alignItems: 'center',
     marginTop: 12,
-    minHeight: 44,
-    justifyContent: 'center',
   },
 });
