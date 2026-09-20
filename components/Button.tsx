@@ -50,12 +50,12 @@ export default function Button({
   const isLarge = isPrimary || isSurface || isDestructive;
   const isDisabled = disabled || loading;
   const labelColor = isFilled
-    ? colors.surface
+    ? colors.onPrimary
     : isGhost
       ? colors.textSecondary
       : colors.text;
   const iconColor = isFilled
-    ? colors.surface
+    ? colors.onPrimary
     : isSurface
       ? colors.primary
       : isGhost

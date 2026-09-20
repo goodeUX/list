@@ -66,8 +66,8 @@ export default function EmptyState({
           },
         ]}
       >
-        <MaterialIcons color={colors.surface} name="add" size={24} />
-        <Text style={[buttonLabelStyle(16), { color: colors.surface }]}>
+        <MaterialIcons color={colors.onPrimary} name="add" size={24} />
+        <Text style={[buttonLabelStyle(16), { color: colors.onPrimary }]}>
           Create a new list
         </Text>
       </Pressable>
