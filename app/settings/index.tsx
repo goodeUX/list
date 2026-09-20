@@ -51,9 +51,9 @@ function getStoreSubscriptionsUrl(): string {
   return PLAY_SUBSCRIPTIONS_URL;
 }
 const introLightImage =
-  require('../../assets/images/intro-light.png') as ImageSourcePropType;
+  require('../../assets/images/intro-light.webp') as ImageSourcePropType;
 const introDarkImage =
-  require('../../assets/images/intro-dark.png') as ImageSourcePropType;
+  require('../../assets/images/intro-dark.webp') as ImageSourcePropType;
 
 const THEME_OPTIONS: {
   value: ThemePreference;

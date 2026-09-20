@@ -13,9 +13,9 @@ import { buttonLabelStyle, buttonLayoutStyle } from '@/lib/buttonStyles';
 import { space } from '@/lib/design';
 
 const lightEmptyStateImage =
-  require('../assets/images/empty-state-light.png') as ImageSourcePropType;
+  require('../assets/images/empty-state-light.webp') as ImageSourcePropType;
 const darkEmptyStateImage =
-  require('../assets/images/empty-state-dark.png') as ImageSourcePropType;
+  require('../assets/images/empty-state-dark.webp') as ImageSourcePropType;
 
 const EMPTY_STATE_OFFSET_Y = -100;
 

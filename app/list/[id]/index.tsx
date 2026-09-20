@@ -54,9 +54,9 @@ const LIST_ITEMS_FADE_MS = 500;
 const LIST_ITEMS_FADE_EASING = Easing.bezier(0, 0, 0.58, 1);
 
 const lightListEmptyStateImage =
-  require('../../../assets/images/bowl-red.png') as ImageSourcePropType;
+  require('../../../assets/images/bowl-red.webp') as ImageSourcePropType;
 const darkListEmptyStateImage =
-  require('../../../assets/images/bowl-blue.png') as ImageSourcePropType;
+  require('../../../assets/images/bowl-blue.webp') as ImageSourcePropType;
 const ADD_INPUT_ROW_NATIVE_ID = 'list-add-input-row';
 
 export default function ListDetailScreen() {
