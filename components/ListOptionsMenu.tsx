@@ -18,9 +18,7 @@ import Animated, {
 import { useTheme } from '@/contexts/ThemeContext';
 import type { ThemeColors } from '@/lib/theme';
 
-const DESTRUCTIVE_COLOR = '#D64545';
 const MENU_ITEM_ICON_SIZE = 22;
-const MENU_ITEM_REM = 16;
 const MENU_ITEM_HORIZONTAL_PADDING = 14;
 const MENU_ITEM_GAP = 10;
 const MENU_MIN_WIDTH = 320;
@@ -35,9 +33,6 @@ const TOGGLE_THUMB_TRAVEL = TOGGLE_WIDTH - TOGGLE_THUMB_SIZE - 4;
 
 const menuItemTextStyle = {
   flexShrink: 0,
-  fontFamily: 'NunitoSans_600SemiBold',
-  fontSize: MENU_ITEM_REM,
-  lineHeight: 22,
   ...(Platform.OS === 'web' ? ({ whiteSpace: 'nowrap' } as object) : null),
 };
 
@@ -90,7 +85,7 @@ export default function ListOptionsMenu({
   onDeleteList,
   onOpen,
 }: ListOptionsMenuProps) {
-  const { colors, radii, spacing } = useTheme();
+  const { colors, radius, space, typography, elevation } = useTheme();
   const iconRotation = useSharedValue(0);
 
   const closeMenu = useCallback(() => {
@@ -171,11 +166,12 @@ export default function ListOptionsMenu({
             <View
               style={[
                 styles.menu,
+                elevation.e2,
                 {
                   backgroundColor: colors.surface,
                   borderColor: colors.border,
-                  borderRadius: radii.card,
-                  paddingVertical: spacing.xs,
+                  borderRadius: radius.lg,
+                  paddingVertical: space[1],
                 },
               ]}
             >
@@ -190,7 +186,14 @@ export default function ListOptionsMenu({
                 ]}
               >
                 <MaterialIcons color={colors.text} name="move-down" size={MENU_ITEM_ICON_SIZE} />
-                <Text style={[menuItemTextStyle, styles.menuItemLabel, { color: colors.text }]}>
+                <Text
+                  style={[
+                    typography.label,
+                    menuItemTextStyle,
+                    styles.menuItemLabel,
+                    { color: colors.text },
+                  ]}
+                >
                   Move 'done' to bottom
                 </Text>
                 <MenuToggle colors={colors} value={moveDoneToBottom} />
@@ -204,7 +207,9 @@ export default function ListOptionsMenu({
                 style={({ pressed }) => [styles.menuItem, { opacity: pressed ? 0.7 : 1 }]}
               >
                 <MaterialIcons color={colors.text} name="person-add" size={MENU_ITEM_ICON_SIZE} />
-                <Text style={[menuItemTextStyle, { color: colors.text }]}>Invite someone</Text>
+                <Text style={[typography.label, menuItemTextStyle, { color: colors.text }]}>
+                  Invite someone
+                </Text>
               </Pressable>
 
               <Pressable
@@ -219,7 +224,9 @@ export default function ListOptionsMenu({
                   name="playlist-remove"
                   size={MENU_ITEM_ICON_SIZE}
                 />
-                <Text style={[menuItemTextStyle, { color: colors.text }]}>Clear list</Text>
+                <Text style={[typography.label, menuItemTextStyle, { color: colors.text }]}>
+                  Clear list
+                </Text>
               </Pressable>
 
               {showLeaveList ? (
@@ -231,11 +238,11 @@ export default function ListOptionsMenu({
                   style={({ pressed }) => [styles.menuItem, { opacity: pressed ? 0.7 : 1 }]}
                 >
                   <MaterialIcons
-                    color={DESTRUCTIVE_COLOR}
+                    color={colors.danger}
                     name="logout"
                     size={MENU_ITEM_ICON_SIZE}
                   />
-                  <Text style={[menuItemTextStyle, { color: DESTRUCTIVE_COLOR }]}>
+                  <Text style={[typography.label, menuItemTextStyle, { color: colors.danger }]}>
                     Leave list
                   </Text>
                 </Pressable>
@@ -250,11 +257,11 @@ export default function ListOptionsMenu({
                   style={({ pressed }) => [styles.menuItem, { opacity: pressed ? 0.7 : 1 }]}
                 >
                   <MaterialIcons
-                    color={DESTRUCTIVE_COLOR}
+                    color={colors.danger}
                     name="delete-outline"
                     size={MENU_ITEM_ICON_SIZE}
                   />
-                  <Text style={[menuItemTextStyle, { color: DESTRUCTIVE_COLOR }]}>
+                  <Text style={[typography.label, menuItemTextStyle, { color: colors.danger }]}>
                     Delete list
                   </Text>
                 </Pressable>
