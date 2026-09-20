@@ -140,7 +140,7 @@ export default function ReorderableItemList({
             <View
               style={[
                 styles.sectionCountBadge,
-                { backgroundColor: palette.teal[200], borderRadius: radii.checkbox },
+                { backgroundColor: palette.teal[100], borderRadius: radii.checkbox },
               ]}
             >
               <Text style={[typography.caption, styles.sectionCount, { color: palette.sand[900] }]}>
@@ -237,7 +237,7 @@ export default function ReorderableItemList({
         <View
           style={[
             styles.sectionCountBadge,
-            { backgroundColor: palette.teal[200], borderRadius: radii.checkbox },
+            { backgroundColor: palette.teal[100], borderRadius: radii.checkbox },
           ]}
         >
           <Text style={[typography.caption, styles.sectionCount, { color: palette.sand[900] }]}>

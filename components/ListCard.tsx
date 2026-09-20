@@ -82,7 +82,7 @@ export default function ListCard({
             style={[
               styles.itemCountBadge,
               {
-                backgroundColor: palette.teal[200],
+                backgroundColor: palette.teal[100],
                 borderRadius: 8,
               },
             ]}
