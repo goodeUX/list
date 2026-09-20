@@ -602,12 +602,6 @@ const styles = StyleSheet.create({
       elevation: 6,
     },
   }),
-  handleButton: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    minHeight: 32,
-    minWidth: 32,
-  },
   fabLayer: {
     alignItems: 'flex-end',
     bottom: 0,
