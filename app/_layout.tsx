@@ -1,9 +1,4 @@
 import {
-  Fraunces_400Regular,
-  Fraunces_600SemiBold,
-  Fraunces_700Bold,
-} from '@expo-google-fonts/fraunces';
-import {
   Fredoka_500Medium,
   Fredoka_600SemiBold,
   Fredoka_700Bold,
@@ -65,9 +60,6 @@ const OPENING_ZOOM_FROM = 0.9;
 export default function RootLayout() {
   const skipOpening = useShouldSkipOpening();
   const [loaded, error] = useFonts({
-    Fraunces_400Regular,
-    Fraunces_600SemiBold,
-    Fraunces_700Bold,
     Fredoka_500Medium,
     Fredoka_600SemiBold,
     Fredoka_700Bold,
