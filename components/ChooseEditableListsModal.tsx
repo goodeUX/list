@@ -37,7 +37,7 @@ export default function ChooseEditableListsModal({
   onConfirm,
   onDismiss,
 }: ChooseEditableListsModalProps) {
-  const { colors, radii, spacing } = useTheme();
+  const { colors, radius, space, typography, elevation } = useTheme();
   const { height: windowHeight } = useWindowDimensions();
   const [selected, setSelected] = useState<string[]>(initialSelection);
   const [saving, setSaving] = useState(false);
@@ -88,30 +88,35 @@ export default function ChooseEditableListsModal({
           : null,
       ]}
     >
-      <Pressable accessibilityLabel="Dismiss" onPress={onDismiss} style={styles.backdrop} />
+      <Pressable
+        accessibilityLabel="Dismiss"
+        onPress={onDismiss}
+        style={[styles.backdrop, { backgroundColor: colors.scrim }]}
+      />
       <View
         style={[
           styles.dialog,
+          elevation.e3,
           {
             backgroundColor: colors.surface,
             borderColor: colors.border,
-            borderRadius: radii.card,
-            gap: spacing.md,
-            padding: spacing.lg,
+            borderRadius: radius.xl,
+            gap: space[4],
+            padding: space[6],
           },
         ]}
       >
         <View style={styles.header}>
-          <Text style={[styles.title, { color: colors.text }]}>
+          <Text style={[typography.h2, { color: colors.text }]}>
             Pick {FREE_LIST_LIMIT} lists to keep editable
           </Text>
-          <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
+          <Text style={[typography.body, { color: colors.textSecondary }]}>
             You're on the Free plan with more than {FREE_LIST_LIMIT} lists. The
             others stay safe but read-only until you upgrade or free a slot.
           </Text>
         </View>
 
-        <View style={{ gap: spacing.sm }}>
+        <View style={{ gap: space[2] }}>
           {lists.map((list) => {
             const isSelected = selected.includes(list.id);
             return (
@@ -126,14 +131,14 @@ export default function ChooseEditableListsModal({
                   {
                     backgroundColor: isSelected ? colors.primarySoft : colors.surfaceMuted,
                     borderColor: isSelected ? colors.primary : colors.border,
-                    borderRadius: radii.item,
+                    borderRadius: radius.md,
                     opacity: pressed ? 0.85 : 1,
-                    padding: spacing.md,
+                    padding: space[4],
                   },
                 ]}
               >
                 <Text style={styles.listEmoji}>{list.emoji}</Text>
-                <Text numberOfLines={1} style={[styles.listName, { color: colors.text }]}>
+                <Text numberOfLines={1} style={[typography.label, { color: colors.text }, styles.listName]}>
                   {list.name}
                 </Text>
                 <MaterialIcons
@@ -171,7 +176,6 @@ const styles = StyleSheet.create({
   },
   backdrop: {
     ...absoluteFill,
-    backgroundColor: 'rgba(44, 36, 23, 0.35)',
   },
   dialog: {
     borderWidth: 1,
@@ -180,16 +184,6 @@ const styles = StyleSheet.create({
     zIndex: 1,
   },
   header: { gap: 8 },
-  title: {
-    fontFamily: 'Fraunces_600SemiBold',
-    fontSize: 24,
-    lineHeight: 32,
-  },
-  subtitle: {
-    fontFamily: 'NunitoSans_400Regular',
-    fontSize: 15,
-    lineHeight: 22,
-  },
   listRow: {
     alignItems: 'center',
     borderWidth: 1,
@@ -199,8 +193,6 @@ const styles = StyleSheet.create({
   listEmoji: { fontSize: 22, lineHeight: 26 },
   listName: {
     flex: 1,
-    fontFamily: 'NunitoSans_600SemiBold',
-    fontSize: 16,
   },
   buttonGroup: { gap: 8 },
 });
