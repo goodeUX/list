@@ -53,7 +53,7 @@ export default function BenefitsModal({
   onPrimary,
   onDismiss,
 }: BenefitsModalProps) {
-  const { colors, radii, spacing } = useTheme();
+  const { colors, radius, space, typography, elevation } = useTheme();
   const { height: windowHeight } = useWindowDimensions();
   const backdropOpacity = useSharedValue(0);
   const dialogOpacity = useSharedValue(0);
@@ -110,27 +110,25 @@ export default function BenefitsModal({
       <AnimatedPressable
         accessibilityLabel="Dismiss"
         onPress={onDismiss}
-        style={[styles.backdrop, backdropStyle]}
+        style={[styles.backdrop, { backgroundColor: colors.scrim }, backdropStyle]}
       />
       <Animated.View
         style={[
           styles.dialog,
           dialogStyle,
+          elevation.e3,
           {
             backgroundColor: colors.surface,
             borderColor: colors.border,
-            borderRadius: radii.card,
-            gap: spacing.lg,
-            padding: spacing.lg,
-            ...(Platform.OS === 'web'
-              ? { boxShadow: '0 12px 40px rgba(44, 36, 23, 0.2)' }
-              : null),
+            borderRadius: radius.xl,
+            gap: space[6],
+            padding: space[6],
           },
         ]}
       >
         <View style={styles.header}>
-          <Text style={[styles.title, { color: colors.text }]}>{title}</Text>
-          <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
+          <Text style={[typography.h2, { color: colors.text }]}>{title}</Text>
+          <Text style={[typography.body, { color: colors.textSecondary }]}>
             {subtitle}
           </Text>
         </View>
@@ -139,7 +137,7 @@ export default function BenefitsModal({
           {benefits.map((benefit) => (
             <View key={benefit.text} style={styles.benefitRow}>
               <MaterialIcons color={colors.primary} name={benefit.icon} size={22} />
-              <Text style={[styles.benefitText, { color: colors.text }]}>
+              <Text style={[typography.label, { color: colors.text }, styles.benefitText]}>
                 {benefit.text}
               </Text>
             </View>
@@ -165,7 +163,6 @@ const styles = StyleSheet.create({
   },
   backdrop: {
     ...absoluteFill,
-    backgroundColor: 'rgba(44, 36, 23, 0.35)',
   },
   dialog: {
     borderWidth: 1,
@@ -175,16 +172,6 @@ const styles = StyleSheet.create({
   },
   header: {
     gap: 8,
-  },
-  title: {
-    fontFamily: 'Fraunces_600SemiBold',
-    fontSize: 24,
-    lineHeight: 32,
-  },
-  subtitle: {
-    fontFamily: 'NunitoSans_400Regular',
-    fontSize: 16,
-    lineHeight: 24,
   },
   benefits: {
     gap: 14,
@@ -196,9 +183,6 @@ const styles = StyleSheet.create({
   },
   benefitText: {
     flex: 1,
-    fontFamily: 'NunitoSans_600SemiBold',
-    fontSize: 16,
-    lineHeight: 22,
   },
   buttonGroup: {
     gap: 8,
