@@ -30,9 +30,6 @@ const SORT_OPTIONS: SortOption[] = [
 
 const menuItemTextStyle = {
   flex: 1,
-  fontFamily: 'NunitoSans_600SemiBold',
-  fontSize: 16,
-  lineHeight: 22,
   ...(Platform.OS === 'web' ? ({ whiteSpace: 'nowrap' } as object) : null),
 };
 
@@ -49,7 +46,7 @@ export default function ListSortMenu({
   sortMode,
   onSortModeChange,
 }: ListSortMenuProps) {
-  const { colors, radii, spacing } = useTheme();
+  const { colors, radius, space, typography, elevation } = useTheme();
 
   const closeMenu = useCallback(() => {
     onVisibleChange(false);
@@ -103,11 +100,12 @@ export default function ListSortMenu({
           <View
             style={[
               styles.menu,
+              elevation.e2,
               {
                 backgroundColor: colors.surface,
                 borderColor: colors.border,
-                borderRadius: radii.card,
-                paddingVertical: spacing.xs,
+                borderRadius: radius.lg,
+                paddingVertical: space[1],
               },
             ]}
           >
@@ -129,11 +127,17 @@ export default function ListSortMenu({
                   ]}
                 >
                   <MaterialIcons
-                    color={colors.text}
+                    color={selected ? colors.primary : colors.text}
                     name={option.icon}
                     size={MENU_ITEM_ICON_SIZE}
                   />
-                  <Text style={[menuItemTextStyle, { color: colors.text }]}>
+                  <Text
+                    style={[
+                      typography.label,
+                      menuItemTextStyle,
+                      { color: selected ? colors.primary : colors.text },
+                    ]}
+                  >
                     {option.label}
                   </Text>
                   {selected ? (
