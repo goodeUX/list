@@ -41,7 +41,7 @@ export default function Button({
   accessibilityLabel,
   style,
 }: ButtonProps) {
-  const { colors, radii } = useTheme();
+  const { colors, radii, elevation } = useTheme();
   const isPrimary = variant === 'primary';
   const isSurface = variant === 'surface';
   const isGhost = variant === 'ghost';
@@ -79,7 +79,7 @@ export default function Button({
         buttonLayoutStyle,
         {
           backgroundColor: isPrimary
-            ? colors.primary
+            ? (pressed ? colors.primaryPressed : colors.primary)
             : isDestructive
               ? colors.danger
               : isSurface
@@ -90,6 +90,7 @@ export default function Button({
           borderWidth: isFilled || isSurface || isGhost ? 0 : 1,
           opacity: pressed || isDisabled ? (isGhost ? 0.7 : isLarge ? 0.7 : 0.85) : 1,
         },
+        (isFilled || isSurface) ? elevation.e1 : null,
         style,
       ]}
     >
