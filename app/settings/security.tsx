@@ -6,7 +6,6 @@ import {
   Pressable,
   ScrollView,
   StyleSheet,
-  Switch,
   Text,
   View,
 } from 'react-native';
@@ -14,6 +13,7 @@ import { absoluteFill } from '@/lib/absoluteFill';
 import Animated from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import AppSwitch from '@/components/AppSwitch';
 import Button from '@/components/Button';
 import ThemedTextInput from '@/components/ThemedTextInput';
 import { getAuthErrorMessage, useAuth } from '@/contexts/AuthContext';
@@ -169,12 +169,10 @@ export default function SecurityScreen() {
                     Require fingerprint / Face ID to open List Kitty
                   </Text>
                 </View>
-                <Switch
+                <AppSwitch
                   accessibilityLabel="App lock"
                   disabled={appLock.loading || appLockBusy}
                   onValueChange={(next) => void handleAppLockToggle(next)}
-                  thumbColor={appLock.enabled ? colors.primary : colors.textSecondary}
-                  trackColor={{ false: colors.border, true: colors.primarySoft }}
                   value={appLock.enabled}
                 />
               </View>
