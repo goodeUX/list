@@ -4,6 +4,11 @@ import {
   Fraunces_700Bold,
 } from '@expo-google-fonts/fraunces';
 import {
+  Fredoka_500Medium,
+  Fredoka_600SemiBold,
+  Fredoka_700Bold,
+} from '@expo-google-fonts/fredoka';
+import {
   NunitoSans_400Regular,
   NunitoSans_600SemiBold,
   NunitoSans_700Bold,
@@ -63,6 +68,9 @@ export default function RootLayout() {
     Fraunces_400Regular,
     Fraunces_600SemiBold,
     Fraunces_700Bold,
+    Fredoka_500Medium,
+    Fredoka_600SemiBold,
+    Fredoka_700Bold,
     NunitoSans_400Regular,
     NunitoSans_600SemiBold,
     NunitoSans_700Bold,
