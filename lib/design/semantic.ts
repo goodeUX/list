@@ -5,7 +5,7 @@ export type SemanticColors = {
   text: string; textSecondary: string; textMuted: string;
   border: string; borderStrong: string;
   primary: string; primaryPressed: string; primarySoft: string; onPrimary: string;
-  secondary: string; secondarySoft: string; accent: string;
+  secondary: string; secondarySoft: string; accent: string; accentSoft: string;
   success: string; danger: string; dangerSoft: string;
   scrim: string;
 };
@@ -16,7 +16,7 @@ export const semantic: { light: SemanticColors; dark: SemanticColors } = {
     text: palette.sand[900], textSecondary: palette.sand[700], textMuted: palette.sand[600],
     border: palette.sand[300], borderStrong: palette.sand[400],
     primary: palette.coral[500], primaryPressed: palette.coral[600], primarySoft: palette.coral[100], onPrimary: '#FFFFFF',
-    secondary: palette.teal[500], secondarySoft: palette.teal[100], accent: palette.butter[500],
+    secondary: palette.teal[500], secondarySoft: palette.teal[100], accent: palette.butter[500], accentSoft: palette.butter[100],
     success: palette.green[500], danger: palette.red[500], dangerSoft: palette.red[50],
     scrim: 'rgba(43,32,24,0.5)',
   },
@@ -25,7 +25,7 @@ export const semantic: { light: SemanticColors; dark: SemanticColors } = {
     text: '#F5F0E8', textSecondary: '#A89B8C', textMuted: '#7E7365',
     border: '#3D352C', borderStrong: '#4A4034',
     primary: palette.coral[400], primaryPressed: palette.coral[500], primarySoft: '#3D2A26', onPrimary: '#FFFFFF',
-    secondary: palette.teal[400], secondarySoft: '#22302E', accent: palette.butter[400],
+    secondary: palette.teal[400], secondarySoft: '#22302E', accent: palette.butter[400], accentSoft: '#3A3320',
     success: '#7DB88E', danger: '#E06A5E', dangerSoft: '#3D211F',
     scrim: 'rgba(0,0,0,0.6)',
   },

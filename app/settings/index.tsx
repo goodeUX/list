@@ -216,8 +216,8 @@ export default function SettingsScreen() {
                   style={({ pressed }) => [
                     styles.themeOption,
                     {
-                      backgroundColor: selected ? colors.secondarySoft : colors.surfaceMuted,
-                      borderColor: selected ? colors.secondary : colors.border,
+                      backgroundColor: selected ? colors.accentSoft : colors.surfaceMuted,
+                      borderColor: selected ? colors.accent : colors.border,
                       borderRadius: radius.md,
                       opacity: pressed ? 0.85 : 1,
                     },
