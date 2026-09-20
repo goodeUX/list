@@ -2,7 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { useTheme } from '@/contexts/ThemeContext';
-import { buttonLabelStyle, buttonLayoutStyle } from '@/lib/buttonStyles';
+import { buttonLayoutStyle } from '@/lib/buttonStyles';
 
 type SocialAuthButtonsProps = {
   disabled: boolean;
@@ -21,7 +21,7 @@ export default function SocialAuthButtons({
   onGooglePress,
   onApplePress,
 }: SocialAuthButtonsProps) {
-  const { colors, radii } = useTheme();
+  const { colors, typography } = useTheme();
 
   const buttonStyle = ({ pressed }: { pressed: boolean }) => [
     styles.button,
@@ -48,7 +48,7 @@ export default function SocialAuthButtons({
         ) : (
           <View style={styles.row}>
             <Ionicons color={colors.text} name="logo-google" size={20} />
-            <Text style={[buttonLabelStyle(16), { color: colors.text }]}>
+            <Text style={[typography.label, styles.buttonLabel, { color: colors.text }]}>
               Continue with Google
             </Text>
           </View>
@@ -69,7 +69,7 @@ export default function SocialAuthButtons({
           ) : (
             <View style={styles.row}>
               <Ionicons color={colors.text} name="logo-apple" size={20} />
-              <Text style={[buttonLabelStyle(16), { color: colors.text }]}>
+              <Text style={[typography.label, styles.buttonLabel, { color: colors.text }]}>
                 Continue with Apple
               </Text>
             </View>
@@ -93,5 +93,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     flexDirection: 'row',
     gap: 10,
+  },
+  buttonLabel: {
+    textAlign: 'center',
   },
 });
