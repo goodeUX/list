@@ -60,12 +60,9 @@ import { markPendingAddInputFocus } from '@/lib/pendingAddInputFocus';
 import type { AppList } from '@/lib/types';
 
 const DEFAULT_EMOJI = '📋';
-// The header's only fixed values: type sizes and the settings button's box.
-// Everything else about the header comes from flex rules and theme spacing.
-const TITLE_FONT_SIZE = 32;
-const TITLE_LINE_HEIGHT = 40;
-const SUMMARY_FONT_SIZE = 15;
-const SUMMARY_LINE_HEIGHT = 22;
+// The header's only fixed value left after typography tokens: the settings
+// button's box. Everything else about the header comes from flex rules,
+// typography tokens, and theme spacing.
 const SETTINGS_BUTTON_SIZE = 44;
 const FAB_SIZE = 72;
 // Squircle corner, matching the product's other buttons. borderCurve only
@@ -86,7 +83,7 @@ function formatSummary(listCount: number, sharedCount: number): string {
 }
 
 export default function ListsHomeScreen() {
-  const { colors, spacing } = useTheme();
+  const { colors, spacing, typography } = useTheme();
   const safeAreaInsets = useSafeAreaInsets();
   const { user } = useAuth();
   const { lists, loading, createList } = useLists();
@@ -375,7 +372,7 @@ export default function ListsHomeScreen() {
           ]}
         >
           <View style={[styles.headerRow, { gap: spacing.sm }]}>
-            <Text numberOfLines={1} style={[styles.title, { color: colors.text }]}>
+            <Text numberOfLines={1} style={[typography.display, styles.title, { color: colors.text }]}>
               My Lists
             </Text>
             {!loading && lists.length > 0 ? (
@@ -404,7 +401,7 @@ export default function ListsHomeScreen() {
           </View>
 
           {!loading ? (
-            <Text style={[styles.summary, { color: colors.textSecondary }]}>
+            <Text style={[typography.body, styles.summary, { color: colors.textSecondary }]}>
               {summary}
             </Text>
           ) : null}
@@ -592,16 +589,8 @@ const styles = StyleSheet.create({
   },
   // No flex properties: flexShrink defaults to 0 in React Native, so a text
   // node already keeps its own width and the row grows around it.
-  title: {
-    fontFamily: 'Fraunces_600SemiBold',
-    fontSize: TITLE_FONT_SIZE,
-    lineHeight: TITLE_LINE_HEIGHT,
-  },
-  summary: {
-    fontFamily: 'NunitoSans_400Regular',
-    fontSize: SUMMARY_FONT_SIZE,
-    lineHeight: SUMMARY_LINE_HEIGHT,
-  },
+  title: {},
+  summary: {},
   loading: {
     alignItems: 'center',
     flex: 1,
