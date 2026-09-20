@@ -11,7 +11,7 @@ export const space = { 0: 0, 1: 4, 2: 8, 3: 12, 4: 16, 5: 20, 6: 24, 8: 32, 10: 
 
 export const radius = { sm: 8, md: 12, lg: 16, xl: 24, full: 999 } as const;
 
-export const fontSize = { display: 34, h1: 28, h2: 22, title: 18, bodyL: 17, body: 15, bodyS: 13, label: 15, caption: 12 } as const;
+export const fontSize = { display: 32, h1: 28, h2: 24, title: 18, bodyL: 18, body: 16, bodyS: 14, label: 16, caption: 12 } as const;
 
 export const lineHeight = { display: 40, h1: 34, h2: 28, title: 24, bodyL: 26, body: 22, bodyS: 18, label: 20, caption: 16 } as const;
 
