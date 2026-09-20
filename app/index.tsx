@@ -183,27 +183,10 @@ export default function ListsHomeScreen() {
         drag();
       };
 
-      const dragHandle =
-        Platform.OS === 'web' ? (
-          <Pressable
-            accessibilityLabel="Drag to reorder"
-            accessibilityRole="button"
-            onPressIn={drag}
-            style={({ pressed }) => [
-              styles.handleButton,
-              { opacity: pressed ? 0.6 : 1 },
-              Platform.OS === 'web' ? ({ cursor: 'grab' } as object) : null,
-            ]}
-          >
-            <MaterialIcons color={colors.textSecondary} name="drag-indicator" size={20} />
-          </Pressable>
-        ) : undefined;
-
       return (
         <View style={[styles.cardCell, isActive ? styles.activeCell : null]}>
           <ListCard
             countsRefreshKey={countsRefreshKey}
-            dragHandle={dragHandle}
             isActive={isActive}
             list={item}
             locked={!isListEditable(item.id, editableListIds)}

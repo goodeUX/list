@@ -61,7 +61,7 @@ export default function ListCard({
         <Text style={styles.emoji}>{list.emoji}</Text>
         <Text
           numberOfLines={1}
-          style={[typography.h2, { color: colors.text, flex: 1 }]}
+          style={[typography.title, { color: colors.text, flex: 1 }]}
         >
           {list.name}
         </Text>

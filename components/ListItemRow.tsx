@@ -169,15 +169,15 @@ export default function ListItemRow({
           style={[
             styles.checkbox,
             {
-              backgroundColor: item.checked ? colors.primary : 'transparent',
-              borderColor: item.checked ? colors.primary : colors.border,
+              backgroundColor: item.checked ? colors.success : 'transparent',
+              borderColor: item.checked ? colors.success : colors.border,
               borderRadius: radii.checkbox,
             },
           ]}
         >
           {item.checked ? (
             Platform.OS === 'ios' ? (
-              <SymbolView name="checkmark" size={14} tintColor={colors.surface} />
+              <SymbolView name="checkmark" size={14} tintColor={colors.onPrimary} />
             ) : (
               <MaterialIcons color={colors.onPrimary} name="check" size={14} />
             )
