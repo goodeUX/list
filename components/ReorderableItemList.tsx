@@ -139,10 +139,10 @@ export default function ReorderableItemList({
             <View
               style={[
                 styles.sectionCountBadge,
-                { backgroundColor: colors.surfaceMuted, borderRadius: radii.checkbox },
+                { backgroundColor: colors.accent, borderRadius: radii.checkbox },
               ]}
             >
-              <Text style={[typography.caption, styles.sectionCount, { color: colors.textSecondary }]}>
+              <Text style={[typography.caption, styles.sectionCount, { color: colors.text }]}>
                 {doneCount}
               </Text>
             </View>
@@ -236,10 +236,10 @@ export default function ReorderableItemList({
         <View
           style={[
             styles.sectionCountBadge,
-            { backgroundColor: colors.surfaceMuted, borderRadius: radii.checkbox },
+            { backgroundColor: colors.accent, borderRadius: radii.checkbox },
           ]}
         >
-          <Text style={[typography.caption, styles.sectionCount, { color: colors.textSecondary }]}>
+          <Text style={[typography.caption, styles.sectionCount, { color: colors.text }]}>
             {todoCount}
           </Text>
         </View>

@@ -81,12 +81,12 @@ export default function ListCard({
             style={[
               styles.itemCountBadge,
               {
-                backgroundColor: colors.surfaceMuted,
+                backgroundColor: colors.accent,
                 borderRadius: 8,
               },
             ]}
           >
-            <Text style={[typography.bodyS, styles.itemCount, { color: colors.textSecondary }]}>
+            <Text style={[typography.bodyS, styles.itemCount, { color: colors.text }]}>
               {incompleteCount}
             </Text>
           </View>

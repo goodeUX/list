@@ -54,7 +54,7 @@ export function getThemedInputBorderColor(
   if (invalid) {
     return colors.danger;
   }
-  return focused ? colors.primary : colors.border;
+  return focused ? colors.secondary : colors.border;
 }
 
 export function getThemedInputContainerStyle(

@@ -203,7 +203,7 @@ export default function ListItemRow({
                 style={[
                   styles.pill,
                   {
-                    backgroundColor: colors.surfaceMuted,
+                    backgroundColor: colors.secondary,
                     borderRadius: radii.checkbox,
                   },
                 ]}
@@ -211,7 +211,7 @@ export default function ListItemRow({
                 <CompletedText
                   animatedStyle={completedTextStyle}
                   checked={item.checked}
-                  color={colors.textSecondary}
+                  color={colors.onPrimary}
                   style={styles.pillText}
                 >
                   {item.quantity}
@@ -225,20 +225,20 @@ export default function ListItemRow({
                   styles.pill,
                   styles.linkPill,
                   {
-                    backgroundColor: colors.primarySoft,
+                    backgroundColor: colors.secondary,
                     borderRadius: radii.checkbox,
                   },
                 ]}
               >
                 {Platform.OS === 'ios' ? (
-                  <SymbolView name="link" size={12} tintColor={colors.primary} />
+                  <SymbolView name="link" size={12} tintColor={colors.onPrimary} />
                 ) : (
-                  <MaterialIcons color={colors.primary} name="link" size={12} />
+                  <MaterialIcons color={colors.onPrimary} name="link" size={12} />
                 )}
                 <CompletedText
                   animatedStyle={completedTextStyle}
                   checked={item.checked}
-                  color={colors.primary}
+                  color={colors.onPrimary}
                   style={styles.pillText}
                 >
                   Link

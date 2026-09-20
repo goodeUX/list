@@ -32,7 +32,9 @@
       "output": "static",
       "favicon": "./assets/images/favicon.png",
       "splash": {
-        "backgroundColor": "#DBB793"
+        "backgroundColor": "#FFF8EF",
+        "image": "./assets/images/splash-light.png",
+        "imageWidth": 180
       }
     },
     "plugins": [
@@ -40,15 +42,12 @@
       [
         "expo-splash-screen",
         {
-          "backgroundColor": "#DBB793",
-          "ios": {
-            "backgroundColor": "#DBB793"
-          },
-          "android": {
-            "backgroundColor": "#DBB793",
-            "drawable": {
-              "icon": "./assets/images/android-splash-icon.xml"
-            }
+          "backgroundColor": "#FFF8EF",
+          "image": "./assets/images/splash-light.png",
+          "imageWidth": 180,
+          "dark": {
+            "backgroundColor": "#1A1612",
+            "image": "./assets/images/splash-dark.png"
           }
         }
       ],
