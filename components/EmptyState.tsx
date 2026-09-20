@@ -10,6 +10,7 @@ import { MaterialIcons } from '@expo/vector-icons';
 
 import { useTheme } from '@/contexts/ThemeContext';
 import { buttonLabelStyle, buttonLayoutStyle } from '@/lib/buttonStyles';
+import { space } from '@/lib/design';
 
 const lightEmptyStateImage =
   require('../assets/images/empty-state-light.png') as ImageSourcePropType;
@@ -27,7 +28,7 @@ export default function EmptyState({
   title = 'Nothing to see here',
   onCreateList,
 }: EmptyStateProps) {
-  const { colors, colorScheme, radii, spacing } = useTheme();
+  const { colors, colorScheme, typography } = useTheme();
   const emptyStateImage =
     colorScheme === 'dark' ? darkEmptyStateImage : lightEmptyStateImage;
 
@@ -36,7 +37,7 @@ export default function EmptyState({
       style={[
         styles.container,
         {
-          padding: spacing.lg,
+          padding: space[6],
           pointerEvents: 'box-none',
           transform: [{ translateY: EMPTY_STATE_OFFSET_Y }],
         },
@@ -46,9 +47,9 @@ export default function EmptyState({
           accessibilityIgnoresInvertColors
           resizeMode="contain"
           source={emptyStateImage}
-          style={[styles.illustration, { marginBottom: spacing.xl }]}
+          style={[styles.illustration, { marginBottom: space[8] }]}
         />
-        <Text style={[styles.title, { color: colors.text }]}>{title}</Text>
+        <Text style={[styles.title, typography.h2, { color: colors.text }]}>{title}</Text>
         <Pressable
           accessibilityLabel="Create a new list"
           accessibilityRole="button"
@@ -60,7 +61,7 @@ export default function EmptyState({
             backgroundColor: colors.primary,
             flexDirection: 'row',
             gap: 8,
-            marginTop: spacing.md,
+            marginTop: space[4],
             opacity: pressed ? 0.7 : 1,
           },
         ]}
@@ -85,9 +86,6 @@ const styles = StyleSheet.create({
     width: 180,
   },
   title: {
-    fontFamily: 'Fraunces_600SemiBold',
-    fontSize: 22,
-    lineHeight: 28,
     textAlign: 'center',
   },
   createListButton: {
