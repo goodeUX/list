@@ -6,16 +6,16 @@ interface Props {
   /** Display name or email; its first letter is the fallback. */
   label: string;
   photoURL?: string | null;
-  size: number;
+  size?: number;
 }
 
 /**
  * The account's picture when the sign-in provider supplies one — Google does —
  * and the first initial otherwise. Nothing in the app writes `photoURL`.
  */
-export default function UserAvatar({ label, photoURL, size }: Props) {
-  const { colors } = useTheme();
-  const box = { borderRadius: size / 2, height: size, width: size };
+export default function UserAvatar({ label, photoURL, size = 40 }: Props) {
+  const { colors, radius } = useTheme();
+  const box = { borderRadius: radius.full, height: size, width: size };
 
   if (photoURL) {
     return (
@@ -31,7 +31,7 @@ export default function UserAvatar({ label, photoURL, size }: Props) {
 
   return (
     <View style={[styles.fallback, box, { backgroundColor: colors.primarySoft }]}>
-      <Text style={[styles.initial, { color: colors.text, fontSize: size * 0.44 }]}>
+      <Text style={[styles.initial, { color: colors.primary, fontSize: Math.round(size * 0.4) }]}>
         {initial}
       </Text>
     </View>
@@ -44,6 +44,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   initial: {
-    fontFamily: 'NunitoSans_600SemiBold',
+    fontFamily: 'NunitoSans_700Bold',
   },
 });
