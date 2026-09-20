@@ -34,7 +34,6 @@ const openingDarkImage =
 
 const OPENING_IMAGE_ASPECT_RATIO = 1024 / 1024;
 const OPENING_IMAGE_WIDTH_SCALE = 0.8;
-const ACCENT_COLOR = '#C4785A';
 
 type OpeningScreenProps = {
   fontsLoaded: boolean;
@@ -63,7 +62,7 @@ export default function OpeningScreen({ fontsLoaded, onComplete }: OpeningScreen
   const { width: windowWidth } = useWindowDimensions();
   const layoutWidth = Math.min(windowWidth, CONTENT_MAX_WIDTH);
   const { user, loading } = useAuth();
-  const { colors, colorScheme } = useTheme();
+  const { colors, colorScheme, typography } = useTheme();
   const [journeyMode, setJourneyMode] = useState<AuthJourneyMode | null>(null);
   const [lockRequired, setLockRequired] = useState<boolean | null>(null);
   const [unlocked, setUnlocked] = useState(false);
@@ -168,7 +167,7 @@ export default function OpeningScreen({ fontsLoaded, onComplete }: OpeningScreen
           >
             {showLoading ? (
               <View style={styles.loadingContainer}>
-                <ActivityIndicator color={ACCENT_COLOR} size="large" />
+                <ActivityIndicator color={colors.primary} size="large" />
               </View>
             ) : null}
 
@@ -181,10 +180,10 @@ export default function OpeningScreen({ fontsLoaded, onComplete }: OpeningScreen
 
             {showWelcome ? (
               <View style={styles.welcomeContainer}>
-                <Text style={[styles.welcomeBack, { color: colors.text }]}>
+                <Text style={[typography.h1, styles.welcomeBack, { color: colors.text }]}>
                   Welcome back,
                 </Text>
-                <Text style={[styles.welcomeName, { color: colors.text }]}>
+                <Text style={[typography.display, styles.welcomeName, { color: colors.text }]}>
                   {welcomeName}
                 </Text>
               </View>
@@ -244,15 +243,9 @@ const styles = StyleSheet.create({
     paddingTop: 40,
   },
   welcomeBack: {
-    fontFamily: 'Fraunces_400Regular',
-    fontSize: 28,
-    lineHeight: 36,
     textAlign: 'center',
   },
   welcomeName: {
-    fontFamily: 'Fraunces_600SemiBold',
-    fontSize: 52,
-    lineHeight: 60,
     marginTop: 4,
     textAlign: 'center',
   },
