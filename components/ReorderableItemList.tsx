@@ -16,6 +16,7 @@ import DraggableFlatList, {
 
 import ListItemRow from '@/components/ListItemRow';
 import { useTheme } from '@/contexts/ThemeContext';
+import { palette } from '@/lib/design';
 import { DROP_ANIMATION_CONFIG } from '@/lib/dragAnimation';
 import { playToggleHaptic } from '@/lib/haptics';
 import type { ListItem } from '@/lib/types';
@@ -139,10 +140,10 @@ export default function ReorderableItemList({
             <View
               style={[
                 styles.sectionCountBadge,
-                { backgroundColor: colors.accent, borderRadius: radii.checkbox },
+                { backgroundColor: palette.teal[200], borderRadius: radii.checkbox },
               ]}
             >
-              <Text style={[typography.caption, styles.sectionCount, { color: colors.text }]}>
+              <Text style={[typography.caption, styles.sectionCount, { color: palette.sand[900] }]}>
                 {doneCount}
               </Text>
             </View>
@@ -236,10 +237,10 @@ export default function ReorderableItemList({
         <View
           style={[
             styles.sectionCountBadge,
-            { backgroundColor: colors.accent, borderRadius: radii.checkbox },
+            { backgroundColor: palette.teal[200], borderRadius: radii.checkbox },
           ]}
         >
-          <Text style={[typography.caption, styles.sectionCount, { color: colors.text }]}>
+          <Text style={[typography.caption, styles.sectionCount, { color: palette.sand[900] }]}>
             {todoCount}
           </Text>
         </View>

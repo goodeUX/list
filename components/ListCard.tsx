@@ -4,6 +4,7 @@ import { type ReactNode } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { useTheme } from '@/contexts/ThemeContext';
+import { palette } from '@/lib/design';
 import { useListItemCounts } from '@/hooks/useListItems';
 import type { AppList } from '@/lib/types';
 
@@ -81,12 +82,12 @@ export default function ListCard({
             style={[
               styles.itemCountBadge,
               {
-                backgroundColor: colors.accent,
+                backgroundColor: palette.teal[200],
                 borderRadius: 8,
               },
             ]}
           >
-            <Text style={[typography.bodyS, styles.itemCount, { color: colors.text }]}>
+            <Text style={[typography.bodyS, styles.itemCount, { color: palette.sand[900] }]}>
               {incompleteCount}
             </Text>
           </View>

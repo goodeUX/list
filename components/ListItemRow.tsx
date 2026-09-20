@@ -11,6 +11,7 @@ import Animated, {
 
 import SubItemRow from '@/components/SubItemRow';
 import { useTheme } from '@/contexts/ThemeContext';
+import { palette } from '@/lib/design';
 import { playToggleHaptic } from '@/lib/haptics';
 import { formatItemNameForDisplay } from '@/lib/itemName';
 import { subItemProgress, sortSubItems } from '@/lib/subItems';
@@ -203,7 +204,7 @@ export default function ListItemRow({
                 style={[
                   styles.pill,
                   {
-                    backgroundColor: colors.secondary,
+                    backgroundColor: palette.butter[200],
                     borderRadius: radii.checkbox,
                   },
                 ]}
@@ -211,7 +212,7 @@ export default function ListItemRow({
                 <CompletedText
                   animatedStyle={completedTextStyle}
                   checked={item.checked}
-                  color={colors.onPrimary}
+                  color={palette.sand[900]}
                   style={styles.pillText}
                 >
                   {item.quantity}
@@ -225,20 +226,20 @@ export default function ListItemRow({
                   styles.pill,
                   styles.linkPill,
                   {
-                    backgroundColor: colors.secondary,
+                    backgroundColor: palette.butter[200],
                     borderRadius: radii.checkbox,
                   },
                 ]}
               >
                 {Platform.OS === 'ios' ? (
-                  <SymbolView name="link" size={12} tintColor={colors.onPrimary} />
+                  <SymbolView name="link" size={12} tintColor={palette.sand[900]} />
                 ) : (
-                  <MaterialIcons color={colors.onPrimary} name="link" size={12} />
+                  <MaterialIcons color={palette.sand[900]} name="link" size={12} />
                 )}
                 <CompletedText
                   animatedStyle={completedTextStyle}
                   checked={item.checked}
-                  color={colors.onPrimary}
+                  color={palette.sand[900]}
                   style={styles.pillText}
                 >
                   Link
