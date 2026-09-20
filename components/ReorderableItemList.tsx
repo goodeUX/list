@@ -68,7 +68,7 @@ export default function ReorderableItemList({
   contentContainerStyle,
   ListEmptyComponent,
 }: ReorderableItemListProps) {
-  const { colors, radii, spacing } = useTheme();
+  const { colors, radii, spacing, typography, elevation } = useTheme();
   const [rows, setRows] = useState<Row[]>(() => buildRows(items, moveDoneToBottom));
 
   useEffect(() => {
@@ -135,14 +135,14 @@ export default function ReorderableItemList({
               { marginTop: spacing.md, marginBottom: spacing.sm },
             ]}
           >
-            <Text style={[styles.sectionHeader, { color: colors.textSecondary }]}>Done</Text>
+            <Text style={[typography.label, styles.sectionHeader, { color: colors.textSecondary }]}>Done</Text>
             <View
               style={[
                 styles.sectionCountBadge,
                 { backgroundColor: colors.surfaceMuted, borderRadius: radii.checkbox },
               ]}
             >
-              <Text style={[styles.sectionCount, { color: colors.textSecondary }]}>
+              <Text style={[typography.caption, styles.sectionCount, { color: colors.textSecondary }]}>
                 {doneCount}
               </Text>
             </View>
@@ -179,7 +179,13 @@ export default function ReorderableItemList({
         ) : undefined;
 
       return (
-        <View style={isActive ? styles.activeCell : null}>
+        <View
+          style={
+            isActive
+              ? [styles.activeCell, elevation.e2, { backgroundColor: colors.surfaceRaised }]
+              : null
+          }
+        >
           <ListItemRow
             disabled={disabled}
             dragHandle={dragHandle}
@@ -201,9 +207,11 @@ export default function ReorderableItemList({
     [
       colors.border,
       colors.surfaceMuted,
+      colors.surfaceRaised,
       colors.textSecondary,
       disabled,
       doneCount,
+      elevation.e2,
       isItemDraggable,
       onPressItem,
       onToggleItem,
@@ -212,6 +220,8 @@ export default function ReorderableItemList({
       rows,
       spacing.md,
       spacing.sm,
+      typography.caption,
+      typography.label,
     ],
   );
 
@@ -222,14 +232,14 @@ export default function ReorderableItemList({
 
     return (
       <View style={[styles.sectionHeaderRow, { marginBottom: spacing.sm }]}>
-        <Text style={[styles.sectionHeader, { color: colors.textSecondary }]}>To do</Text>
+        <Text style={[typography.label, styles.sectionHeader, { color: colors.textSecondary }]}>To do</Text>
         <View
           style={[
             styles.sectionCountBadge,
             { backgroundColor: colors.surfaceMuted, borderRadius: radii.checkbox },
           ]}
         >
-          <Text style={[styles.sectionCount, { color: colors.textSecondary }]}>
+          <Text style={[typography.caption, styles.sectionCount, { color: colors.textSecondary }]}>
             {todoCount}
           </Text>
         </View>
@@ -243,6 +253,8 @@ export default function ReorderableItemList({
     radii.checkbox,
     spacing.sm,
     todoCount,
+    typography.caption,
+    typography.label,
   ]);
 
   return (
@@ -270,16 +282,7 @@ const styles = StyleSheet.create({
   flex: {
     flex: 1,
   },
-  activeCell: Platform.select({
-    web: { boxShadow: '0px 4px 12px rgba(0, 0, 0, 0.18)' },
-    default: {
-      shadowColor: '#000',
-      shadowOffset: { width: 0, height: 4 },
-      shadowOpacity: 0.18,
-      shadowRadius: 12,
-      elevation: 6,
-    },
-  }),
+  activeCell: {},
   handleButton: {
     alignItems: 'center',
     justifyContent: 'center',
@@ -295,10 +298,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   sectionHeader: {
-    fontFamily: 'NunitoSans_600SemiBold',
-    fontSize: 13,
     letterSpacing: 0.4,
-    lineHeight: 18,
     textTransform: 'uppercase',
   },
   sectionCountBadge: {
@@ -309,9 +309,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 6,
   },
   sectionCount: {
-    fontFamily: 'NunitoSans_600SemiBold',
-    fontSize: 12,
-    lineHeight: 14,
     textAlign: 'center',
   },
 });
