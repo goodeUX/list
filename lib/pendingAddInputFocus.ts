@@ -9,7 +9,3 @@ export function consumePendingAddInputFocus(): boolean {
   pendingAddInputFocus = false;
   return shouldFocus;
 }
-
-export function clearPendingAddInputFocus(): void {
-  pendingAddInputFocus = false;
-}

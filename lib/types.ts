@@ -36,17 +36,3 @@ export interface ListItem {
   updatedAt: Date;
 }
 
-export interface AppUser {
-  uid: string;
-  displayName: string;
-  email: string;
-  themePreference: 'system' | 'light' | 'dark';
-  /** Display-only mirror of the store entitlement (see PlanContext). */
-  premium?: boolean;
-  /** Over-cap pick: which lists stay editable on the free plan. */
-  activeListIds?: string[];
-  /** How the home screen orders lists. */
-  listSortMode?: 'alphabetical' | 'recent' | 'custom';
-  /** List ids in the user's hand-dragged order, used by the custom mode. */
-  listCustomOrder?: string[];
-}

@@ -1,20 +1,5 @@
 import { Platform } from 'react-native';
 
-import { getAppWebOrigin } from '@/lib/inviteUrl';
-
-export function getAppWebHost(): string | null {
-  const origin = getAppWebOrigin();
-  if (!origin) {
-    return null;
-  }
-
-  try {
-    return new URL(origin).hostname;
-  } catch {
-    return null;
-  }
-}
-
 export function isMobileWebUserAgent(): boolean {
   if (Platform.OS !== 'web' || typeof navigator === 'undefined') {
     return false;
