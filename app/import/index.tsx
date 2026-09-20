@@ -39,7 +39,7 @@ function hostOf(url: string): string {
 export default function ImportScreen() {
   const params = useLocalSearchParams<{ url?: string | string[] }>();
   const url = typeof params.url === 'string' ? params.url : undefined;
-  const { colors, radii, spacing } = useTheme();
+  const { colors, radius, space, typography } = useTheme();
   const insets = useSafeAreaInsets();
   const { user } = useAuth();
   const { lists, loading: listsLoading, createList } = useLists();
@@ -192,9 +192,9 @@ export default function ImportScreen() {
             styles.header,
             {
               borderBottomColor: colors.border,
-              paddingHorizontal: spacing.lg,
-              paddingTop: spacing.md,
-              paddingBottom: spacing.md,
+              paddingHorizontal: space[6],
+              paddingTop: space[4],
+              paddingBottom: space[4],
             },
           ]}
         >
@@ -210,15 +210,18 @@ export default function ImportScreen() {
           >
             <MaterialIcons color={colors.primary} name="chevron-left" size={24} />
           </Pressable>
-          <Text style={[styles.title, { color: colors.text }]} numberOfLines={1}>
+          <Text
+            style={[typography.h1, styles.title, { color: colors.text }]}
+            numberOfLines={1}
+          >
             {headerTitle}
           </Text>
           <View style={styles.headerSpacer} />
         </View>
 
         {!url ? (
-          <View style={[styles.centered, { padding: spacing.lg }]}>
-            <Text style={[styles.body, { color: colors.textSecondary }]}>
+          <View style={[styles.centered, { padding: space[6] }]}>
+            <Text style={[typography.body, styles.body, { color: colors.textSecondary }]}>
               Nothing was shared to import.
             </Text>
             <Button label="Back to lists" onPress={goBack} variant="secondary" />
@@ -227,7 +230,7 @@ export default function ImportScreen() {
           <ScrollView
             contentContainerStyle={[
               styles.content,
-              { gap: spacing.md, padding: spacing.lg },
+              { gap: space[4], padding: space[6] },
             ]}
             keyboardShouldPersistTaps="handled"
           >
@@ -237,30 +240,30 @@ export default function ImportScreen() {
                 {
                   backgroundColor: colors.surface,
                   borderColor: colors.border,
-                  borderRadius: radii.card,
-                  gap: spacing.xs,
-                  padding: spacing.md,
+                  borderRadius: radius.lg,
+                  gap: space[1],
+                  padding: space[4],
                 },
               ]}
             >
-              <Text style={[styles.urlLabel, { color: colors.textSecondary }]}>
+              <Text style={[typography.caption, styles.urlLabel, { color: colors.textSecondary }]}>
                 Shared link
               </Text>
               <Text
                 numberOfLines={2}
-                style={[styles.urlValue, { color: colors.text }]}
+                style={[typography.body, styles.urlValue, { color: colors.text }]}
               >
                 {url}
               </Text>
             </View>
 
             {phase === 'working' ? (
-              <View style={[styles.centered, { paddingVertical: spacing.xl }]}>
+              <View style={[styles.centered, { paddingVertical: space[8] }]}>
                 <ActivityIndicator color={colors.primary} size="large" />
               </View>
             ) : phase === 'pickList' ? (
-              <View style={{ gap: spacing.md }}>
-                <Text style={[styles.sectionLabel, { color: colors.textSecondary }]}>
+              <View style={{ gap: space[4] }}>
+                <Text style={[typography.label, styles.sectionLabel, { color: colors.textSecondary }]}>
                   {action === 'ingredients'
                     ? `Add ${ingredients.length} ${
                         ingredients.length === 1 ? 'ingredient' : 'ingredients'
@@ -269,15 +272,15 @@ export default function ImportScreen() {
                 </Text>
 
                 {listsLoading ? (
-                  <View style={[styles.centered, { paddingVertical: spacing.lg }]}>
+                  <View style={[styles.centered, { paddingVertical: space[6] }]}>
                     <ActivityIndicator color={colors.primary} />
                   </View>
                 ) : lists.length === 0 ? (
-                  <Text style={[styles.body, { color: colors.textSecondary }]}>
+                  <Text style={[typography.body, styles.body, { color: colors.textSecondary }]}>
                     You don't have any lists yet. Create one below.
                   </Text>
                 ) : (
-                  <View style={{ gap: spacing.sm }}>
+                  <View style={{ gap: space[2] }}>
                     {lists.map((list) => (
                       <Pressable
                         key={list.id}
@@ -288,16 +291,16 @@ export default function ImportScreen() {
                           {
                             backgroundColor: colors.surfaceMuted,
                             borderColor: colors.border,
-                            borderRadius: radii.item,
+                            borderRadius: radius.md,
                             opacity: pressed ? 0.85 : 1,
-                            padding: spacing.md,
+                            padding: space[4],
                           },
                         ]}
                       >
                         <Text style={styles.listEmoji}>{list.emoji}</Text>
                         <Text
                           numberOfLines={1}
-                          style={[styles.listName, { color: colors.text }]}
+                          style={[typography.label, styles.listName, { color: colors.text }]}
                         >
                           {list.name}
                         </Text>
@@ -319,8 +322,8 @@ export default function ImportScreen() {
                 />
               </View>
             ) : (
-              <View style={{ gap: spacing.sm }}>
-                <Text style={[styles.body, { color: colors.textSecondary }]}>
+              <View style={{ gap: space[2] }}>
+                <Text style={[typography.body, styles.body, { color: colors.textSecondary }]}>
                   What would you like to do with this page?
                 </Text>
                 <Button
@@ -382,9 +385,6 @@ const styles = StyleSheet.create({
   },
   title: {
     flex: 1,
-    fontFamily: 'Fraunces_600SemiBold',
-    fontSize: 24,
-    lineHeight: 30,
     minWidth: 0,
   },
   content: {
@@ -399,26 +399,12 @@ const styles = StyleSheet.create({
     borderWidth: 1,
   },
   urlLabel: {
-    fontFamily: 'NunitoSans_600SemiBold',
-    fontSize: 12,
     letterSpacing: 0.5,
     textTransform: 'uppercase',
   },
-  urlValue: {
-    fontFamily: 'NunitoSans_400Regular',
-    fontSize: 15,
-    lineHeight: 22,
-  },
-  sectionLabel: {
-    fontFamily: 'NunitoSans_600SemiBold',
-    fontSize: 15,
-    lineHeight: 22,
-  },
-  body: {
-    fontFamily: 'NunitoSans_400Regular',
-    fontSize: 15,
-    lineHeight: 22,
-  },
+  urlValue: {},
+  sectionLabel: {},
+  body: {},
   listRow: {
     alignItems: 'center',
     borderWidth: 1,
@@ -428,7 +414,5 @@ const styles = StyleSheet.create({
   listEmoji: { fontSize: 22, lineHeight: 26 },
   listName: {
     flex: 1,
-    fontFamily: 'NunitoSans_600SemiBold',
-    fontSize: 16,
   },
 });
