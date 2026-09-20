@@ -32,7 +32,7 @@ function getMobileUserAgentPlatform(): 'android' | 'ios' | 'other' {
 }
 
 export default function JoinInviteLanding({ listId }: JoinInviteLandingProps) {
-  const { colors, spacing } = useTheme();
+  const { colors, space, typography } = useTheme();
   const storeUrl = getAppStoreUrlForPlatform(listId);
   const inviteUrl = getInviteUrl(listId);
   const platform = getMobileUserAgentPlatform();
@@ -69,12 +69,12 @@ export default function JoinInviteLanding({ listId }: JoinInviteLandingProps) {
   }, [inviteUrl, listId, platform, storeUrl]);
 
   return (
-    <View style={[styles.container, { gap: spacing.lg, padding: spacing.lg }]}>
-      <View style={{ gap: spacing.sm }}>
-        <Text style={[styles.title, { color: colors.text }]}>
+    <View style={[styles.container, { gap: space[6], padding: space[6] }]}>
+      <View style={{ gap: space[2] }}>
+        <Text style={[typography.h1, styles.centered, { color: colors.text }]}>
           Join a shared list
         </Text>
-        <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
+        <Text style={[typography.body, styles.centered, { color: colors.textSecondary }]}>
           Opening {APP_NAME} if it is installed. Otherwise, we will take you to
           the app store.
         </Text>
@@ -82,7 +82,7 @@ export default function JoinInviteLanding({ listId }: JoinInviteLandingProps) {
 
       <ActivityIndicator color={colors.primary} size="large" />
 
-      <Text style={[styles.hint, { color: colors.textSecondary }]}>
+      <Text style={[typography.bodyS, styles.centered, { color: colors.textSecondary }]}>
         If nothing happens, open the same invite link again after installing.
       </Text>
     </View>
@@ -95,22 +95,7 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
   },
-  title: {
-    fontFamily: 'Fraunces_600SemiBold',
-    fontSize: 28,
-    lineHeight: 34,
-    textAlign: 'center',
-  },
-  subtitle: {
-    fontFamily: 'NunitoSans_400Regular',
-    fontSize: 16,
-    lineHeight: 24,
-    textAlign: 'center',
-  },
-  hint: {
-    fontFamily: 'NunitoSans_400Regular',
-    fontSize: 13,
-    lineHeight: 18,
+  centered: {
     textAlign: 'center',
   },
 });
