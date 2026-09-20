@@ -13,11 +13,12 @@ import {
 
 import { useTheme } from '@/contexts/ThemeContext';
 import { scheduleTextInputFocus } from '@/lib/focusTextInput';
+import { space, typography } from '@/lib/design';
 import type { ThemeColors } from '@/lib/theme';
 
 export const BORDERED_INPUT_BORDER_WIDTH = 1;
-const BORDERED_INPUT_PADDING_VERTICAL = 14;
-const BORDERED_INPUT_LINE_HEIGHT = 22;
+const BORDERED_INPUT_PADDING_VERTICAL = space[3];
+const BORDERED_INPUT_LINE_HEIGHT = typography.body.lineHeight;
 
 export function getBorderedInputHeight(
   lineHeight = BORDERED_INPUT_LINE_HEIGHT,
@@ -48,7 +49,10 @@ export function getThemedInputBorderColor(
   focused: boolean,
   invalid = false,
 ): string {
-  return focused || invalid ? colors.primary : colors.border;
+  if (invalid) {
+    return colors.danger;
+  }
+  return focused ? colors.primary : colors.border;
 }
 
 export function getThemedInputContainerStyle(
@@ -97,7 +101,7 @@ const ThemedTextInput = forwardRef<TextInput, ThemedTextInputProps>(
     },
     ref,
   ) {
-    const { colors, radii } = useTheme();
+    const { colors, radius } = useTheme();
     const [focused, setFocused] = useState(false);
     const innerRef = useRef<TextInput | null>(null);
     const isDisabled = props.editable === false;
@@ -151,7 +155,7 @@ const ThemedTextInput = forwardRef<TextInput, ThemedTextInputProps>(
       variant === 'bordered' && {
         backgroundColor,
         borderColor,
-        borderRadius: radii.item,
+        borderRadius: radius.md,
         color: colors.text,
       },
       variant === 'plain' && {
@@ -171,7 +175,7 @@ const ThemedTextInput = forwardRef<TextInput, ThemedTextInputProps>(
         onBlur={handleBlur}
         onFocus={handleFocus}
         placeholder={label ? undefined : placeholder}
-        placeholderTextColor={placeholderTextColor ?? colors.textSecondary}
+        placeholderTextColor={placeholderTextColor ?? colors.textMuted}
         selectionColor={colors.primarySoft}
         showSoftInputOnFocus
         style={themedStyle}
@@ -218,14 +222,12 @@ const ThemedTextInput = forwardRef<TextInput, ThemedTextInputProps>(
 
 const styles = StyleSheet.create({
   base: {
-    fontFamily: 'NunitoSans_400Regular',
-    fontSize: 16,
-    lineHeight: 22,
+    ...typography.body,
     ...(Platform.OS === 'android' ? { includeFontPadding: false } : null),
   },
   bordered: {
     borderWidth: BORDERED_INPUT_BORDER_WIDTH,
-    paddingHorizontal: 16,
+    paddingHorizontal: space[4],
     paddingVertical: BORDERED_INPUT_PADDING_VERTICAL,
   },
   disabled: {
