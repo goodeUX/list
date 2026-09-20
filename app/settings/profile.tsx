@@ -25,7 +25,7 @@ import { useChildSlideTransition } from '@/hooks/useSlideTransition';
 const AVATAR_SIZE = 96;
 
 export default function ProfileScreen() {
-  const { colors, radii, spacing } = useTheme();
+  const { colors, radius, space, typography } = useTheme();
   const { user, loading, signOut, updateAccount } = useAuth();
   const insets = useSafeAreaInsets();
   const { animatedStyle, goBack, isEnabled: slideTransitionEnabled } =
@@ -149,9 +149,9 @@ export default function ProfileScreen() {
               styles.header,
               {
                 borderBottomColor: colors.border,
-                paddingHorizontal: spacing.lg,
-                paddingTop: spacing.md,
-                paddingBottom: spacing.md,
+                paddingHorizontal: space[6],
+                paddingTop: space[4],
+                paddingBottom: space[4],
               },
             ]}
           >
@@ -171,13 +171,13 @@ export default function ProfileScreen() {
               <MaterialIcons color={colors.primary} name="chevron-left" size={24} />
             </Pressable>
 
-            <Text style={[styles.title, { color: colors.text }]}>Profile</Text>
+            <Text style={[typography.h2, styles.title, { color: colors.text }]}>Profile</Text>
 
             <View style={styles.headerSpacer} />
           </View>
 
           <ScrollView
-            contentContainerStyle={[styles.content, { gap: spacing.md, padding: spacing.lg }]}
+            contentContainerStyle={[styles.content, { gap: space[4], padding: space[6] }]}
             keyboardShouldPersistTaps="handled"
             style={styles.scroll}
           >
@@ -191,7 +191,7 @@ export default function ProfileScreen() {
 
             <View style={styles.field}>
               <View style={styles.labelRow}>
-                <Text style={[styles.label, { color: colors.textSecondary }]}>
+                <Text style={[typography.label, styles.label, { color: colors.textSecondary }]}>
                   Display name
                 </Text>
                 {saving ? <ActivityIndicator color={colors.textSecondary} size="small" /> : null}
@@ -207,26 +207,28 @@ export default function ProfileScreen() {
             </View>
 
             <View style={styles.field}>
-              <Text style={[styles.label, { color: colors.textSecondary }]}>Email</Text>
+              <Text style={[typography.label, styles.label, { color: colors.textSecondary }]}>
+                Email
+              </Text>
               <View
                 style={[
                   styles.readOnlyBox,
                   {
                     backgroundColor: colors.surfaceMuted,
                     borderColor: colors.border,
-                    borderRadius: radii.item,
-                    padding: spacing.md,
+                    borderRadius: radius.md,
+                    padding: space[4],
                   },
                 ]}
               >
-                <Text style={[styles.readOnlyText, { color: colors.textSecondary }]}>
+                <Text style={[typography.body, styles.readOnlyText, { color: colors.textSecondary }]}>
                   {user.email ?? ''}
                 </Text>
               </View>
             </View>
 
             {error ? (
-              <Text style={[styles.error, { color: colors.primary }]}>{error}</Text>
+              <Text style={[typography.bodyS, styles.error, { color: colors.primary }]}>{error}</Text>
             ) : null}
 
             <Button
@@ -267,11 +269,7 @@ const styles = StyleSheet.create({
     marginLeft: 'auto',
     width: 44,
   },
-  title: {
-    fontFamily: 'Fraunces_600SemiBold',
-    fontSize: 24,
-    lineHeight: 30,
-  },
+  title: {},
   scroll: {
     flex: 1,
   },
@@ -289,21 +287,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: 8,
   },
-  label: {
-    fontFamily: 'NunitoSans_600SemiBold',
-    fontSize: 14,
-  },
+  label: {},
   readOnlyBox: {
     borderWidth: 1,
   },
-  readOnlyText: {
-    fontFamily: 'NunitoSans_400Regular',
-    fontSize: 16,
-    lineHeight: 22,
-  },
-  error: {
-    fontFamily: 'NunitoSans_400Regular',
-    fontSize: 14,
-    lineHeight: 20,
-  },
+  readOnlyText: {},
+  error: {},
 });
