@@ -9,6 +9,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { usePlan } from '@/contexts/PlanContext';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useLists } from '@/hooks/useLists';
+import { fontFamily, fontSize, lineHeight, space } from '@/lib/design';
 import { shouldShowInviteAppLanding } from '@/lib/inviteLanding';
 import { joinList } from '@/lib/joinList';
 import { canJoinList } from '@/lib/listLimits';
@@ -134,9 +135,9 @@ export default function JoinListScreen() {
             />
           </>
         ) : error ? (
-          <Text style={[styles.error, { color: colors.accent }]}>{error}</Text>
+          <Text style={[styles.error, { color: colors.primary }]}>{error}</Text>
         ) : (
-          <ActivityIndicator color={colors.accent} size="large" />
+          <ActivityIndicator color={colors.primary} size="large" />
         )}
         {!error && !blocked ? (
           <Text style={[styles.message, { color: colors.textSecondary }]}>
@@ -156,21 +157,21 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     alignSelf: 'center',
     flex: 1,
-    gap: 16,
+    gap: space[4],
     justifyContent: 'center',
     maxWidth: 440,
     width: '100%',
   },
   message: {
-    fontFamily: 'NunitoSans_400Regular',
-    fontSize: 16,
-    lineHeight: 24,
+    fontFamily: fontFamily.bodyRegular,
+    fontSize: fontSize.body,
+    lineHeight: lineHeight.body,
     textAlign: 'center',
   },
   error: {
-    fontFamily: 'NunitoSans_400Regular',
-    fontSize: 16,
-    lineHeight: 24,
+    fontFamily: fontFamily.bodyRegular,
+    fontSize: fontSize.body,
+    lineHeight: lineHeight.body,
     textAlign: 'center',
   },
 });

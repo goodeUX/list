@@ -1,6 +1,7 @@
 import { Platform, Pressable, ScrollView, StyleSheet, Text } from 'react-native';
 
 import { useTheme } from '@/contexts/ThemeContext';
+import { fontFamily, space } from '@/lib/design';
 import {
   SUGGESTION_ROWS_VISIBLE,
   type ItemSuggestion,
@@ -23,7 +24,7 @@ export default function AddItemSuggestions({
   onSelect,
   suggestions,
 }: Props) {
-  const { colors, radii, spacing } = useTheme();
+  const { colors, radius, spacing, typography } = useTheme();
 
   if (suggestions.length === 0) {
     return null;
@@ -37,13 +38,14 @@ export default function AddItemSuggestions({
         {
           backgroundColor: colors.surface,
           borderColor: colors.border,
-          borderRadius: radii.card,
+          borderRadius: radius.lg,
           left: spacing.lg,
-          marginTop: 6,
+          marginTop: space[2],
           maxHeight: ROW_HEIGHT * SUGGESTION_ROWS_VISIBLE,
           right: spacing.lg,
         },
       ]}
+      contentContainerStyle={{ gap: space[1], padding: space[2] }}
     >
       {suggestions.map((suggestion) => {
         const { checkedItemId, matchLength, matchStart, name } = suggestion;
@@ -72,14 +74,15 @@ export default function AddItemSuggestions({
             style={({ pressed }) => [
               styles.row,
               {
-                backgroundColor: pressed ? colors.surfaceMuted : 'transparent',
-                paddingHorizontal: 15,
+                backgroundColor: pressed ? colors.primarySoft : colors.surfaceMuted,
+                borderRadius: radius.full,
+                paddingHorizontal: space[4],
               },
             ]}
           >
-            <Text numberOfLines={1} style={[styles.label, { color: colors.textSecondary }]}>
+            <Text numberOfLines={1} style={[typography.label, styles.label, { color: colors.textSecondary }]}>
               {before}
-              <Text style={[styles.matched, { color: colors.text }]}>{matched}</Text>
+              <Text style={{ color: colors.text, fontFamily: fontFamily.bodyBold }}>{matched}</Text>
               {after}
             </Text>
           </Pressable>
@@ -92,11 +95,6 @@ export default function AddItemSuggestions({
 const styles = StyleSheet.create({
   label: {
     flex: 1,
-    fontFamily: 'NunitoSans_400Regular',
-    fontSize: 16,
-  },
-  matched: {
-    fontFamily: 'NunitoSans_600SemiBold',
   },
   panel: {
     borderWidth: StyleSheet.hairlineWidth,
@@ -107,7 +105,7 @@ const styles = StyleSheet.create({
   row: {
     alignItems: 'center',
     flexDirection: 'row',
-    gap: 8,
+    gap: space[2],
     height: ROW_HEIGHT,
   },
 });

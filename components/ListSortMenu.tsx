@@ -3,6 +3,7 @@ import { useCallback, useEffect } from 'react';
 import { BackHandler, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { useTheme } from '@/contexts/ThemeContext';
+import { space } from '@/lib/design';
 import type { ListSortMode } from '@/lib/listSort';
 
 // The button has no background, so its box is sized to the icon itself —
@@ -10,11 +11,11 @@ import type { ListSortMode } from '@/lib/listSort';
 // a comfortable touch target.
 const ICON_SIZE = 24;
 const BUTTON_SIZE = ICON_SIZE;
-const MENU_ANCHOR_GAP = 8;
+const MENU_ANCHOR_GAP = space[2];
 const MENU_MIN_WIDTH = 240;
 const MENU_ITEM_ICON_SIZE = 20;
-const MENU_ITEM_HORIZONTAL_PADDING = 14;
-const MENU_ITEM_GAP = 10;
+const MENU_ITEM_HORIZONTAL_PADDING = space[4];
+const MENU_ITEM_GAP = space[3];
 
 type SortOption = {
   mode: ListSortMode;
@@ -30,9 +31,6 @@ const SORT_OPTIONS: SortOption[] = [
 
 const menuItemTextStyle = {
   flex: 1,
-  fontFamily: 'NunitoSans_600SemiBold',
-  fontSize: 16,
-  lineHeight: 22,
   ...(Platform.OS === 'web' ? ({ whiteSpace: 'nowrap' } as object) : null),
 };
 
@@ -49,7 +47,7 @@ export default function ListSortMenu({
   sortMode,
   onSortModeChange,
 }: ListSortMenuProps) {
-  const { colors, radii, spacing } = useTheme();
+  const { colors, radius, space, typography, elevation } = useTheme();
 
   const closeMenu = useCallback(() => {
     onVisibleChange(false);
@@ -92,7 +90,7 @@ export default function ListSortMenu({
         ]}
       >
         <MaterialIcons
-          color={colors.accent}
+          color={colors.primary}
           name={activeOption.icon}
           size={ICON_SIZE}
         />
@@ -103,11 +101,12 @@ export default function ListSortMenu({
           <View
             style={[
               styles.menu,
+              elevation.e2,
               {
                 backgroundColor: colors.surface,
                 borderColor: colors.border,
-                borderRadius: radii.card,
-                paddingVertical: spacing.xs,
+                borderRadius: radius.lg,
+                paddingVertical: space[1],
               },
             ]}
           >
@@ -129,16 +128,22 @@ export default function ListSortMenu({
                   ]}
                 >
                   <MaterialIcons
-                    color={colors.text}
+                    color={selected ? colors.primary : colors.text}
                     name={option.icon}
                     size={MENU_ITEM_ICON_SIZE}
                   />
-                  <Text style={[menuItemTextStyle, { color: colors.text }]}>
+                  <Text
+                    style={[
+                      typography.label,
+                      menuItemTextStyle,
+                      { color: selected ? colors.primary : colors.text },
+                    ]}
+                  >
                     {option.label}
                   </Text>
                   {selected ? (
                     <MaterialIcons
-                      color={colors.accent}
+                      color={colors.primary}
                       name="check"
                       size={MENU_ITEM_ICON_SIZE}
                     />

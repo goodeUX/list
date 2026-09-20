@@ -6,7 +6,6 @@ import {
   Pressable,
   ScrollView,
   StyleSheet,
-  Switch,
   Text,
   View,
 } from 'react-native';
@@ -14,15 +13,17 @@ import { absoluteFill } from '@/lib/absoluteFill';
 import Animated from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import AppSwitch from '@/components/AppSwitch';
 import Button from '@/components/Button';
 import ThemedTextInput from '@/components/ThemedTextInput';
 import { getAuthErrorMessage, useAuth } from '@/contexts/AuthContext';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useAppLock } from '@/hooks/useAppLock';
 import { useChildSlideTransition } from '@/hooks/useSlideTransition';
+import { radius, space } from '@/lib/design';
 
 export default function SecurityScreen() {
-  const { colors, spacing } = useTheme();
+  const { colors, typography } = useTheme();
   const { user, loading, updateAccount } = useAuth();
   const appLock = useAppLock();
   const insets = useSafeAreaInsets();
@@ -127,9 +128,9 @@ export default function SecurityScreen() {
               styles.header,
               {
                 borderBottomColor: colors.border,
-                paddingHorizontal: spacing.lg,
-                paddingTop: spacing.md,
-                paddingBottom: spacing.md,
+                paddingHorizontal: space[6],
+                paddingTop: space[4],
+                paddingBottom: space[4],
               },
             ]}
           >
@@ -146,40 +147,38 @@ export default function SecurityScreen() {
                 },
               ]}
             >
-              <MaterialIcons color={colors.accent} name="chevron-left" size={24} />
+              <MaterialIcons color={colors.primary} name="chevron-left" size={24} />
             </Pressable>
 
-            <Text style={[styles.title, { color: colors.text }]}>Security</Text>
+            <Text style={[typography.h2, styles.title, { color: colors.text }]}>Security</Text>
 
             <View style={styles.headerSpacer} />
           </View>
 
           <ScrollView
-            contentContainerStyle={[styles.content, { gap: spacing.md, padding: spacing.lg }]}
+            contentContainerStyle={[styles.content, { gap: space[4], padding: space[6] }]}
             keyboardShouldPersistTaps="handled"
             style={styles.scroll}
           >
             {appLock.capability === 'ready' ? (
               <View style={styles.appLockRow}>
                 <View style={styles.appLockLabels}>
-                  <Text style={[styles.sectionTitle, { color: colors.text }]}>
+                  <Text style={[typography.h2, styles.sectionTitle, { color: colors.text }]}>
                     Fingerprint / Face ID
                   </Text>
-                  <Text style={[styles.helper, { color: colors.textSecondary }]}>
+                  <Text style={[typography.bodyS, styles.helper, { color: colors.textSecondary }]}>
                     Require fingerprint / Face ID to open List Kitty
                   </Text>
                 </View>
-                <Switch
+                <AppSwitch
                   accessibilityLabel="App lock"
                   disabled={appLock.loading || appLockBusy}
                   onValueChange={(next) => void handleAppLockToggle(next)}
-                  thumbColor={appLock.enabled ? colors.accent : colors.textSecondary}
-                  trackColor={{ false: colors.border, true: colors.accentSoft }}
                   value={appLock.enabled}
                 />
               </View>
             ) : appLock.capability === 'unsupported' ? null : (
-              <Text style={[styles.helper, { color: colors.textSecondary }]}>
+              <Text style={[typography.bodyS, styles.helper, { color: colors.textSecondary }]}>
                 Set up fingerprint or face unlock in your device settings to use App lock.
               </Text>
             )}
@@ -190,20 +189,20 @@ export default function SecurityScreen() {
                   borderTopColor: colors.border,
                   borderTopWidth:
                     appLock.capability === 'unsupported' ? 0 : StyleSheet.hairlineWidth,
-                  gap: spacing.md,
+                  gap: space[4],
                   paddingTop:
-                    appLock.capability === 'unsupported' ? 0 : spacing.md,
+                    appLock.capability === 'unsupported' ? 0 : space[4],
                 }}
               >
-                <Text style={[styles.sectionTitle, { color: colors.text }]}>
+                <Text style={[typography.h2, styles.sectionTitle, { color: colors.text }]}>
                   Change password
                 </Text>
-                <Text style={[styles.helper, { color: colors.textSecondary }]}>
+                <Text style={[typography.bodyS, styles.helper, { color: colors.textSecondary }]}>
                   Enter your current password, then a new password twice.
                 </Text>
 
                 <View style={styles.field}>
-                  <Text style={[styles.label, { color: colors.textSecondary }]}>
+                  <Text style={[typography.label, styles.label, { color: colors.textSecondary }]}>
                     Current password
                   </Text>
                   <ThemedTextInput
@@ -218,7 +217,7 @@ export default function SecurityScreen() {
                 </View>
 
                 <View style={styles.field}>
-                  <Text style={[styles.label, { color: colors.textSecondary }]}>
+                  <Text style={[typography.label, styles.label, { color: colors.textSecondary }]}>
                     New password
                   </Text>
                   <ThemedTextInput
@@ -233,7 +232,7 @@ export default function SecurityScreen() {
                 </View>
 
                 <View style={styles.field}>
-                  <Text style={[styles.label, { color: colors.textSecondary }]}>
+                  <Text style={[typography.label, styles.label, { color: colors.textSecondary }]}>
                     Confirm new password
                   </Text>
                   <ThemedTextInput
@@ -250,7 +249,7 @@ export default function SecurityScreen() {
             ) : null}
 
             {error ? (
-              <Text style={[styles.error, { color: colors.accent }]}>{error}</Text>
+              <Text style={[typography.bodyS, styles.error, { color: colors.primary }]}>{error}</Text>
             ) : null}
           </ScrollView>
 
@@ -260,9 +259,9 @@ export default function SecurityScreen() {
                 styles.bottomBar,
                 {
                   borderTopColor: colors.border,
-                  paddingHorizontal: spacing.lg,
-                  paddingTop: spacing.md,
-                  paddingBottom: spacing.lg,
+                  paddingHorizontal: space[6],
+                  paddingTop: space[4],
+                  paddingBottom: space[6],
                 },
               ]}
             >
@@ -291,11 +290,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderBottomWidth: 1,
     flexDirection: 'row',
-    gap: 12,
+    gap: space[3],
   },
   backButton: {
     alignItems: 'center',
-    borderRadius: 22,
+    borderRadius: radius.xl,
     height: 44,
     justifyContent: 'center',
     width: 44,
@@ -305,11 +304,7 @@ const styles = StyleSheet.create({
     marginLeft: 'auto',
     width: 44,
   },
-  title: {
-    fontFamily: 'Fraunces_600SemiBold',
-    fontSize: 24,
-    lineHeight: 30,
-  },
+  title: {},
   scroll: {
     flex: 1,
   },
@@ -319,7 +314,7 @@ const styles = StyleSheet.create({
   appLockRow: {
     alignItems: 'center',
     flexDirection: 'row',
-    gap: 12,
+    gap: space[3],
   },
   appLockLabels: {
     flex: 1,
@@ -327,27 +322,12 @@ const styles = StyleSheet.create({
     minWidth: 0,
   },
   field: {
-    gap: 6,
+    gap: space[2],
   },
-  sectionTitle: {
-    fontFamily: 'Fraunces_600SemiBold',
-    fontSize: 20,
-    lineHeight: 28,
-  },
-  label: {
-    fontFamily: 'NunitoSans_600SemiBold',
-    fontSize: 14,
-  },
-  helper: {
-    fontFamily: 'NunitoSans_400Regular',
-    fontSize: 13,
-    lineHeight: 18,
-  },
-  error: {
-    fontFamily: 'NunitoSans_400Regular',
-    fontSize: 14,
-    lineHeight: 20,
-  },
+  sectionTitle: {},
+  label: {},
+  helper: {},
+  error: {},
   bottomBar: {
     borderTopWidth: StyleSheet.hairlineWidth,
   },

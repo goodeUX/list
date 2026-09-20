@@ -4,6 +4,7 @@ import { Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { useTheme } from '@/contexts/ThemeContext';
 import { playToggleHaptic } from '@/lib/haptics';
+import { space } from '@/lib/design';
 import type { SubItem } from '@/lib/types';
 
 type SubItemRowProps = {
@@ -17,7 +18,7 @@ export default function SubItemRow({
   disabled = false,
   onToggle,
 }: SubItemRowProps) {
-  const { colors, radii, spacing } = useTheme();
+  const { colors, radii, spacing, typography } = useTheme();
 
   const handleToggle = () => {
     if (disabled) {
@@ -53,9 +54,9 @@ export default function SubItemRow({
       >
         {subItem.checked ? (
           Platform.OS === 'ios' ? (
-            <SymbolView name="checkmark" size={11} tintColor={colors.surface} />
+            <SymbolView name="checkmark" size={11} tintColor={colors.onPrimary} />
           ) : (
-            <MaterialIcons color={colors.surface} name="check" size={11} />
+            <MaterialIcons color={colors.onPrimary} name="check" size={11} />
           )
         ) : null}
       </View>
@@ -63,6 +64,7 @@ export default function SubItemRow({
       <Text
         numberOfLines={1}
         style={[
+          typography.bodyS,
           styles.name,
           {
             color: subItem.checked ? colors.textSecondary : colors.text,
@@ -80,7 +82,7 @@ const styles = StyleSheet.create({
   row: {
     alignItems: 'center',
     flexDirection: 'row',
-    gap: 10,
+    gap: space[3],
   },
   checkbox: {
     alignItems: 'center',
@@ -91,8 +93,5 @@ const styles = StyleSheet.create({
   },
   name: {
     flex: 1,
-    fontFamily: 'NunitoSans_400Regular',
-    fontSize: 15,
-    lineHeight: 20,
   },
 });

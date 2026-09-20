@@ -13,6 +13,7 @@ import {
 import { useColorScheme } from '@/components/useColorScheme';
 import { useAuth } from '@/contexts/AuthContext';
 import { db } from '@/lib/firebase';
+import { radius, space, typography, elevation } from '@/lib/design';
 import {
   colors,
   radii,
@@ -28,6 +29,10 @@ type ThemeContextValue = {
   colors: ThemeColors;
   radii: typeof radii;
   spacing: typeof spacing;
+  radius: typeof radius;
+  space: typeof space;
+  typography: typeof typography;
+  elevation: typeof elevation;
   colorScheme: ColorScheme;
   preference: ThemePreference;
   setPreference: (preference: ThemePreference) => void;
@@ -87,6 +92,10 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
       colors: colors[colorScheme],
       radii,
       spacing,
+      radius,
+      space,
+      typography,
+      elevation,
       colorScheme,
       preference,
       setPreference,

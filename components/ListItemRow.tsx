@@ -11,6 +11,7 @@ import Animated, {
 
 import SubItemRow from '@/components/SubItemRow';
 import { useTheme } from '@/contexts/ThemeContext';
+import { fontFamily, fontSize, lineHeight, palette, space } from '@/lib/design';
 import { playToggleHaptic } from '@/lib/haptics';
 import { formatItemNameForDisplay } from '@/lib/itemName';
 import { subItemProgress, sortSubItems } from '@/lib/subItems';
@@ -97,7 +98,7 @@ export default function ListItemRow({
   dragHandle,
   onToggleSubItem,
 }: ListItemRowProps) {
-  const { colors, radii, spacing } = useTheme();
+  const { colors, radii, radius, spacing, typography } = useTheme();
   const { done, total } = subItemProgress(item.subItems);
   const hasSubItems = total > 0;
   const checkScale = useSharedValue(1);
@@ -151,7 +152,7 @@ export default function ListItemRow({
         isActive
           ? {
               backgroundColor: colors.surface,
-              borderRadius: radii.item,
+              borderRadius: radius.md,
               paddingHorizontal: spacing.sm,
             }
           : null,
@@ -177,9 +178,9 @@ export default function ListItemRow({
         >
           {item.checked ? (
             Platform.OS === 'ios' ? (
-              <SymbolView name="checkmark" size={14} tintColor={colors.surface} />
+              <SymbolView name="checkmark" size={14} tintColor={colors.onPrimary} />
             ) : (
-              <MaterialIcons color={colors.surface} name="check" size={14} />
+              <MaterialIcons color={colors.onPrimary} name="check" size={14} />
             )
           ) : null}
         </View>
@@ -189,9 +190,9 @@ export default function ListItemRow({
         <CompletedText
           animatedStyle={completedTextStyle}
           checked={item.checked}
-          color={colors.text}
+          color={item.checked ? colors.textMuted : colors.text}
           numberOfLines={1}
-          style={styles.name}
+          style={typography.body}
         >
           {formatItemNameForDisplay(item.name)}
         </CompletedText>
@@ -203,7 +204,7 @@ export default function ListItemRow({
                 style={[
                   styles.pill,
                   {
-                    backgroundColor: colors.surfaceMuted,
+                    backgroundColor: palette.butter[200],
                     borderRadius: radii.checkbox,
                   },
                 ]}
@@ -211,7 +212,7 @@ export default function ListItemRow({
                 <CompletedText
                   animatedStyle={completedTextStyle}
                   checked={item.checked}
-                  color={colors.textSecondary}
+                  color={palette.sand[900]}
                   style={styles.pillText}
                 >
                   {item.quantity}
@@ -225,20 +226,20 @@ export default function ListItemRow({
                   styles.pill,
                   styles.linkPill,
                   {
-                    backgroundColor: colors.accentSoft,
+                    backgroundColor: palette.butter[200],
                     borderRadius: radii.checkbox,
                   },
                 ]}
               >
                 {Platform.OS === 'ios' ? (
-                  <SymbolView name="link" size={12} tintColor={colors.accent} />
+                  <SymbolView name="link" size={12} tintColor={palette.sand[900]} />
                 ) : (
-                  <MaterialIcons color={colors.accent} name="link" size={12} />
+                  <MaterialIcons color={palette.sand[900]} name="link" size={12} />
                 )}
                 <CompletedText
                   animatedStyle={completedTextStyle}
                   checked={item.checked}
-                  color={colors.accent}
+                  color={palette.sand[900]}
                   style={styles.pillText}
                 >
                   Link
@@ -253,10 +254,10 @@ export default function ListItemRow({
         <View
           style={[
             styles.progressBadge,
-            { backgroundColor: colors.surfaceMuted, borderRadius: radii.checkbox },
+            { backgroundColor: palette.teal[100], borderRadius: radii.checkbox },
           ]}
         >
-          <Text style={[styles.progressText, { color: colors.textSecondary }]}>
+          <Text style={[styles.progressText, { color: palette.sand[900] }]}>
             {done}/{total}
           </Text>
         </View>
@@ -280,7 +281,7 @@ export default function ListItemRow({
       ) : null}
     </Pressable>
       {hasSubItems ? (
-        <View style={[styles.subItems, { paddingLeft: spacing.lg + 12 }]}>
+        <View style={[styles.subItems, { paddingLeft: spacing.lg + space[3] }]}>
           {sortSubItems(item.subItems).map((subItem) => (
             <SubItemRow
               key={subItem.id}
@@ -299,7 +300,7 @@ const styles = StyleSheet.create({
   row: {
     alignItems: 'center',
     flexDirection: 'row',
-    gap: 12,
+    gap: space[3],
   },
   checkboxHitArea: {
     alignItems: 'center',
@@ -316,7 +317,7 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
-    gap: 4,
+    gap: space[1],
   },
   dragHandle: {
     alignItems: 'center',
@@ -335,45 +336,40 @@ const styles = StyleSheet.create({
     right: 0,
     top: '50%',
   },
-  name: {
-    fontFamily: 'NunitoSans_400Regular',
-    fontSize: 18,
-    lineHeight: 24,
-  },
   meta: {
     flexDirection: 'row',
     flexWrap: 'wrap',
   },
   pill: {
-    paddingHorizontal: 8,
+    paddingHorizontal: space[2],
     paddingVertical: 2,
   },
   linkPill: {
     alignItems: 'center',
     flexDirection: 'row',
-    gap: 4,
+    gap: space[1],
   },
   pillText: {
-    fontFamily: 'NunitoSans_600SemiBold',
-    fontSize: 12,
-    lineHeight: 16,
+    fontFamily: fontFamily.bodySemiBold,
+    fontSize: fontSize.caption,
+    lineHeight: lineHeight.caption,
   },
   progressBadge: {
     alignItems: 'center',
     height: 20,
     justifyContent: 'center',
     minWidth: 28,
-    paddingHorizontal: 6,
+    paddingHorizontal: space[2],
   },
   progressText: {
-    fontFamily: 'NunitoSans_600SemiBold',
-    fontSize: 12,
-    lineHeight: 14,
+    fontFamily: fontFamily.bodySemiBold,
+    fontSize: fontSize.caption,
+    lineHeight: lineHeight.caption,
     textAlign: 'center',
   },
   subItems: {
     gap: 2,
-    marginTop: -6,
-    paddingBottom: 14,
+    marginTop: -space[2],
+    paddingBottom: space[4],
   },
 });

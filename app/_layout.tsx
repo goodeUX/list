@@ -1,8 +1,8 @@
 import {
-  Fraunces_400Regular,
-  Fraunces_600SemiBold,
-  Fraunces_700Bold,
-} from '@expo-google-fonts/fraunces';
+  Fredoka_500Medium,
+  Fredoka_600SemiBold,
+  Fredoka_700Bold,
+} from '@expo-google-fonts/fredoka';
 import {
   NunitoSans_400Regular,
   NunitoSans_600SemiBold,
@@ -60,9 +60,9 @@ const OPENING_ZOOM_FROM = 0.9;
 export default function RootLayout() {
   const skipOpening = useShouldSkipOpening();
   const [loaded, error] = useFonts({
-    Fraunces_400Regular,
-    Fraunces_600SemiBold,
-    Fraunces_700Bold,
+    Fredoka_500Medium,
+    Fredoka_600SemiBold,
+    Fredoka_700Bold,
     NunitoSans_400Regular,
     NunitoSans_600SemiBold,
     NunitoSans_700Bold,

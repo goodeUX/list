@@ -6,12 +6,10 @@ import {
   KeyboardAvoidingView,
   Platform,
   Pressable,
-  StyleSheet,
   Text,
   View,
   type ImageSourcePropType,
 } from 'react-native';
-import { absoluteFill } from '@/lib/absoluteFill';
 import Animated, {
   Easing,
   useAnimatedStyle,
@@ -34,6 +32,7 @@ import { useListItemHistory } from '@/hooks/useListItemHistory';
 import { isOptimisticListItem, useListItems } from '@/hooks/useListItems';
 import { useChildSlideTransition } from '@/hooks/useSlideTransition';
 import { showAppAlert } from '@/lib/appAlert';
+import { space } from '@/lib/design';
 import { getItemSuggestions, type ItemSuggestion } from '@/lib/itemSuggestions';
 import { db } from '@/lib/firebase';
 import { handleFirestoreListenerError } from '@/lib/firestoreListenerErrors';
@@ -48,16 +47,16 @@ import { deleteListById, leaveListById, setListMoveDoneToBottom, updateListDetai
 import { consumePendingAddInputFocus } from '@/lib/pendingAddInputFocus';
 import { isPurchasesAvailable } from '@/lib/purchases';
 import { SLIDE_IN_MS } from '@/lib/slideTransition';
+import { ADD_SUBMIT_BUTTON_SIZE, listDetailStyles as styles } from '@/lib/listDetailScreenStyles';
 import type { ListItem } from '@/lib/types';
 
 const LIST_ITEMS_FADE_MS = 500;
 const LIST_ITEMS_FADE_EASING = Easing.bezier(0, 0, 0.58, 1);
 
-const ADD_SUBMIT_BUTTON_SIZE = 40;
 const lightListEmptyStateImage =
-  require('../../../assets/images/bowl-red.png') as ImageSourcePropType;
+  require('../../../assets/images/bowl-red.webp') as ImageSourcePropType;
 const darkListEmptyStateImage =
-  require('../../../assets/images/bowl-blue.png') as ImageSourcePropType;
+  require('../../../assets/images/bowl-blue.webp') as ImageSourcePropType;
 const ADD_INPUT_ROW_NATIVE_ID = 'list-add-input-row';
 
 export default function ListDetailScreen() {
@@ -73,7 +72,7 @@ export default function ListDetailScreen() {
   const shouldFocusAddInput = params.focusAdd === '1';
   const cachedList = listId ? getCachedLocalList(listId) : null;
   const { user } = useAuth();
-  const { colors, colorScheme, radii, spacing } = useTheme();
+  const { colors, colorScheme, radii, spacing, typography } = useTheme();
   const insets = useSafeAreaInsets();
   const [listName, setListName] = useState(paramName || cachedList?.name || '');
   const [listEmoji, setListEmoji] = useState(paramEmoji || cachedList?.emoji || '📋');
@@ -731,7 +730,7 @@ export default function ListDetailScreen() {
         source={colorScheme === 'dark' ? darkListEmptyStateImage : lightListEmptyStateImage}
         style={styles.emptyListImage}
       />
-      <Text style={[styles.emptyText, { color: colors.textSecondary }]}>
+      <Text style={[typography.body, styles.emptyText, { color: colors.textSecondary }]}>
         No items yet. Add your first one above.
       </Text>
     </View>
@@ -795,7 +794,7 @@ export default function ListDetailScreen() {
             },
           ]}
         >
-          <MaterialIcons color={colors.accent} name="chevron-left" size={24} />
+          <MaterialIcons color={colors.primary} name="chevron-left" size={24} />
         </Pressable>
 
         <Pressable
@@ -821,7 +820,7 @@ export default function ListDetailScreen() {
           <View style={[styles.titleTextBlock, { pointerEvents: 'none' }]}>
             <Text
               numberOfLines={2}
-              style={[styles.title, { color: colors.text, pointerEvents: 'none' }]}
+              style={[typography.h2, styles.title, { color: colors.text, pointerEvents: 'none' }]}
             >
               {listName || paramName || 'List'}
             </Text>
@@ -867,7 +866,7 @@ export default function ListDetailScreen() {
           ]}
         >
           <MaterialIcons color={colors.textSecondary} name="lock-outline" size={20} />
-          <Text style={[styles.readOnlyText, { color: colors.textSecondary }]}>
+          <Text style={[typography.label, styles.readOnlyText, { color: colors.textSecondary }]}>
             Read-only on the Free plan
           </Text>
           {isPurchasesAvailable() ? (
@@ -878,7 +877,7 @@ export default function ListDetailScreen() {
                 router.push({ pathname: '/(auth)/paywall', params: { from: 'settings' } })
               }
             >
-              <Text style={[styles.readOnlyUpgrade, { color: colors.accent }]}>
+              <Text style={[typography.label, styles.readOnlyUpgrade, { color: colors.primary }]}>
                 Upgrade
               </Text>
             </Pressable>
@@ -899,8 +898,8 @@ export default function ListDetailScreen() {
               paddingRight: showSubmitButton
                   ? spacing.xs
                   : isAddInputFocused
-                    ? 12
-                    : 15,
+                    ? space[3]
+                    : space[4],
               },
             ]}
           >
@@ -913,7 +912,7 @@ export default function ListDetailScreen() {
               placeholder="Add an item..."
               returnKeyType="done"
               showSoftInputOnFocus
-              style={styles.addInput}
+              style={[typography.body, styles.addInput]}
               value={newItemName}
               variant="plain"
             />
@@ -931,7 +930,7 @@ export default function ListDetailScreen() {
               style={({ pressed }) => [
                 styles.addSubmitButton,
                 {
-                  backgroundColor: colors.accent,
+                  backgroundColor: colors.primary,
                   borderRadius: radii.checkbox,
                   opacity: showSubmitButton ? (pressed && canSubmitNewItem ? 0.85 : 1) : 0,
                   pointerEvents: showSubmitButton ? 'auto' : 'none',
@@ -939,7 +938,7 @@ export default function ListDetailScreen() {
                 },
               ]}
             >
-              <MaterialIcons color={colors.surface} name="check" size={22} />
+              <MaterialIcons color={colors.onPrimary} name="check" size={22} />
             </Pressable>
           </Pressable>
           <AddItemSuggestions
@@ -992,122 +991,3 @@ export default function ListDetailScreen() {
     </Animated.View>
   );
 }
-
-const styles = StyleSheet.create({
-  screen: {
-    ...absoluteFill,
-  },
-  screenMenuOpen: {
-    overflow: 'visible',
-  },
-  flex: {
-    flex: 1,
-  },
-  header: {
-    alignItems: 'center',
-    borderBottomWidth: 1,
-    flexDirection: 'row',
-    gap: 12,
-  },
-  headerMenuOpen: {
-    overflow: 'visible',
-    zIndex: 10,
-  },
-  menuBackdrop: {
-    ...absoluteFill,
-    backgroundColor: 'transparent',
-    zIndex: 5,
-  },
-  shareButton: {
-    alignItems: 'center',
-    borderRadius: 22,
-    flexShrink: 0,
-    height: 44,
-    justifyContent: 'center',
-    width: 44,
-  },
-  titleBlock: {
-    alignItems: 'center',
-    flex: 1,
-    flexDirection: 'row',
-    gap: 10,
-  },
-  titleTextBlock: {
-    flex: 1,
-    gap: 2,
-    minHeight: 30,
-  },
-  emoji: {
-    fontSize: 28,
-    lineHeight: 32,
-  },
-  title: {
-    fontFamily: 'Fraunces_600SemiBold',
-    fontSize: 24,
-    lineHeight: 30,
-  },
-  addInputRow: {
-    alignItems: 'center',
-    flexDirection: 'row',
-    gap: 8,
-    paddingLeft: 15,
-    paddingVertical: 6,
-  },
-  // Lifts the suggestion panel above the item list that follows it, and no
-  // higher: the menu backdrop (5) and the header's options menu (10) must
-  // both still sit above the input row.
-  addInputWrapper: {
-    zIndex: 1,
-  },
-  addInput: {
-    flex: 1,
-    fontFamily: 'NunitoSans_400Regular',
-    fontSize: 16,
-    minHeight: ADD_SUBMIT_BUTTON_SIZE - 4,
-    paddingVertical: 7,
-  },
-  addSubmitButton: {
-    alignItems: 'center',
-    height: ADD_SUBMIT_BUTTON_SIZE,
-    justifyContent: 'center',
-    width: ADD_SUBMIT_BUTTON_SIZE,
-  },
-  readOnlyBanner: {
-    alignItems: 'center',
-    borderWidth: 1,
-    flexDirection: 'row',
-    gap: 8,
-  },
-  readOnlyText: {
-    flex: 1,
-    fontFamily: 'NunitoSans_600SemiBold',
-    fontSize: 14,
-    lineHeight: 20,
-  },
-  readOnlyUpgrade: {
-    fontFamily: 'NunitoSans_600SemiBold',
-    fontSize: 14,
-  },
-  listContainer: {
-    flex: 1,
-    minHeight: 0,
-  },
-  listContent: {
-    flexGrow: 1,
-  },
-  emptyList: {
-    alignItems: 'center',
-    paddingHorizontal: 24,
-  },
-  emptyListImage: {
-    height: 168,
-    width: 168,
-  },
-  emptyText: {
-    fontFamily: 'NunitoSans_400Regular',
-    fontSize: 15,
-    lineHeight: 22,
-    marginTop: 16,
-    textAlign: 'center',
-  },
-});

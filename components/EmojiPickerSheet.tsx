@@ -25,6 +25,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 
 import { useTheme } from '@/contexts/ThemeContext';
+import { radius, space } from '@/lib/design';
 import {
   activeCategoryIndex,
   buildEmojiLayout,
@@ -41,7 +42,7 @@ const FALLBACK_VISIBLE_ROWS = 6;
 // Close to the real measured value, so the first open doesn't visibly resize.
 const ESTIMATED_CHROME_HEIGHT = 72;
 // Corner of the highlight behind the selected category icon.
-const CATEGORY_ACTIVE_RADIUS = 8;
+const CATEGORY_ACTIVE_RADIUS = radius.sm;
 // Never collapse the grid to nothing on a very short keyboard.
 const MIN_VISIBLE_ROWS = 2;
 const HEADER_HEIGHT = 34;
@@ -50,7 +51,7 @@ const TAB_BAR_HEIGHT = 52;
 const EMOJI_FONT_SIZE = 26;
 // Shared by the search row, the emoji grid and the category row, so all three
 // sections line up against the same inset.
-const CONTENT_HORIZONTAL_PADDING = 12;
+const CONTENT_HORIZONTAL_PADDING = space[3];
 
 const OPEN_DURATION_MS = 220;
 const CLOSE_DURATION_MS = 180;
@@ -91,7 +92,7 @@ export default function EmojiPickerSheet({
   selected,
   keyboardHeight = 0,
 }: EmojiPickerSheetProps) {
-  const { colors, radii } = useTheme();
+  const { colors, radius, typography, elevation } = useTheme();
   const { width: windowWidth } = useWindowDimensions();
   const insets = useSafeAreaInsets();
   const [query, setQuery] = useState('');
@@ -279,7 +280,7 @@ export default function EmojiPickerSheet({
       if (item.type === 'header') {
         return (
           <View style={[styles.sectionHeader, { height: HEADER_HEIGHT }]}>
-            <Text style={[styles.sectionHeaderText, { color: colors.textSecondary }]}>
+            <Text style={[typography.bodyS, styles.sectionHeaderText, { color: colors.textSecondary }]}>
               {item.label}
             </Text>
           </View>
@@ -299,7 +300,7 @@ export default function EmojiPickerSheet({
                 {
                   backgroundColor:
                     emoji.emoji === selected ? colors.surfaceMuted : 'transparent',
-                  borderRadius: radii.checkbox,
+                  borderRadius: radius.sm,
                   height: cellSize,
                   opacity: pressed ? 0.6 : 1,
                   width: cellSize,
@@ -317,7 +318,7 @@ export default function EmojiPickerSheet({
       colors.surfaceMuted,
       colors.textSecondary,
       handleSelectEmoji,
-      radii.checkbox,
+      radius.sm,
       selected,
     ],
   );
@@ -332,7 +333,16 @@ export default function EmojiPickerSheet({
     <View pointerEvents="box-none" style={styles.layer}>
       <Animated.View
         onLayout={handleSheetLayout}
-        style={[styles.sheet, sheetAnimatedStyle, { backgroundColor: colors.surface }]}
+        style={[
+          styles.sheet,
+          sheetAnimatedStyle,
+          elevation.e3,
+          {
+            backgroundColor: colors.surface,
+            borderTopLeftRadius: radius.xl,
+            borderTopRightRadius: radius.xl,
+          },
+        ]}
       >
         <View onLayout={handleChromeLayout}>
         <View
@@ -344,7 +354,7 @@ export default function EmojiPickerSheet({
               {
                 backgroundColor: colors.surfaceMuted,
                 borderColor: colors.border,
-                borderRadius: radii.item,
+                borderRadius: radius.md,
               },
             ]}
           >
@@ -355,7 +365,7 @@ export default function EmojiPickerSheet({
               onChangeText={setQuery}
               placeholder="Search"
               placeholderTextColor={colors.textSecondary}
-              style={[styles.searchInput, { color: colors.text }]}
+              style={[typography.body, styles.searchInput, { color: colors.text }]}
               value={query}
             />
             {query ? (
@@ -373,7 +383,7 @@ export default function EmojiPickerSheet({
 
         {searching && rows.length === 0 ? (
           <View style={[styles.emptyState, { height: listHeight }]}>
-            <Text style={[styles.emptyStateText, { color: colors.textSecondary }]}>
+            <Text style={[typography.body, styles.emptyStateText, { color: colors.textSecondary }]}>
               No emoji found
             </Text>
           </View>
@@ -428,7 +438,7 @@ export default function EmojiPickerSheet({
                   ]}
                 >
                   <Ionicons
-                    color={isActive ? colors.accent : colors.textSecondary}
+                    color={isActive ? colors.primary : colors.textSecondary}
                     name={CATEGORY_ICONS[category.key] ?? 'ellipse-outline'}
                     size={20}
                   />
@@ -456,32 +466,27 @@ const styles = StyleSheet.create({
   searchRow: {
     // Matches the tab bar's top border so both dividers read the same weight.
     borderBottomWidth: StyleSheet.hairlineWidth,
-    paddingBottom: 16,
+    paddingBottom: space[4],
     paddingHorizontal: CONTENT_HORIZONTAL_PADDING,
-    paddingTop: 16,
+    paddingTop: space[4],
   },
   searchField: {
     alignItems: 'center',
     borderWidth: 1,
     flexDirection: 'row',
-    gap: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
+    gap: space[2],
+    paddingHorizontal: space[3],
+    paddingVertical: space[2],
   },
   searchInput: {
     flex: 1,
-    fontFamily: 'NunitoSans_400Regular',
-    fontSize: 15,
     padding: 0,
   },
   sectionHeader: {
     justifyContent: 'center',
-    paddingHorizontal: 12,
+    paddingHorizontal: space[3],
   },
-  sectionHeaderText: {
-    fontFamily: 'NunitoSans_600SemiBold',
-    fontSize: 13,
-  },
+  sectionHeaderText: {},
   listContent: {
     paddingHorizontal: CONTENT_HORIZONTAL_PADDING,
   },
@@ -500,10 +505,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  emptyStateText: {
-    fontFamily: 'NunitoSans_400Regular',
-    fontSize: 15,
-  },
+  emptyStateText: {},
   tabBar: {
     alignItems: 'stretch',
     borderTopWidth: StyleSheet.hairlineWidth,

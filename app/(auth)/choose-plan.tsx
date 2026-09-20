@@ -8,6 +8,7 @@ import { useTheme } from '@/contexts/ThemeContext';
 import { APP_NAME } from '@/lib/appName';
 import { buildAuthHref, parseAuthRedirect } from '@/lib/authRedirect';
 import { FREE_LIST_LIMIT } from '@/lib/listLimits';
+import { radius, space } from '@/lib/design';
 import { getPremiumPackages, isPurchasesAvailable } from '@/lib/purchases';
 
 type TierFeature = { icon: keyof typeof MaterialIcons.glyphMap; text: string };
@@ -24,7 +25,7 @@ const PREMIUM_FEATURES: TierFeature[] = [
 ];
 
 export default function ChoosePlanScreen() {
-  const { colors, radii, spacing } = useTheme();
+  const { colors, radius, space, typography } = useTheme();
   const { redirect } = useLocalSearchParams<{ redirect?: string }>();
   const resolvedRedirect = parseAuthRedirect(redirect);
   const [monthlyPrice, setMonthlyPrice] = useState<string | null>(null);
@@ -75,25 +76,25 @@ export default function ChoosePlanScreen() {
         styles.card,
         {
           backgroundColor: colors.surface,
-          borderColor: highlighted ? colors.accent : colors.border,
-          borderRadius: radii.card,
+          borderColor: highlighted ? colors.primary : colors.border,
+          borderRadius: radius.lg,
           borderWidth: highlighted ? 2 : 1,
-          gap: spacing.sm,
+          gap: space[2],
           opacity: pressed ? 0.85 : 1,
-          padding: spacing.md,
+          padding: space[4],
         },
       ]}
     >
       <View style={styles.cardHeader}>
-        <Text style={[styles.cardTitle, { color: colors.text }]}>{title}</Text>
-        <Text style={[styles.cardPrice, { color: colors.textSecondary }]}>
+        <Text style={[typography.h2, styles.cardTitle, { color: colors.text }]}>{title}</Text>
+        <Text style={[typography.label, styles.cardPrice, { color: colors.textSecondary }]}>
           {priceLine}
         </Text>
       </View>
       {features.map((feature) => (
         <View key={feature.text} style={styles.featureRow}>
-          <MaterialIcons color={colors.accent} name={feature.icon} size={20} />
-          <Text style={[styles.featureText, { color: colors.text }]}>
+          <MaterialIcons color={colors.primary} name={feature.icon} size={20} />
+          <Text style={[typography.label, styles.featureText, { color: colors.text }]}>
             {feature.text}
           </Text>
         </View>
@@ -112,9 +113,9 @@ export default function ChoosePlanScreen() {
         style={[
           styles.topHeader,
           {
-            paddingHorizontal: spacing.lg,
-            paddingTop: spacing.md,
-            paddingBottom: spacing.sm,
+            paddingHorizontal: space[6],
+            paddingTop: space[4],
+            paddingBottom: space[2],
           },
         ]}
       >
@@ -128,16 +129,16 @@ export default function ChoosePlanScreen() {
             { backgroundColor: colors.surface, opacity: pressed ? 0.7 : 1 },
           ]}
         >
-          <MaterialIcons color={colors.accent} name="chevron-left" size={24} />
+          <MaterialIcons color={colors.primary} name="chevron-left" size={24} />
         </Pressable>
       </View>
 
-      <View style={[styles.container, { padding: spacing.lg, gap: spacing.md }]}>
+      <View style={[styles.container, { padding: space[6], gap: space[4] }]}>
         <View style={styles.header}>
-          <Text style={[styles.title, { color: colors.text }]}>
+          <Text style={[typography.display, styles.title, { color: colors.text }]}>
             Join {APP_NAME}
           </Text>
-          <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
+          <Text style={[typography.bodyL, styles.subtitle, { color: colors.textSecondary }]}>
             Pick a plan to get started
           </Text>
         </View>
@@ -151,7 +152,7 @@ export default function ChoosePlanScreen() {
           true,
         )}
 
-        <Text style={[styles.footnote, { color: colors.textSecondary }]}>
+        <Text style={[typography.bodyS, styles.footnote, { color: colors.textSecondary }]}>
           You can change plans anytime in Settings.
         </Text>
       </View>
@@ -164,7 +165,7 @@ const styles = StyleSheet.create({
   topHeader: { alignItems: 'flex-start' },
   backButton: {
     alignItems: 'center',
-    borderRadius: 22,
+    borderRadius: radius.xl,
     flexShrink: 0,
     height: 44,
     justifyContent: 'center',
@@ -177,18 +178,12 @@ const styles = StyleSheet.create({
     maxWidth: 440,
     width: '100%',
   },
-  header: { alignItems: 'center', marginBottom: 8 },
+  header: { alignItems: 'center', marginBottom: space[2] },
   title: {
-    fontFamily: 'Fraunces_600SemiBold',
-    fontSize: 32,
-    lineHeight: 40,
-    marginBottom: 8,
+    marginBottom: space[2],
     textAlign: 'center',
   },
   subtitle: {
-    fontFamily: 'NunitoSans_400Regular',
-    fontSize: 16,
-    lineHeight: 24,
     textAlign: 'center',
   },
   card: {},
@@ -197,30 +192,17 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
   },
-  cardTitle: {
-    fontFamily: 'Fraunces_600SemiBold',
-    fontSize: 22,
-    lineHeight: 28,
-  },
-  cardPrice: {
-    fontFamily: 'NunitoSans_600SemiBold',
-    fontSize: 14,
-  },
+  cardTitle: {},
+  cardPrice: {},
   featureRow: {
     alignItems: 'center',
     flexDirection: 'row',
-    gap: 10,
+    gap: space[3],
   },
   featureText: {
     flex: 1,
-    fontFamily: 'NunitoSans_600SemiBold',
-    fontSize: 15,
-    lineHeight: 20,
   },
   footnote: {
-    fontFamily: 'NunitoSans_400Regular',
-    fontSize: 13,
-    lineHeight: 18,
     textAlign: 'center',
   },
 });

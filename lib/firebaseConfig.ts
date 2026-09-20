@@ -22,10 +22,6 @@ export function getMissingFirebaseEnvKeys(): string[] {
     .map((field) => firebaseEnvKeyByField[field]);
 }
 
-export function isFirebaseConfigured(): boolean {
-  return getMissingFirebaseEnvKeys().length === 0;
-}
-
 export function assertFirebaseConfigured(): void {
   const missing = getMissingFirebaseEnvKeys();
   if (missing.length === 0) {

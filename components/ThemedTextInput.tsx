@@ -13,11 +13,12 @@ import {
 
 import { useTheme } from '@/contexts/ThemeContext';
 import { scheduleTextInputFocus } from '@/lib/focusTextInput';
+import { fontFamily, fontSize, lineHeight, space, typography } from '@/lib/design';
 import type { ThemeColors } from '@/lib/theme';
 
 export const BORDERED_INPUT_BORDER_WIDTH = 1;
-const BORDERED_INPUT_PADDING_VERTICAL = 14;
-const BORDERED_INPUT_LINE_HEIGHT = 22;
+const BORDERED_INPUT_PADDING_VERTICAL = space[3];
+const BORDERED_INPUT_LINE_HEIGHT = typography.body.lineHeight;
 
 export function getBorderedInputHeight(
   lineHeight = BORDERED_INPUT_LINE_HEIGHT,
@@ -38,9 +39,11 @@ export type ThemedTextInputProps = TextInputProps & {
 
 export function getThemedInputBackgroundColor(
   colors: ThemeColors,
-  focused: boolean,
+  _focused: boolean,
 ): string {
-  return focused ? colors.surfaceMuted : colors.surface;
+  // Inputs stay on the white surface in every state; focus is signalled by the
+  // border color, not a background change.
+  return colors.surface;
 }
 
 export function getThemedInputBorderColor(
@@ -48,7 +51,10 @@ export function getThemedInputBorderColor(
   focused: boolean,
   invalid = false,
 ): string {
-  return focused || invalid ? colors.accent : colors.border;
+  if (invalid) {
+    return colors.danger;
+  }
+  return focused ? colors.secondary : colors.border;
 }
 
 export function getThemedInputContainerStyle(
@@ -97,7 +103,7 @@ const ThemedTextInput = forwardRef<TextInput, ThemedTextInputProps>(
     },
     ref,
   ) {
-    const { colors, radii } = useTheme();
+    const { colors, radius } = useTheme();
     const [focused, setFocused] = useState(false);
     const innerRef = useRef<TextInput | null>(null);
     const isDisabled = props.editable === false;
@@ -151,7 +157,7 @@ const ThemedTextInput = forwardRef<TextInput, ThemedTextInputProps>(
       variant === 'bordered' && {
         backgroundColor,
         borderColor,
-        borderRadius: radii.item,
+        borderRadius: radius.md,
         color: colors.text,
       },
       variant === 'plain' && {
@@ -167,12 +173,12 @@ const ThemedTextInput = forwardRef<TextInput, ThemedTextInputProps>(
         ref={setInputRef}
         accessibilityState={{ disabled: isDisabled }}
         autoFocus={autoFocus}
-        cursorColor={colors.accent}
+        cursorColor={colors.primary}
         onBlur={handleBlur}
         onFocus={handleFocus}
         placeholder={label ? undefined : placeholder}
-        placeholderTextColor={placeholderTextColor ?? colors.textSecondary}
-        selectionColor={colors.accentSoft}
+        placeholderTextColor={placeholderTextColor ?? colors.textMuted}
+        selectionColor={colors.primarySoft}
         showSoftInputOnFocus
         style={themedStyle}
         underlineColorAndroid="transparent"
@@ -218,14 +224,12 @@ const ThemedTextInput = forwardRef<TextInput, ThemedTextInputProps>(
 
 const styles = StyleSheet.create({
   base: {
-    fontFamily: 'NunitoSans_400Regular',
-    fontSize: 16,
-    lineHeight: 22,
+    ...typography.body,
     ...(Platform.OS === 'android' ? { includeFontPadding: false } : null),
   },
   bordered: {
     borderWidth: BORDERED_INPUT_BORDER_WIDTH,
-    paddingHorizontal: 16,
+    paddingHorizontal: space[4],
     paddingVertical: BORDERED_INPUT_PADDING_VERTICAL,
   },
   disabled: {
@@ -236,7 +240,7 @@ const styles = StyleSheet.create({
   },
   floatingLabel: {
     left: 12,
-    paddingHorizontal: 4,
+    paddingHorizontal: space[1],
     position: 'absolute',
     zIndex: 1,
   },
@@ -247,14 +251,14 @@ const styles = StyleSheet.create({
     top: BORDERED_INPUT_PADDING_VERTICAL + BORDERED_INPUT_BORDER_WIDTH,
   },
   floatingLabelText: {
-    fontFamily: 'NunitoSans_400Regular',
+    fontFamily: fontFamily.bodyRegular,
   },
   floatingLabelTextRaised: {
-    fontSize: 12,
-    lineHeight: 16,
+    fontSize: fontSize.caption,
+    lineHeight: lineHeight.caption,
   },
   floatingLabelTextResting: {
-    fontSize: 16,
+    fontSize: fontSize.body,
     lineHeight: BORDERED_INPUT_LINE_HEIGHT,
   },
 });

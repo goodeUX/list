@@ -13,6 +13,7 @@ import {
   type EmitterSubscription,
 } from 'react-native';
 import { absoluteFill } from '@/lib/absoluteFill';
+import { space } from '@/lib/design';
 import Animated, {
   cancelAnimation,
   Easing,
@@ -84,7 +85,7 @@ export default function ListFormModal({
   onSubmitPressIn,
   autoFocusOnOpen = true,
 }: ListFormModalProps) {
-  const { colors, radii, spacing } = useTheme();
+  const { colors, radius, space, typography, elevation } = useTheme();
   const { height: windowHeight } = useWindowDimensions();
   const modalBackdropOpacity = useSharedValue(0);
   const modalDialogOpacity = useSharedValue(0);
@@ -101,7 +102,7 @@ export default function ListFormModal({
   } | null>(null);
   const listNameInputRef = useRef<ElementRef<typeof ThemedTextInput>>(null);
   const lastOpenModalAtRef = useRef(0);
-  const [modalOverlayPaddingTop, setModalOverlayPaddingTop] = useState(24);
+  const [modalOverlayPaddingTop, setModalOverlayPaddingTop] = useState<number>(space[6]);
   const [modalLayerHeight, setModalLayerHeight] = useState<number | null>(null);
   const [validationError, setValidationError] = useState<string | null>(null);
   const isListNameAtLimit = listName.length >= LIST_NAME_MAX_LENGTH;
@@ -213,7 +214,7 @@ export default function ListFormModal({
     setModalLayerHeight(windowHeight);
     setModalOverlayPaddingTop(
       Math.max(
-        24,
+        space[6],
         (windowHeight - MODAL_ESTIMATED_HEIGHT) / 2 - MODAL_VERTICAL_OFFSET,
       ),
     );
@@ -331,8 +332,8 @@ export default function ListFormModal({
   }, [closeEmojiPicker, dismissImmediately, submitting]);
 
   const modalBodyStyle = useMemo(
-    () => [styles.modalBody, { gap: spacing.lg, padding: spacing.lg }],
-    [spacing.lg],
+    () => [styles.modalBody, { gap: space[6], padding: space[6] }],
+    [space],
   );
 
   const modalContent = (
@@ -370,11 +371,12 @@ export default function ListFormModal({
         {isListNameFocused ? (
           <Text
             style={[
+              typography.caption,
               styles.charCounter,
               {
                 color:
                   listName.length >= LIST_NAME_MAX_LENGTH
-                    ? colors.accent
+                    ? colors.primary
                     : colors.textSecondary,
               },
             ]}
@@ -385,7 +387,7 @@ export default function ListFormModal({
       </Pressable>
 
       {error || validationError ? (
-        <Text style={[styles.error, { color: colors.accent }]}>
+        <Text style={[typography.bodyS, { color: colors.primary }]}>
           {error ?? validationError}
         </Text>
       ) : null}
@@ -429,7 +431,7 @@ export default function ListFormModal({
       <AnimatedPressable
         disabled={submitting}
         onPress={handleClose}
-        style={[styles.modalBackdrop, modalBackdropStyle]}
+        style={[styles.modalBackdrop, { backgroundColor: colors.scrim }, modalBackdropStyle]}
       />
       <Animated.View
         accessibilityLabel={title}
@@ -438,13 +440,11 @@ export default function ListFormModal({
         style={[
           styles.modalDialog,
           modalDialogAnimatedStyle,
+          elevation.e3,
           {
             backgroundColor: colors.surface,
             borderColor: colors.border,
-            borderRadius: radii.card,
-            ...(Platform.OS === 'web'
-              ? { boxShadow: '0 12px 40px rgba(44, 36, 23, 0.2)' }
-              : null),
+            borderRadius: radius.xl,
           },
         ]}
       >
@@ -487,13 +487,12 @@ const styles = StyleSheet.create({
     ...absoluteFill,
     alignItems: 'center',
     justifyContent: 'flex-start',
-    paddingBottom: 24,
+    paddingBottom: space[6],
     paddingHorizontal: MODAL_WIDTH_INSET / 2,
     zIndex: 100,
   },
   modalBackdrop: {
     ...absoluteFill,
-    backgroundColor: 'rgba(44, 36, 23, 0.35)',
   },
   modalDialog: {
     borderWidth: 1,
@@ -511,31 +510,23 @@ const styles = StyleSheet.create({
   nameField: {
     alignItems: 'center',
     flexDirection: 'row',
-    gap: 4,
+    gap: space[1],
     minHeight: getBorderedInputHeight(),
-    paddingRight: 12,
+    paddingRight: space[3],
   },
   nameInput: {
     // No left padding: the emoji cell supplies the field's left inset.
     flex: 1,
-    paddingVertical: 14,
-  },
-  error: {
-    fontFamily: 'NunitoSans_400Regular',
-    fontSize: 14,
-    lineHeight: 20,
+    paddingVertical: space[4],
   },
   charCounter: {
     flexShrink: 0,
-    fontFamily: 'NunitoSans_600SemiBold',
-    fontSize: 12,
-    lineHeight: 16,
-    marginLeft: 8,
+    marginLeft: space[2],
   },
   buttonRow: {
     alignSelf: 'stretch',
     flexDirection: 'row',
-    gap: 8,
+    gap: space[2],
     width: '100%',
   },
   buttonRowItem: {

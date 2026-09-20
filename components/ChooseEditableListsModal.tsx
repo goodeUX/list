@@ -13,6 +13,7 @@ import { absoluteFill } from '@/lib/absoluteFill';
 import Button from '@/components/Button';
 import { useTheme } from '@/contexts/ThemeContext';
 import { showAppAlert } from '@/lib/appAlert';
+import { space } from '@/lib/design';
 import { FREE_LIST_LIMIT } from '@/lib/listLimits';
 import { CONTENT_MAX_WIDTH } from '@/lib/slideTransition';
 import type { AppList } from '@/lib/types';
@@ -37,7 +38,7 @@ export default function ChooseEditableListsModal({
   onConfirm,
   onDismiss,
 }: ChooseEditableListsModalProps) {
-  const { colors, radii, spacing } = useTheme();
+  const { colors, radius, space, typography, elevation } = useTheme();
   const { height: windowHeight } = useWindowDimensions();
   const [selected, setSelected] = useState<string[]>(initialSelection);
   const [saving, setSaving] = useState(false);
@@ -88,30 +89,35 @@ export default function ChooseEditableListsModal({
           : null,
       ]}
     >
-      <Pressable accessibilityLabel="Dismiss" onPress={onDismiss} style={styles.backdrop} />
+      <Pressable
+        accessibilityLabel="Dismiss"
+        onPress={onDismiss}
+        style={[styles.backdrop, { backgroundColor: colors.scrim }]}
+      />
       <View
         style={[
           styles.dialog,
+          elevation.e3,
           {
             backgroundColor: colors.surface,
             borderColor: colors.border,
-            borderRadius: radii.card,
-            gap: spacing.md,
-            padding: spacing.lg,
+            borderRadius: radius.xl,
+            gap: space[4],
+            padding: space[6],
           },
         ]}
       >
         <View style={styles.header}>
-          <Text style={[styles.title, { color: colors.text }]}>
+          <Text style={[typography.h2, { color: colors.text }]}>
             Pick {FREE_LIST_LIMIT} lists to keep editable
           </Text>
-          <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
+          <Text style={[typography.body, { color: colors.textSecondary }]}>
             You're on the Free plan with more than {FREE_LIST_LIMIT} lists. The
             others stay safe but read-only until you upgrade or free a slot.
           </Text>
         </View>
 
-        <View style={{ gap: spacing.sm }}>
+        <View style={{ gap: space[2] }}>
           {lists.map((list) => {
             const isSelected = selected.includes(list.id);
             return (
@@ -124,20 +130,20 @@ export default function ChooseEditableListsModal({
                 style={({ pressed }) => [
                   styles.listRow,
                   {
-                    backgroundColor: isSelected ? colors.accentSoft : colors.surfaceMuted,
-                    borderColor: isSelected ? colors.accent : colors.border,
-                    borderRadius: radii.item,
+                    backgroundColor: isSelected ? colors.primarySoft : colors.surfaceMuted,
+                    borderColor: isSelected ? colors.primary : colors.border,
+                    borderRadius: radius.md,
                     opacity: pressed ? 0.85 : 1,
-                    padding: spacing.md,
+                    padding: space[4],
                   },
                 ]}
               >
                 <Text style={styles.listEmoji}>{list.emoji}</Text>
-                <Text numberOfLines={1} style={[styles.listName, { color: colors.text }]}>
+                <Text numberOfLines={1} style={[typography.label, { color: colors.text }, styles.listName]}>
                   {list.name}
                 </Text>
                 <MaterialIcons
-                  color={isSelected ? colors.accent : colors.textSecondary}
+                  color={isSelected ? colors.primary : colors.textSecondary}
                   name={isSelected ? 'check-circle' : 'radio-button-unchecked'}
                   size={22}
                 />
@@ -166,12 +172,11 @@ const styles = StyleSheet.create({
     ...absoluteFill,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: 12,
+    paddingHorizontal: space[3],
     zIndex: 100,
   },
   backdrop: {
     ...absoluteFill,
-    backgroundColor: 'rgba(44, 36, 23, 0.35)',
   },
   dialog: {
     borderWidth: 1,
@@ -179,28 +184,16 @@ const styles = StyleSheet.create({
     width: '100%',
     zIndex: 1,
   },
-  header: { gap: 8 },
-  title: {
-    fontFamily: 'Fraunces_600SemiBold',
-    fontSize: 24,
-    lineHeight: 32,
-  },
-  subtitle: {
-    fontFamily: 'NunitoSans_400Regular',
-    fontSize: 15,
-    lineHeight: 22,
-  },
+  header: { gap: space[2] },
   listRow: {
     alignItems: 'center',
     borderWidth: 1,
     flexDirection: 'row',
-    gap: 10,
+    gap: space[3],
   },
   listEmoji: { fontSize: 22, lineHeight: 26 },
   listName: {
     flex: 1,
-    fontFamily: 'NunitoSans_600SemiBold',
-    fontSize: 16,
   },
-  buttonGroup: { gap: 8 },
+  buttonGroup: { gap: space[2] },
 });

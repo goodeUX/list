@@ -28,7 +28,7 @@ export default function EmojiPickerButton({
   expanded = false,
   disabled = false,
 }: EmojiPickerButtonProps) {
-  const { colors, radii } = useTheme();
+  const { colors, radius, elevation } = useTheme();
 
   return (
     <Pressable
@@ -39,10 +39,11 @@ export default function EmojiPickerButton({
       onPress={onPress}
       style={({ pressed }) => [
         styles.cell,
+        expanded ? elevation.e1 : null,
         {
           // Shows the sheet is open, since the field itself has no chrome.
           backgroundColor: expanded ? colors.surfaceMuted : 'transparent',
-          borderRadius: radii.item,
+          borderRadius: radius.md,
           opacity: disabled ? 0.6 : pressed ? 0.5 : 1,
         },
       ]}

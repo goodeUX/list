@@ -38,6 +38,7 @@ import {
   hasSeenListsIntro,
   markListsIntroSeen,
 } from '@/lib/authLocalState';
+import { fontFamily, radius, space } from '@/lib/design';
 import {
   canCreateList,
   FREE_LIST_LIMIT,
@@ -60,17 +61,14 @@ import { markPendingAddInputFocus } from '@/lib/pendingAddInputFocus';
 import type { AppList } from '@/lib/types';
 
 const DEFAULT_EMOJI = '📋';
-// The header's only fixed values: type sizes and the settings button's box.
-// Everything else about the header comes from flex rules and theme spacing.
-const TITLE_FONT_SIZE = 32;
-const TITLE_LINE_HEIGHT = 40;
-const SUMMARY_FONT_SIZE = 15;
-const SUMMARY_LINE_HEIGHT = 22;
+// The header's only fixed value left after typography tokens: the settings
+// button's box. Everything else about the header comes from flex rules,
+// typography tokens, and theme spacing.
 const SETTINGS_BUTTON_SIZE = 44;
 const FAB_SIZE = 72;
 // Squircle corner, matching the product's other buttons. borderCurve only
 // smooths the corner on iOS; Android draws a plain rounded rect at this radius.
-const FAB_BORDER_RADIUS = 24;
+const FAB_BORDER_RADIUS = radius.xl;
 const LISTS_FADE_MS = 300;
 // Far enough that overscroll bounce alone doesn't flicker the header divider.
 const HEADER_DIVIDER_SCROLL_THRESHOLD = 2;
@@ -86,7 +84,7 @@ function formatSummary(listCount: number, sharedCount: number): string {
 }
 
 export default function ListsHomeScreen() {
-  const { colors, spacing } = useTheme();
+  const { colors, spacing, typography } = useTheme();
   const safeAreaInsets = useSafeAreaInsets();
   const { user } = useAuth();
   const { lists, loading, createList } = useLists();
@@ -186,27 +184,10 @@ export default function ListsHomeScreen() {
         drag();
       };
 
-      const dragHandle =
-        Platform.OS === 'web' ? (
-          <Pressable
-            accessibilityLabel="Drag to reorder"
-            accessibilityRole="button"
-            onPressIn={drag}
-            style={({ pressed }) => [
-              styles.handleButton,
-              { opacity: pressed ? 0.6 : 1 },
-              Platform.OS === 'web' ? ({ cursor: 'grab' } as object) : null,
-            ]}
-          >
-            <MaterialIcons color={colors.textSecondary} name="drag-indicator" size={20} />
-          </Pressable>
-        ) : undefined;
-
       return (
         <View style={[styles.cardCell, isActive ? styles.activeCell : null]}>
           <ListCard
             countsRefreshKey={countsRefreshKey}
-            dragHandle={dragHandle}
             isActive={isActive}
             list={item}
             locked={!isListEditable(item.id, editableListIds)}
@@ -375,7 +356,7 @@ export default function ListsHomeScreen() {
           ]}
         >
           <View style={[styles.headerRow, { gap: spacing.sm }]}>
-            <Text numberOfLines={1} style={[styles.title, { color: colors.text }]}>
+            <Text numberOfLines={1} style={[typography.display, styles.title, { color: colors.text }]}>
               My Lists
             </Text>
             {!loading && lists.length > 0 ? (
@@ -399,12 +380,12 @@ export default function ListsHomeScreen() {
                 },
               ]}
             >
-              <MaterialIcons color={colors.accent} name="more-horiz" size={24} />
+              <MaterialIcons color={colors.primary} name="more-horiz" size={24} />
             </Pressable>
           </View>
 
           {!loading ? (
-            <Text style={[styles.summary, { color: colors.textSecondary }]}>
+            <Text style={[typography.body, styles.summary, { color: colors.textSecondary }]}>
               {summary}
             </Text>
           ) : null}
@@ -432,7 +413,7 @@ export default function ListsHomeScreen() {
 
         {loading ? (
           <View style={styles.loading}>
-            <ActivityIndicator color={colors.accent} size="large" />
+            <ActivityIndicator color={colors.primary} size="large" />
           </View>
         ) : (
           <Animated.View
@@ -490,10 +471,10 @@ export default function ListsHomeScreen() {
               style={({ pressed }) => [
                 styles.fab,
                 styles.fabShadow,
-                { backgroundColor: colors.accent, opacity: pressed ? 0.85 : 1 },
+                { backgroundColor: colors.primary, opacity: pressed ? 0.85 : 1 },
               ]}
             >
-              <Text style={[styles.fabIcon, { color: colors.surface }]}>+</Text>
+              <Text style={[styles.fabIcon, { color: colors.onPrimary }]}>+</Text>
             </Pressable>
           </View>
         ) : null}
@@ -592,16 +573,8 @@ const styles = StyleSheet.create({
   },
   // No flex properties: flexShrink defaults to 0 in React Native, so a text
   // node already keeps its own width and the row grows around it.
-  title: {
-    fontFamily: 'Fraunces_600SemiBold',
-    fontSize: TITLE_FONT_SIZE,
-    lineHeight: TITLE_LINE_HEIGHT,
-  },
-  summary: {
-    fontFamily: 'NunitoSans_400Regular',
-    fontSize: SUMMARY_FONT_SIZE,
-    lineHeight: SUMMARY_LINE_HEIGHT,
-  },
+  title: {},
+  summary: {},
   loading: {
     alignItems: 'center',
     flex: 1,
@@ -617,7 +590,7 @@ const styles = StyleSheet.create({
   // DraggableFlatList measures cell heights to place a drop, and container gap
   // isn't part of that measurement.
   cardCell: {
-    marginBottom: 12,
+    marginBottom: space[3],
   },
   activeCell: Platform.select({
     web: { boxShadow: '0px 4px 12px rgba(0, 0, 0, 0.18)' },
@@ -629,12 +602,6 @@ const styles = StyleSheet.create({
       elevation: 6,
     },
   }),
-  handleButton: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    minHeight: 32,
-    minWidth: 32,
-  },
   fabLayer: {
     alignItems: 'flex-end',
     bottom: 0,
@@ -661,7 +628,7 @@ const styles = StyleSheet.create({
     },
   }),
   fabIcon: {
-    fontFamily: 'NunitoSans_700Bold',
+    fontFamily: fontFamily.bodyBold,
     fontSize: 40,
     lineHeight: 48,
     textAlign: 'center',

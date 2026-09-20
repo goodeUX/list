@@ -10,13 +10,14 @@ import {
   View,
 } from 'react-native';
 
+import Button from '@/components/Button';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTheme } from '@/contexts/ThemeContext';
 import { showAppAlert } from '@/lib/appAlert';
 import { useListCollaborators } from '@/hooks/useListCollaborators';
-import { buttonLabelStyle, buttonLayoutStyle } from '@/lib/buttonStyles';
 import { getInviteUrl } from '@/lib/inviteUrl';
 import { shareListInvite } from '@/lib/shareListInvite';
+import { space } from '@/lib/design';
 
 type ShareListContentProps = {
   listId: string;
@@ -27,7 +28,7 @@ export default function ShareListContent({
   listId,
   listName,
 }: ShareListContentProps) {
-  const { colors, radii, spacing } = useTheme();
+  const { colors, radius, space, typography } = useTheme();
   const { user } = useAuth();
   const { collaborators, loading: loadingMembers } = useListCollaborators(listId);
 
@@ -55,14 +56,14 @@ export default function ShareListContent({
   };
 
   return (
-    <View style={{ gap: spacing.md }}>
-      <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
+    <View style={{ gap: space[4] }}>
+      <Text style={[typography.body, { color: colors.textSecondary }]}>
         Invite someone to collaborate on “{listName}”
       </Text>
 
       {Platform.OS === 'web' ? (
-        <View style={{ gap: spacing.xs }}>
-          <Text style={[styles.sectionLabel, { color: colors.textSecondary }]}>
+        <View style={{ gap: space[1] }}>
+          <Text style={[typography.bodyS, { color: colors.textSecondary }]}>
             Invite link
           </Text>
           <Pressable
@@ -73,55 +74,31 @@ export default function ShareListContent({
               {
                 backgroundColor: colors.surface,
                 borderColor: colors.border,
-                borderRadius: radii.item,
+                borderRadius: radius.md,
                 opacity: pressed ? 0.85 : 1,
               },
             ]}
           >
-            <Text selectable style={[styles.linkText, { color: colors.accent }]}>
+            <Text selectable style={[typography.bodyS, { color: colors.primary }]}>
               {inviteUrl}
             </Text>
           </Pressable>
-          <Pressable
-            onPress={handleCopyLink}
-            style={({ pressed }) => [
-              styles.secondaryButton,
-              buttonLayoutStyle,
-              {
-                backgroundColor: colors.surfaceMuted,
-                opacity: pressed ? 0.85 : 1,
-              },
-            ]}
-          >
-            <Text style={[buttonLabelStyle(15), { color: colors.text }]}>
-              Copy link
-            </Text>
-          </Pressable>
+          <Button label="Copy link" onPress={handleCopyLink} variant="surface" />
         </View>
       ) : null}
 
-      <Pressable
+      <Button
+        label={Platform.OS === 'web' ? 'Invite someone' : 'Share invite link'}
         onPress={handleShare}
-        style={({ pressed }) => [
-          styles.actionButton,
-          buttonLayoutStyle,
-          {
-            backgroundColor: colors.accent,
-            opacity: pressed ? 0.85 : 1,
-          },
-        ]}
-      >
-        <Text style={[buttonLabelStyle(15), { color: colors.surface }]}>
-          {Platform.OS === 'web' ? 'Invite someone' : 'Share invite link'}
-        </Text>
-      </Pressable>
+        variant="primary"
+      />
 
-      <View style={{ gap: spacing.sm }}>
-        <Text style={[styles.sectionLabel, { color: colors.textSecondary }]}>
+      <View style={{ gap: space[2] }}>
+        <Text style={[typography.bodyS, { color: colors.textSecondary }]}>
           Collaborators
         </Text>
         {loadingMembers ? (
-          <ActivityIndicator color={colors.accent} />
+          <ActivityIndicator color={colors.primary} />
         ) : (
           collaborators.map((collaborator) => {
             const showEmail =
@@ -134,22 +111,20 @@ export default function ShareListContent({
                 <View
                   style={[
                     styles.avatar,
-                    { backgroundColor: colors.accentSoft },
+                    { backgroundColor: colors.primarySoft, borderRadius: radius.md },
                   ]}
                 >
-                  <Text style={[styles.avatarText, { color: colors.text }]}>
+                  <Text style={[typography.bodyS, { color: colors.text }]}>
                     {collaborator.displayName.charAt(0).toUpperCase()}
                   </Text>
                 </View>
                 <View style={styles.collaboratorDetails}>
-                  <Text style={[styles.collaboratorName, { color: colors.text }]}>
+                  <Text style={[typography.body, { color: colors.text }]}>
                     {collaborator.displayName}
                     {collaborator.uid === user?.uid ? ' (you)' : ''}
                   </Text>
                   {showEmail ? (
-                    <Text
-                      style={[styles.collaboratorEmail, { color: colors.textSecondary }]}
-                    >
+                    <Text style={[typography.bodyS, { color: colors.textSecondary }]}>
                       {collaborator.email}
                     </Text>
                   ) : null}
@@ -170,63 +145,25 @@ export default function ShareListContent({
 }
 
 const styles = StyleSheet.create({
-  subtitle: {
-    fontFamily: 'NunitoSans_400Regular',
-    fontSize: 15,
-    lineHeight: 22,
-  },
   linkBox: {
     borderWidth: 1,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-  },
-  linkText: {
-    fontFamily: 'NunitoSans_400Regular',
-    fontSize: 14,
-    lineHeight: 20,
-  },
-  secondaryButton: {
-    minHeight: 44,
-    width: '100%',
-  },
-  actionButton: {
-    minHeight: 48,
-    width: '100%',
-  },
-  sectionLabel: {
-    fontFamily: 'NunitoSans_600SemiBold',
-    fontSize: 13,
-    lineHeight: 18,
+    paddingHorizontal: space[4],
+    paddingVertical: space[3],
   },
   collaboratorRow: {
     alignItems: 'center',
     flexDirection: 'row',
-    gap: 10,
+    gap: space[3],
   },
   avatar: {
     alignItems: 'center',
-    borderRadius: 16,
     height: 32,
     justifyContent: 'center',
     width: 32,
   },
-  avatarText: {
-    fontFamily: 'NunitoSans_600SemiBold',
-    fontSize: 14,
-  },
   collaboratorDetails: {
     flex: 1,
     gap: 2,
-  },
-  collaboratorName: {
-    fontFamily: 'NunitoSans_400Regular',
-    fontSize: 15,
-    lineHeight: 20,
-  },
-  collaboratorEmail: {
-    fontFamily: 'NunitoSans_400Regular',
-    fontSize: 13,
-    lineHeight: 18,
   },
   onlineDot: {
     borderRadius: 4,

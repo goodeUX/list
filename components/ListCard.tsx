@@ -4,6 +4,7 @@ import { type ReactNode } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { useTheme } from '@/contexts/ThemeContext';
+import { palette, space } from '@/lib/design';
 import { useListItemCounts } from '@/hooks/useListItems';
 import type { AppList } from '@/lib/types';
 
@@ -27,7 +28,7 @@ export default function ListCard({
   isActive = false,
   dragHandle,
 }: ListCardProps) {
-  const { colors, radii, spacing } = useTheme();
+  const { colors, radius, spacing, typography, elevation } = useTheme();
 
   const { doneCount, totalCount } = useListItemCounts(list.id, countsRefreshKey);
   const incompleteCount = totalCount - doneCount;
@@ -47,10 +48,12 @@ export default function ListCard({
       onPress={handlePress}
       style={({ pressed }) => [
         styles.card,
+        elevation.e1,
         {
           backgroundColor: colors.surface,
-          borderColor: isActive ? colors.accent : colors.border,
-          borderRadius: radii.card,
+          borderColor: colors.primary,
+          borderWidth: isActive ? 1 : 0,
+          borderRadius: radius.lg,
           opacity: pressed && !isActive ? 0.72 : 1,
           padding: spacing.md,
         },
@@ -60,7 +63,7 @@ export default function ListCard({
         <Text style={styles.emoji}>{list.emoji}</Text>
         <Text
           numberOfLines={1}
-          style={[styles.name, { color: colors.text, flex: 1 }]}
+          style={[typography.title, { color: colors.text, flex: 1 }]}
         >
           {list.name}
         </Text>
@@ -79,12 +82,12 @@ export default function ListCard({
             style={[
               styles.itemCountBadge,
               {
-                backgroundColor: colors.surfaceMuted,
-                borderRadius: radii.checkbox,
+                backgroundColor: palette.teal[100],
+                borderRadius: radius.sm,
               },
             ]}
           >
-            <Text style={[styles.itemCount, { color: colors.textSecondary }]}>
+            <Text style={[typography.bodyS, styles.itemCount, { color: palette.sand[900] }]}>
               {incompleteCount}
             </Text>
           </View>
@@ -97,26 +100,21 @@ export default function ListCard({
 
 const styles = StyleSheet.create({
   card: {
-    borderWidth: 1,
+    borderWidth: 0,
   },
   header: {
     alignItems: 'center',
     flexDirection: 'row',
-    gap: 12,
+    gap: space[3],
   },
   emoji: {
     fontSize: 28,
     lineHeight: 32,
   },
-  name: {
-    fontFamily: 'NunitoSans_600SemiBold',
-    fontSize: 17,
-    lineHeight: 22,
-  },
   trailingMeta: {
     alignItems: 'center',
     flexDirection: 'row',
-    gap: 6,
+    gap: space[2],
   },
   groupIcon: {
     alignItems: 'center',
@@ -129,9 +127,6 @@ const styles = StyleSheet.create({
     width: 26,
   },
   itemCount: {
-    fontFamily: 'NunitoSans_400Regular',
-    fontSize: 13,
-    lineHeight: 16,
     textAlign: 'center',
   },
 });

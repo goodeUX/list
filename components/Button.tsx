@@ -12,6 +12,7 @@ import {
 
 import { useTheme } from '@/contexts/ThemeContext';
 import { buttonLabelStyle, buttonLayoutStyle } from '@/lib/buttonStyles';
+import { space } from '@/lib/design';
 
 const BUTTON_ICON_SIZE = 20;
 const SURFACE_BUTTON_ICON_SIZE = 24;
@@ -41,7 +42,7 @@ export default function Button({
   accessibilityLabel,
   style,
 }: ButtonProps) {
-  const { colors, radii } = useTheme();
+  const { colors, radii, elevation } = useTheme();
   const isPrimary = variant === 'primary';
   const isSurface = variant === 'surface';
   const isGhost = variant === 'ghost';
@@ -50,14 +51,14 @@ export default function Button({
   const isLarge = isPrimary || isSurface || isDestructive;
   const isDisabled = disabled || loading;
   const labelColor = isFilled
-    ? colors.surface
+    ? colors.onPrimary
     : isGhost
       ? colors.textSecondary
       : colors.text;
   const iconColor = isFilled
-    ? colors.surface
+    ? colors.onPrimary
     : isSurface
-      ? colors.accent
+      ? colors.primary
       : isGhost
         ? colors.textSecondary
         : colors.text;
@@ -79,7 +80,7 @@ export default function Button({
         buttonLayoutStyle,
         {
           backgroundColor: isPrimary
-            ? colors.accent
+            ? (pressed ? colors.primaryPressed : colors.primary)
             : isDestructive
               ? colors.danger
               : isSurface
@@ -90,6 +91,7 @@ export default function Button({
           borderWidth: isFilled || isSurface || isGhost ? 0 : 1,
           opacity: pressed || isDisabled ? (isGhost ? 0.7 : isLarge ? 0.7 : 0.85) : 1,
         },
+        (isFilled || isSurface) ? elevation.e1 : null,
         style,
       ]}
     >
@@ -113,10 +115,10 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   largeButton: {
-    minHeight: 54,
+    minHeight: 48,
   },
   ghostButton: {
-    minHeight: 44,
+    minHeight: 48,
   },
   labelOnly: {
     width: '100%',
@@ -124,7 +126,7 @@ const styles = StyleSheet.create({
   iconRow: {
     alignItems: 'center',
     flexDirection: 'row',
-    gap: 8,
+    gap: space[2],
     justifyContent: 'center',
   },
 });

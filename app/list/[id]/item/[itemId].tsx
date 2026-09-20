@@ -8,12 +8,10 @@ import {
   KeyboardAvoidingView,
   Platform,
   Pressable,
-  StyleSheet,
   Text,
   TextInput,
   View,
 } from 'react-native';
-import { absoluteFill } from '@/lib/absoluteFill';
 import Animated, {
   KeyboardState,
   runOnJS,
@@ -35,6 +33,8 @@ import {
   sortSubItems,
 } from '@/lib/subItems';
 import { playToggleHaptic } from '@/lib/haptics';
+import { radius, space } from '@/lib/design';
+import { itemDetailStyles as styles } from '@/lib/itemDetailScreenStyles';
 import type { SubItem } from '@/lib/types';
 import { useTheme } from '@/contexts/ThemeContext';
 import { showAppAlert } from '@/lib/appAlert';
@@ -51,7 +51,7 @@ export default function ItemDetailScreen() {
   const { id, itemId } = useLocalSearchParams<{ id: string; itemId: string }>();
   const listId = typeof id === 'string' ? id : undefined;
   const resolvedItemId = typeof itemId === 'string' ? itemId : undefined;
-  const { colors, radii, spacing } = useTheme();
+  const { colors, typography } = useTheme();
   const insets = useSafeAreaInsets();
   const { items, loading, updateItem, deleteItem, setSubItems, toggleSubItem } =
     useListItems(listId);
@@ -321,7 +321,7 @@ export default function ItemDetailScreen() {
           ]}
         >
           <View style={styles.loading}>
-            <ActivityIndicator color={colors.accent} size="large" />
+            <ActivityIndicator color={colors.primary} size="large" />
           </View>
         </View>
       </Animated.View>
@@ -353,9 +353,9 @@ export default function ItemDetailScreen() {
             styles.header,
             {
               borderBottomColor: colors.border,
-              paddingHorizontal: spacing.lg,
-              paddingTop: spacing.md,
-              paddingBottom: spacing.md,
+              paddingHorizontal: space[6],
+              paddingTop: space[4],
+              paddingBottom: space[4],
             },
           ]}
         >
@@ -372,9 +372,11 @@ export default function ItemDetailScreen() {
               },
             ]}
           >
-            <MaterialIcons color={colors.accent} name="chevron-left" size={24} />
+            <MaterialIcons color={colors.primary} name="chevron-left" size={24} />
           </Pressable>
-          <Text style={[styles.headerTitle, { color: colors.text }]}>Edit item</Text>
+          <Text style={[typography.h2, styles.headerTitle, { color: colors.text }]}>
+            Edit item
+          </Text>
           <Pressable
             accessibilityLabel="Delete item"
             accessibilityRole="button"
@@ -388,7 +390,7 @@ export default function ItemDetailScreen() {
               },
             ]}
           >
-            <MaterialIcons color={colors.accent} name="delete-outline" size={22} />
+            <MaterialIcons color={colors.primary} name="delete-outline" size={22} />
           </Pressable>
         </View>
 
@@ -406,7 +408,7 @@ export default function ItemDetailScreen() {
           style={styles.flex}
           contentContainerStyle={[
             styles.content,
-            { padding: spacing.lg, paddingBottom: spacing.lg + keyboardHeight },
+            { padding: space[6], paddingBottom: space[6] + keyboardHeight },
           ]}
           data={subItems}
           keyboardShouldPersistTaps="handled"
@@ -418,9 +420,11 @@ export default function ItemDetailScreen() {
             });
           }}
           ListHeaderComponent={
-            <View style={{ gap: spacing.md, marginBottom: spacing.sm }}>
+            <View style={{ gap: space[4], marginBottom: space[2] }}>
               <View style={styles.field}>
-                <Text style={[styles.label, { color: colors.textSecondary }]}>Name</Text>
+                <Text style={[typography.label, styles.label, { color: colors.textSecondary }]}>
+                  Name
+                </Text>
                 <ThemedTextInput
                   invalid={nameLimitError}
                   onBlur={commitName}
@@ -433,14 +437,16 @@ export default function ItemDetailScreen() {
                   value={name}
                 />
                 {nameLimitError ? (
-                  <Text style={[styles.limitError, { color: colors.accent }]}>
+                  <Text style={[typography.bodyS, styles.limitError, { color: colors.primary }]}>
                     {ITEM_NAME_LIMIT_MESSAGE}
                   </Text>
                 ) : null}
               </View>
 
               <View style={styles.field}>
-                <Text style={[styles.label, { color: colors.textSecondary }]}>Quantity</Text>
+                <Text style={[typography.label, styles.label, { color: colors.textSecondary }]}>
+                  Quantity
+                </Text>
                 <ThemedTextInput
                   onBlur={commitQuantity}
                   onChangeText={setQuantity}
@@ -450,7 +456,9 @@ export default function ItemDetailScreen() {
               </View>
 
               <View style={styles.field}>
-                <Text style={[styles.label, { color: colors.textSecondary }]}>Description</Text>
+                <Text style={[typography.label, styles.label, { color: colors.textSecondary }]}>
+                  Description
+                </Text>
                 <ThemedTextInput
                   multiline
                   onBlur={commitDescription}
@@ -462,7 +470,9 @@ export default function ItemDetailScreen() {
               </View>
 
               <View style={styles.field}>
-                <Text style={[styles.label, { color: colors.textSecondary }]}>Link</Text>
+                <Text style={[typography.label, styles.label, { color: colors.textSecondary }]}>
+                  Link
+                </Text>
                 <ThemedTextInput
                   autoCapitalize="none"
                   autoCorrect={false}
@@ -477,20 +487,26 @@ export default function ItemDetailScreen() {
                   value={link}
                 />
                 {linkError ? (
-                  <Text style={[styles.error, { color: colors.accent }]}>{linkError}</Text>
+                  <Text style={[typography.bodyS, styles.error, { color: colors.primary }]}>
+                    {linkError}
+                  </Text>
                 ) : null}
                 {link.trim() && isValidUrl(link) ? (
                   <Pressable onPress={handleOpenLink}>
-                    <Text style={[styles.openLink, { color: colors.accent }]}>Open link</Text>
+                    <Text style={[typography.label, styles.openLink, { color: colors.primary }]}>
+                      Open link
+                    </Text>
                   </Pressable>
                 ) : null}
               </View>
 
-              <Text style={[styles.label, { color: colors.textSecondary }]}>Sub-items</Text>
+              <Text style={[typography.label, styles.label, { color: colors.textSecondary }]}>
+                Sub-items
+              </Text>
             </View>
           }
           ListFooterComponent={
-            <View style={{ marginTop: spacing.sm }}>
+            <View style={{ marginTop: space[2] }}>
               <ThemedTextInput
                 ref={addInputRef}
                 onBlur={() => {
@@ -535,7 +551,7 @@ export default function ItemDetailScreen() {
                   styles.subItemRow,
                   {
                     backgroundColor: isActive ? colors.surfaceMuted : 'transparent',
-                    borderRadius: radii.item,
+                    borderRadius: radius.md,
                   },
                 ]}
               >
@@ -550,12 +566,12 @@ export default function ItemDetailScreen() {
                     {
                       backgroundColor: subItem.checked ? colors.success : 'transparent',
                       borderColor: subItem.checked ? colors.success : colors.border,
-                      borderRadius: radii.checkbox,
+                      borderRadius: radius.sm,
                     },
                   ]}
                 >
                   {subItem.checked ? (
-                    <MaterialIcons color={colors.surface} name="check" size={12} />
+                    <MaterialIcons color={colors.onPrimary} name="check" size={12} />
                   ) : null}
                 </Pressable>
 
@@ -579,6 +595,7 @@ export default function ItemDetailScreen() {
                   <Text
                     numberOfLines={1}
                     style={[
+                      typography.body,
                       styles.subItemLabel,
                       {
                         color: subItem.checked ? colors.textSecondary : colors.text,
@@ -598,7 +615,7 @@ export default function ItemDetailScreen() {
                     onPress={() => handleRemoveSubItem(subItem.id)}
                     style={styles.subItemAction}
                   >
-                    <MaterialIcons color={colors.accent} name="delete-outline" size={20} />
+                    <MaterialIcons color={colors.primary} name="delete-outline" size={20} />
                   </Pressable>
                 ) : null}
               </Pressable>
@@ -610,104 +627,3 @@ export default function ItemDetailScreen() {
     </Animated.View>
   );
 }
-
-const styles = StyleSheet.create({
-  screen: {
-    ...absoluteFill,
-  },
-  flex: {
-    flex: 1,
-  },
-  loading: {
-    alignItems: 'center',
-    flex: 1,
-    justifyContent: 'center',
-  },
-  header: {
-    alignItems: 'center',
-    borderBottomWidth: 1,
-    flexDirection: 'row',
-    gap: 12,
-  },
-  shareButton: {
-    alignItems: 'center',
-    borderRadius: 22,
-    flexShrink: 0,
-    height: 44,
-    justifyContent: 'center',
-    width: 44,
-  },
-  headerTitle: {
-    flex: 1,
-    fontFamily: 'Fraunces_600SemiBold',
-    fontSize: 20,
-    lineHeight: 26,
-    textAlign: 'center',
-  },
-  content: {
-    flexGrow: 1,
-  },
-  field: {
-    gap: 6,
-  },
-  label: {
-    fontFamily: 'NunitoSans_600SemiBold',
-    fontSize: 14,
-  },
-  nameInput: {
-    fontFamily: 'NunitoSans_400Regular',
-    fontSize: 16,
-    lineHeight: 22,
-  },
-  textArea: {
-    minHeight: 100,
-    textAlignVertical: 'top',
-  },
-  error: {
-    fontFamily: 'NunitoSans_400Regular',
-    fontSize: 13,
-    lineHeight: 18,
-  },
-  limitError: {
-    fontFamily: 'NunitoSans_400Regular',
-    fontSize: 14,
-    lineHeight: 20,
-    marginTop: 6,
-  },
-  openLink: {
-    fontFamily: 'NunitoSans_600SemiBold',
-    fontSize: 14,
-    marginTop: 4,
-  },
-  subItemRow: {
-    alignItems: 'center',
-    flexDirection: 'row',
-    gap: 10,
-    paddingVertical: 8,
-  },
-  subItemCheckbox: {
-    alignItems: 'center',
-    borderWidth: 1.5,
-    height: 20,
-    justifyContent: 'center',
-    width: 20,
-  },
-  subItemLabel: {
-    flex: 1,
-    fontFamily: 'NunitoSans_400Regular',
-    fontSize: 16,
-    lineHeight: 22,
-  },
-  subItemInput: {
-    flex: 1,
-    fontFamily: 'NunitoSans_400Regular',
-    fontSize: 16,
-    paddingVertical: 6,
-  },
-  subItemAction: {
-    alignItems: 'center',
-    height: 32,
-    justifyContent: 'center',
-    width: 32,
-  },
-});
