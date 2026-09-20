@@ -24,7 +24,7 @@ const PREMIUM_FEATURES: TierFeature[] = [
 ];
 
 export default function ChoosePlanScreen() {
-  const { colors, radii, spacing } = useTheme();
+  const { colors, radius, space, typography } = useTheme();
   const { redirect } = useLocalSearchParams<{ redirect?: string }>();
   const resolvedRedirect = parseAuthRedirect(redirect);
   const [monthlyPrice, setMonthlyPrice] = useState<string | null>(null);
@@ -76,24 +76,24 @@ export default function ChoosePlanScreen() {
         {
           backgroundColor: colors.surface,
           borderColor: highlighted ? colors.primary : colors.border,
-          borderRadius: radii.card,
+          borderRadius: radius.lg,
           borderWidth: highlighted ? 2 : 1,
-          gap: spacing.sm,
+          gap: space[2],
           opacity: pressed ? 0.85 : 1,
-          padding: spacing.md,
+          padding: space[4],
         },
       ]}
     >
       <View style={styles.cardHeader}>
-        <Text style={[styles.cardTitle, { color: colors.text }]}>{title}</Text>
-        <Text style={[styles.cardPrice, { color: colors.textSecondary }]}>
+        <Text style={[typography.h2, styles.cardTitle, { color: colors.text }]}>{title}</Text>
+        <Text style={[typography.label, styles.cardPrice, { color: colors.textSecondary }]}>
           {priceLine}
         </Text>
       </View>
       {features.map((feature) => (
         <View key={feature.text} style={styles.featureRow}>
           <MaterialIcons color={colors.primary} name={feature.icon} size={20} />
-          <Text style={[styles.featureText, { color: colors.text }]}>
+          <Text style={[typography.label, styles.featureText, { color: colors.text }]}>
             {feature.text}
           </Text>
         </View>
@@ -112,9 +112,9 @@ export default function ChoosePlanScreen() {
         style={[
           styles.topHeader,
           {
-            paddingHorizontal: spacing.lg,
-            paddingTop: spacing.md,
-            paddingBottom: spacing.sm,
+            paddingHorizontal: space[6],
+            paddingTop: space[4],
+            paddingBottom: space[2],
           },
         ]}
       >
@@ -132,12 +132,12 @@ export default function ChoosePlanScreen() {
         </Pressable>
       </View>
 
-      <View style={[styles.container, { padding: spacing.lg, gap: spacing.md }]}>
+      <View style={[styles.container, { padding: space[6], gap: space[4] }]}>
         <View style={styles.header}>
-          <Text style={[styles.title, { color: colors.text }]}>
+          <Text style={[typography.display, styles.title, { color: colors.text }]}>
             Join {APP_NAME}
           </Text>
-          <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
+          <Text style={[typography.bodyL, styles.subtitle, { color: colors.textSecondary }]}>
             Pick a plan to get started
           </Text>
         </View>
@@ -151,7 +151,7 @@ export default function ChoosePlanScreen() {
           true,
         )}
 
-        <Text style={[styles.footnote, { color: colors.textSecondary }]}>
+        <Text style={[typography.bodyS, styles.footnote, { color: colors.textSecondary }]}>
           You can change plans anytime in Settings.
         </Text>
       </View>
@@ -179,16 +179,10 @@ const styles = StyleSheet.create({
   },
   header: { alignItems: 'center', marginBottom: 8 },
   title: {
-    fontFamily: 'Fraunces_600SemiBold',
-    fontSize: 32,
-    lineHeight: 40,
     marginBottom: 8,
     textAlign: 'center',
   },
   subtitle: {
-    fontFamily: 'NunitoSans_400Regular',
-    fontSize: 16,
-    lineHeight: 24,
     textAlign: 'center',
   },
   card: {},
@@ -197,15 +191,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
   },
-  cardTitle: {
-    fontFamily: 'Fraunces_600SemiBold',
-    fontSize: 22,
-    lineHeight: 28,
-  },
-  cardPrice: {
-    fontFamily: 'NunitoSans_600SemiBold',
-    fontSize: 14,
-  },
+  cardTitle: {},
+  cardPrice: {},
   featureRow: {
     alignItems: 'center',
     flexDirection: 'row',
@@ -213,14 +200,8 @@ const styles = StyleSheet.create({
   },
   featureText: {
     flex: 1,
-    fontFamily: 'NunitoSans_600SemiBold',
-    fontSize: 15,
-    lineHeight: 20,
   },
   footnote: {
-    fontFamily: 'NunitoSans_400Regular',
-    fontSize: 13,
-    lineHeight: 18,
     textAlign: 'center',
   },
 });
