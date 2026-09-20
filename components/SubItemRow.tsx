@@ -17,7 +17,7 @@ export default function SubItemRow({
   disabled = false,
   onToggle,
 }: SubItemRowProps) {
-  const { colors, radii, spacing } = useTheme();
+  const { colors, radii, spacing, typography } = useTheme();
 
   const handleToggle = () => {
     if (disabled) {
@@ -63,6 +63,7 @@ export default function SubItemRow({
       <Text
         numberOfLines={1}
         style={[
+          typography.bodyS,
           styles.name,
           {
             color: subItem.checked ? colors.textSecondary : colors.text,
@@ -91,8 +92,5 @@ const styles = StyleSheet.create({
   },
   name: {
     flex: 1,
-    fontFamily: 'NunitoSans_400Regular',
-    fontSize: 15,
-    lineHeight: 20,
   },
 });
