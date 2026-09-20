@@ -374,7 +374,7 @@ export default function ListFormModal({
               {
                 color:
                   listName.length >= LIST_NAME_MAX_LENGTH
-                    ? colors.accent
+                    ? colors.primary
                     : colors.textSecondary,
               },
             ]}
@@ -385,7 +385,7 @@ export default function ListFormModal({
       </Pressable>
 
       {error || validationError ? (
-        <Text style={[styles.error, { color: colors.accent }]}>
+        <Text style={[styles.error, { color: colors.primary }]}>
           {error ?? validationError}
         </Text>
       ) : null}

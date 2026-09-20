@@ -321,7 +321,7 @@ export default function ItemDetailScreen() {
           ]}
         >
           <View style={styles.loading}>
-            <ActivityIndicator color={colors.accent} size="large" />
+            <ActivityIndicator color={colors.primary} size="large" />
           </View>
         </View>
       </Animated.View>
@@ -372,7 +372,7 @@ export default function ItemDetailScreen() {
               },
             ]}
           >
-            <MaterialIcons color={colors.accent} name="chevron-left" size={24} />
+            <MaterialIcons color={colors.primary} name="chevron-left" size={24} />
           </Pressable>
           <Text style={[styles.headerTitle, { color: colors.text }]}>Edit item</Text>
           <Pressable
@@ -388,7 +388,7 @@ export default function ItemDetailScreen() {
               },
             ]}
           >
-            <MaterialIcons color={colors.accent} name="delete-outline" size={22} />
+            <MaterialIcons color={colors.primary} name="delete-outline" size={22} />
           </Pressable>
         </View>
 
@@ -433,7 +433,7 @@ export default function ItemDetailScreen() {
                   value={name}
                 />
                 {nameLimitError ? (
-                  <Text style={[styles.limitError, { color: colors.accent }]}>
+                  <Text style={[styles.limitError, { color: colors.primary }]}>
                     {ITEM_NAME_LIMIT_MESSAGE}
                   </Text>
                 ) : null}
@@ -477,11 +477,11 @@ export default function ItemDetailScreen() {
                   value={link}
                 />
                 {linkError ? (
-                  <Text style={[styles.error, { color: colors.accent }]}>{linkError}</Text>
+                  <Text style={[styles.error, { color: colors.primary }]}>{linkError}</Text>
                 ) : null}
                 {link.trim() && isValidUrl(link) ? (
                   <Pressable onPress={handleOpenLink}>
-                    <Text style={[styles.openLink, { color: colors.accent }]}>Open link</Text>
+                    <Text style={[styles.openLink, { color: colors.primary }]}>Open link</Text>
                   </Pressable>
                 ) : null}
               </View>
@@ -598,7 +598,7 @@ export default function ItemDetailScreen() {
                     onPress={() => handleRemoveSubItem(subItem.id)}
                     style={styles.subItemAction}
                   >
-                    <MaterialIcons color={colors.accent} name="delete-outline" size={20} />
+                    <MaterialIcons color={colors.primary} name="delete-outline" size={20} />
                   </Pressable>
                 ) : null}
               </Pressable>

@@ -61,7 +61,7 @@ export default function ShareListScreen() {
               },
             ]}
           >
-            <MaterialIcons color={colors.accent} name="chevron-left" size={24} />
+            <MaterialIcons color={colors.primary} name="chevron-left" size={24} />
           </Pressable>
 
           <Text style={[styles.title, { color: colors.text, flex: 1, minWidth: 0 }]}>

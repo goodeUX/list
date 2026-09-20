@@ -168,7 +168,7 @@ export default function ProfileScreen() {
                 },
               ]}
             >
-              <MaterialIcons color={colors.accent} name="chevron-left" size={24} />
+              <MaterialIcons color={colors.primary} name="chevron-left" size={24} />
             </Pressable>
 
             <Text style={[styles.title, { color: colors.text }]}>Profile</Text>
@@ -226,7 +226,7 @@ export default function ProfileScreen() {
             </View>
 
             {error ? (
-              <Text style={[styles.error, { color: colors.accent }]}>{error}</Text>
+              <Text style={[styles.error, { color: colors.primary }]}>{error}</Text>
             ) : null}
 
             <Button

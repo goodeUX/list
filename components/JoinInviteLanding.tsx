@@ -80,7 +80,7 @@ export default function JoinInviteLanding({ listId }: JoinInviteLandingProps) {
         </Text>
       </View>
 
-      <ActivityIndicator color={colors.accent} size="large" />
+      <ActivityIndicator color={colors.primary} size="large" />
 
       <Text style={[styles.hint, { color: colors.textSecondary }]}>
         If nothing happens, open the same invite link again after installing.

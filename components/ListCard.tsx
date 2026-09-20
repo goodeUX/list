@@ -49,7 +49,7 @@ export default function ListCard({
         styles.card,
         {
           backgroundColor: colors.surface,
-          borderColor: isActive ? colors.accent : colors.border,
+          borderColor: isActive ? colors.primary : colors.border,
           borderRadius: radii.card,
           opacity: pressed && !isActive ? 0.72 : 1,
           padding: spacing.md,

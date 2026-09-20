@@ -146,7 +146,7 @@ export default function SecurityScreen() {
                 },
               ]}
             >
-              <MaterialIcons color={colors.accent} name="chevron-left" size={24} />
+              <MaterialIcons color={colors.primary} name="chevron-left" size={24} />
             </Pressable>
 
             <Text style={[styles.title, { color: colors.text }]}>Security</Text>
@@ -173,8 +173,8 @@ export default function SecurityScreen() {
                   accessibilityLabel="App lock"
                   disabled={appLock.loading || appLockBusy}
                   onValueChange={(next) => void handleAppLockToggle(next)}
-                  thumbColor={appLock.enabled ? colors.accent : colors.textSecondary}
-                  trackColor={{ false: colors.border, true: colors.accentSoft }}
+                  thumbColor={appLock.enabled ? colors.primary : colors.textSecondary}
+                  trackColor={{ false: colors.border, true: colors.primarySoft }}
                   value={appLock.enabled}
                 />
               </View>
@@ -250,7 +250,7 @@ export default function SecurityScreen() {
             ) : null}
 
             {error ? (
-              <Text style={[styles.error, { color: colors.accent }]}>{error}</Text>
+              <Text style={[styles.error, { color: colors.primary }]}>{error}</Text>
             ) : null}
           </ScrollView>
 

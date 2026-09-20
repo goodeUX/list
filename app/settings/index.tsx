@@ -163,7 +163,7 @@ export default function SettingsScreen() {
             },
           ]}
         >
-          <MaterialIcons color={colors.accent} name="chevron-left" size={24} />
+          <MaterialIcons color={colors.primary} name="chevron-left" size={24} />
         </Pressable>
 
         <Text style={[styles.title, { color: colors.text }]}>Settings</Text>
@@ -213,8 +213,8 @@ export default function SettingsScreen() {
                   style={({ pressed }) => [
                     styles.themeOption,
                     {
-                      backgroundColor: selected ? colors.accentSoft : colors.surfaceMuted,
-                      borderColor: selected ? colors.accent : colors.border,
+                      backgroundColor: selected ? colors.primarySoft : colors.surfaceMuted,
+                      borderColor: selected ? colors.primary : colors.border,
                       borderRadius: radii.item,
                       opacity: pressed ? 0.85 : 1,
                     },
@@ -287,7 +287,7 @@ export default function SettingsScreen() {
                   styles.actionButton,
                   buttonLayoutStyle,
                   {
-                    backgroundColor: colors.accent,
+                    backgroundColor: colors.primary,
                     borderWidth: 0,
                     opacity: pressed ? 0.85 : 1,
                   },
@@ -336,7 +336,7 @@ export default function SettingsScreen() {
                 style={[
                   styles.planBadge,
                   {
-                    backgroundColor: plan === 'premium' ? colors.accentSoft : colors.surfaceMuted,
+                    backgroundColor: plan === 'premium' ? colors.primarySoft : colors.surfaceMuted,
                     borderRadius: radii.checkbox,
                   },
                 ]}

@@ -61,14 +61,14 @@ function MenuToggle({ colors, value }: { colors: ThemeColors; value: boolean }) 
       pointerEvents="none"
       style={[
         styles.toggleTrack,
-        { backgroundColor: value ? colors.accentSoft : colors.border },
+        { backgroundColor: value ? colors.primarySoft : colors.border },
       ]}
     >
       <View
         style={[
           styles.toggleThumb,
           {
-            backgroundColor: value ? colors.accent : colors.surface,
+            backgroundColor: value ? colors.primary : colors.surface,
             transform: [{ translateX: value ? TOGGLE_THUMB_TRAVEL : 0 }],
           },
         ]}
@@ -155,14 +155,14 @@ export default function ListOptionsMenu({
             styles.button,
             {
               backgroundColor: visible ? colors.surfaceMuted : colors.surface,
-              borderColor: visible ? colors.accent : 'transparent',
+              borderColor: visible ? colors.primary : 'transparent',
               borderWidth: visible ? 1.5 : 0,
               opacity: pressed ? 0.7 : 1,
             },
           ]}
         >
           <Animated.View style={iconStyle}>
-            <MaterialIcons color={colors.accent} name="more-horiz" size={22} />
+            <MaterialIcons color={colors.primary} name="more-horiz" size={22} />
           </Animated.View>
         </Pressable>
 

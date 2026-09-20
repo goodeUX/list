@@ -138,7 +138,7 @@ export default function BenefitsModal({
         <View style={styles.benefits}>
           {benefits.map((benefit) => (
             <View key={benefit.text} style={styles.benefitRow}>
-              <MaterialIcons color={colors.accent} name={benefit.icon} size={22} />
+              <MaterialIcons color={colors.primary} name={benefit.icon} size={22} />
               <Text style={[styles.benefitText, { color: colors.text }]}>
                 {benefit.text}
               </Text>

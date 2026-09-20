@@ -428,7 +428,7 @@ export default function EmojiPickerSheet({
                   ]}
                 >
                   <Ionicons
-                    color={isActive ? colors.accent : colors.textSecondary}
+                    color={isActive ? colors.primary : colors.textSecondary}
                     name={CATEGORY_ICONS[category.key] ?? 'ellipse-outline'}
                     size={20}
                   />

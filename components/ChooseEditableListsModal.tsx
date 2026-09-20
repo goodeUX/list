@@ -124,8 +124,8 @@ export default function ChooseEditableListsModal({
                 style={({ pressed }) => [
                   styles.listRow,
                   {
-                    backgroundColor: isSelected ? colors.accentSoft : colors.surfaceMuted,
-                    borderColor: isSelected ? colors.accent : colors.border,
+                    backgroundColor: isSelected ? colors.primarySoft : colors.surfaceMuted,
+                    borderColor: isSelected ? colors.primary : colors.border,
                     borderRadius: radii.item,
                     opacity: pressed ? 0.85 : 1,
                     padding: spacing.md,
@@ -137,7 +137,7 @@ export default function ChooseEditableListsModal({
                   {list.name}
                 </Text>
                 <MaterialIcons
-                  color={isSelected ? colors.accent : colors.textSecondary}
+                  color={isSelected ? colors.primary : colors.textSecondary}
                   name={isSelected ? 'check-circle' : 'radio-button-unchecked'}
                   size={22}
                 />

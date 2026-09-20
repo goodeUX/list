@@ -795,7 +795,7 @@ export default function ListDetailScreen() {
             },
           ]}
         >
-          <MaterialIcons color={colors.accent} name="chevron-left" size={24} />
+          <MaterialIcons color={colors.primary} name="chevron-left" size={24} />
         </Pressable>
 
         <Pressable
@@ -878,7 +878,7 @@ export default function ListDetailScreen() {
                 router.push({ pathname: '/(auth)/paywall', params: { from: 'settings' } })
               }
             >
-              <Text style={[styles.readOnlyUpgrade, { color: colors.accent }]}>
+              <Text style={[styles.readOnlyUpgrade, { color: colors.primary }]}>
                 Upgrade
               </Text>
             </Pressable>
@@ -931,7 +931,7 @@ export default function ListDetailScreen() {
               style={({ pressed }) => [
                 styles.addSubmitButton,
                 {
-                  backgroundColor: colors.accent,
+                  backgroundColor: colors.primary,
                   borderRadius: radii.checkbox,
                   opacity: showSubmitButton ? (pressed && canSubmitNewItem ? 0.85 : 1) : 0,
                   pointerEvents: showSubmitButton ? 'auto' : 'none',

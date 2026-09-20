@@ -225,20 +225,20 @@ export default function ListItemRow({
                   styles.pill,
                   styles.linkPill,
                   {
-                    backgroundColor: colors.accentSoft,
+                    backgroundColor: colors.primarySoft,
                     borderRadius: radii.checkbox,
                   },
                 ]}
               >
                 {Platform.OS === 'ios' ? (
-                  <SymbolView name="link" size={12} tintColor={colors.accent} />
+                  <SymbolView name="link" size={12} tintColor={colors.primary} />
                 ) : (
-                  <MaterialIcons color={colors.accent} name="link" size={12} />
+                  <MaterialIcons color={colors.primary} name="link" size={12} />
                 )}
                 <CompletedText
                   animatedStyle={completedTextStyle}
                   checked={item.checked}
-                  color={colors.accent}
+                  color={colors.primary}
                   style={styles.pillText}
                 >
                   Link

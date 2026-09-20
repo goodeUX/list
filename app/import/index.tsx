@@ -208,7 +208,7 @@ export default function ImportScreen() {
               { backgroundColor: colors.surface, opacity: pressed ? 0.7 : 1 },
             ]}
           >
-            <MaterialIcons color={colors.accent} name="chevron-left" size={24} />
+            <MaterialIcons color={colors.primary} name="chevron-left" size={24} />
           </Pressable>
           <Text style={[styles.title, { color: colors.text }]} numberOfLines={1}>
             {headerTitle}
@@ -256,7 +256,7 @@ export default function ImportScreen() {
 
             {phase === 'working' ? (
               <View style={[styles.centered, { paddingVertical: spacing.xl }]}>
-                <ActivityIndicator color={colors.accent} size="large" />
+                <ActivityIndicator color={colors.primary} size="large" />
               </View>
             ) : phase === 'pickList' ? (
               <View style={{ gap: spacing.md }}>
@@ -270,7 +270,7 @@ export default function ImportScreen() {
 
                 {listsLoading ? (
                   <View style={[styles.centered, { paddingVertical: spacing.lg }]}>
-                    <ActivityIndicator color={colors.accent} />
+                    <ActivityIndicator color={colors.primary} />
                   </View>
                 ) : lists.length === 0 ? (
                   <Text style={[styles.body, { color: colors.textSecondary }]}>

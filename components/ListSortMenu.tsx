@@ -92,7 +92,7 @@ export default function ListSortMenu({
         ]}
       >
         <MaterialIcons
-          color={colors.accent}
+          color={colors.primary}
           name={activeOption.icon}
           size={ICON_SIZE}
         />
@@ -138,7 +138,7 @@ export default function ListSortMenu({
                   </Text>
                   {selected ? (
                     <MaterialIcons
-                      color={colors.accent}
+                      color={colors.primary}
                       name="check"
                       size={MENU_ITEM_ICON_SIZE}
                     />

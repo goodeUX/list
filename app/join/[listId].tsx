@@ -134,9 +134,9 @@ export default function JoinListScreen() {
             />
           </>
         ) : error ? (
-          <Text style={[styles.error, { color: colors.accent }]}>{error}</Text>
+          <Text style={[styles.error, { color: colors.primary }]}>{error}</Text>
         ) : (
-          <ActivityIndicator color={colors.accent} size="large" />
+          <ActivityIndicator color={colors.primary} size="large" />
         )}
         {!error && !blocked ? (
           <Text style={[styles.message, { color: colors.textSecondary }]}>

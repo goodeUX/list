@@ -22,7 +22,7 @@ export default function UserAvatar({ label, photoURL, size }: Props) {
       <Image
         accessibilityIgnoresInvertColors
         source={{ uri: photoURL }}
-        style={[box, { backgroundColor: colors.accentSoft }]}
+        style={[box, { backgroundColor: colors.primarySoft }]}
       />
     );
   }
@@ -30,7 +30,7 @@ export default function UserAvatar({ label, photoURL, size }: Props) {
   const initial = label.trim().charAt(0).toUpperCase() || '?';
 
   return (
-    <View style={[styles.fallback, box, { backgroundColor: colors.accentSoft }]}>
+    <View style={[styles.fallback, box, { backgroundColor: colors.primarySoft }]}>
       <Text style={[styles.initial, { color: colors.text, fontSize: size * 0.44 }]}>
         {initial}
       </Text>

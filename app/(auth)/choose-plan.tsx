@@ -75,7 +75,7 @@ export default function ChoosePlanScreen() {
         styles.card,
         {
           backgroundColor: colors.surface,
-          borderColor: highlighted ? colors.accent : colors.border,
+          borderColor: highlighted ? colors.primary : colors.border,
           borderRadius: radii.card,
           borderWidth: highlighted ? 2 : 1,
           gap: spacing.sm,
@@ -92,7 +92,7 @@ export default function ChoosePlanScreen() {
       </View>
       {features.map((feature) => (
         <View key={feature.text} style={styles.featureRow}>
-          <MaterialIcons color={colors.accent} name={feature.icon} size={20} />
+          <MaterialIcons color={colors.primary} name={feature.icon} size={20} />
           <Text style={[styles.featureText, { color: colors.text }]}>
             {feature.text}
           </Text>
@@ -128,7 +128,7 @@ export default function ChoosePlanScreen() {
             { backgroundColor: colors.surface, opacity: pressed ? 0.7 : 1 },
           ]}
         >
-          <MaterialIcons color={colors.accent} name="chevron-left" size={24} />
+          <MaterialIcons color={colors.primary} name="chevron-left" size={24} />
         </Pressable>
       </View>
 

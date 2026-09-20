@@ -70,7 +70,7 @@ export default function SignInScreen() {
             },
           ]}
         >
-          <MaterialIcons color={colors.accent} name="chevron-left" size={24} />
+          <MaterialIcons color={colors.primary} name="chevron-left" size={24} />
         </Pressable>
       </View>
 

@@ -57,7 +57,7 @@ export default function EmptyState({
           styles.createListButton,
           buttonLayoutStyle,
           {
-            backgroundColor: colors.accent,
+            backgroundColor: colors.primary,
             flexDirection: 'row',
             gap: 8,
             marginTop: spacing.md,

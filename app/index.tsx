@@ -399,7 +399,7 @@ export default function ListsHomeScreen() {
                 },
               ]}
             >
-              <MaterialIcons color={colors.accent} name="more-horiz" size={24} />
+              <MaterialIcons color={colors.primary} name="more-horiz" size={24} />
             </Pressable>
           </View>
 
@@ -432,7 +432,7 @@ export default function ListsHomeScreen() {
 
         {loading ? (
           <View style={styles.loading}>
-            <ActivityIndicator color={colors.accent} size="large" />
+            <ActivityIndicator color={colors.primary} size="large" />
           </View>
         ) : (
           <Animated.View
@@ -490,7 +490,7 @@ export default function ListsHomeScreen() {
               style={({ pressed }) => [
                 styles.fab,
                 styles.fabShadow,
-                { backgroundColor: colors.accent, opacity: pressed ? 0.85 : 1 },
+                { backgroundColor: colors.primary, opacity: pressed ? 0.85 : 1 },
               ]}
             >
               <Text style={[styles.fabIcon, { color: colors.surface }]}>+</Text>

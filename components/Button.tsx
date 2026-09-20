@@ -57,7 +57,7 @@ export default function Button({
   const iconColor = isFilled
     ? colors.surface
     : isSurface
-      ? colors.accent
+      ? colors.primary
       : isGhost
         ? colors.textSecondary
         : colors.text;
@@ -79,7 +79,7 @@ export default function Button({
         buttonLayoutStyle,
         {
           backgroundColor: isPrimary
-            ? colors.accent
+            ? colors.primary
             : isDestructive
               ? colors.danger
               : isSurface

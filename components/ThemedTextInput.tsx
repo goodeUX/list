@@ -48,7 +48,7 @@ export function getThemedInputBorderColor(
   focused: boolean,
   invalid = false,
 ): string {
-  return focused || invalid ? colors.accent : colors.border;
+  return focused || invalid ? colors.primary : colors.border;
 }
 
 export function getThemedInputContainerStyle(
@@ -167,12 +167,12 @@ const ThemedTextInput = forwardRef<TextInput, ThemedTextInputProps>(
         ref={setInputRef}
         accessibilityState={{ disabled: isDisabled }}
         autoFocus={autoFocus}
-        cursorColor={colors.accent}
+        cursorColor={colors.primary}
         onBlur={handleBlur}
         onFocus={handleFocus}
         placeholder={label ? undefined : placeholder}
         placeholderTextColor={placeholderTextColor ?? colors.textSecondary}
-        selectionColor={colors.accentSoft}
+        selectionColor={colors.primarySoft}
         showSoftInputOnFocus
         style={themedStyle}
         underlineColorAndroid="transparent"

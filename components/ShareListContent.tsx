@@ -78,7 +78,7 @@ export default function ShareListContent({
               },
             ]}
           >
-            <Text selectable style={[styles.linkText, { color: colors.accent }]}>
+            <Text selectable style={[styles.linkText, { color: colors.primary }]}>
               {inviteUrl}
             </Text>
           </Pressable>
@@ -106,7 +106,7 @@ export default function ShareListContent({
           styles.actionButton,
           buttonLayoutStyle,
           {
-            backgroundColor: colors.accent,
+            backgroundColor: colors.primary,
             opacity: pressed ? 0.85 : 1,
           },
         ]}
@@ -121,7 +121,7 @@ export default function ShareListContent({
           Collaborators
         </Text>
         {loadingMembers ? (
-          <ActivityIndicator color={colors.accent} />
+          <ActivityIndicator color={colors.primary} />
         ) : (
           collaborators.map((collaborator) => {
             const showEmail =
@@ -134,7 +134,7 @@ export default function ShareListContent({
                 <View
                   style={[
                     styles.avatar,
-                    { backgroundColor: colors.accentSoft },
+                    { backgroundColor: colors.primarySoft },
                   ]}
                 >
                   <Text style={[styles.avatarText, { color: colors.text }]}>

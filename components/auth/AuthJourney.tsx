@@ -255,7 +255,7 @@ export default function AuthJourney({
             <Text
               accessibilityLiveRegion="polite"
               accessibilityRole="alert"
-              style={[styles.error, { color: colors.accent }]}
+              style={[styles.error, { color: colors.primary }]}
             >
               {error}
             </Text>
@@ -268,7 +268,7 @@ export default function AuthJourney({
               styles.primaryButton,
               buttonLayoutStyle,
               {
-                backgroundColor: colors.accent,
+                backgroundColor: colors.primary,
                 opacity: pressed || disabled ? 0.85 : 1,
               },
             ]}
@@ -353,7 +353,7 @@ export default function AuthJourney({
             <Text
               accessibilityLiveRegion="polite"
               accessibilityRole="alert"
-              style={[styles.error, { color: colors.accent }]}
+              style={[styles.error, { color: colors.primary }]}
             >
               {error}
             </Text>
@@ -374,7 +374,7 @@ export default function AuthJourney({
               styles.primaryButton,
               buttonLayoutStyle,
               {
-                backgroundColor: colors.accent,
+                backgroundColor: colors.primary,
                 opacity: pressed || disabled ? 0.85 : 1,
               },
             ]}
@@ -398,7 +398,7 @@ export default function AuthJourney({
               {busy === 'reset' ? (
                 <ActivityIndicator color={colors.textSecondary} size="small" />
               ) : (
-                <Text style={[styles.link, { color: colors.accent }]}>
+                <Text style={[styles.link, { color: colors.primary }]}>
                   Forgot password?
                 </Text>
               )}
@@ -412,7 +412,7 @@ export default function AuthJourney({
           {isSignUp ? 'Already have an account? ' : `New to ${APP_NAME}? `}
         </Text>
         <Pressable accessibilityRole="link" disabled={disabled} onPress={handleSwitchMode}>
-          <Text style={[styles.link, { color: colors.accent }]}>
+          <Text style={[styles.link, { color: colors.primary }]}>
             {isSignUp ? 'Log in' : 'Create an account'}
           </Text>
         </Pressable>

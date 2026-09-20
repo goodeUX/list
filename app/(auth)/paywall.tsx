@@ -129,7 +129,7 @@ export default function PaywallScreen() {
         </View>
 
         {packages === null ? (
-          <ActivityIndicator color={colors.accent} size="large" />
+          <ActivityIndicator color={colors.primary} size="large" />
         ) : packages.length === 0 ? (
           <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
             Plans aren't available right now. Please try again later.
@@ -148,8 +148,8 @@ export default function PaywallScreen() {
                   style={({ pressed }) => [
                     styles.packageRow,
                     {
-                      backgroundColor: selected ? colors.accentSoft : colors.surface,
-                      borderColor: selected ? colors.accent : colors.border,
+                      backgroundColor: selected ? colors.primarySoft : colors.surface,
+                      borderColor: selected ? colors.primary : colors.border,
                       borderRadius: radii.item,
                       opacity: pressed ? 0.85 : 1,
                       padding: spacing.md,
@@ -170,7 +170,7 @@ export default function PaywallScreen() {
                     </Text>
                   </Text>
                   {selected ? (
-                    <MaterialIcons color={colors.accent} name="check-circle" size={22} />
+                    <MaterialIcons color={colors.primary} name="check-circle" size={22} />
                   ) : null}
                 </Pressable>
               );
@@ -203,7 +203,7 @@ export default function PaywallScreen() {
             {busy === 'restore' ? (
               <ActivityIndicator color={colors.textSecondary} size="small" />
             ) : (
-              <Text style={[styles.restoreText, { color: colors.accent }]}>
+              <Text style={[styles.restoreText, { color: colors.primary }]}>
                 Restore purchases
               </Text>
             )}
