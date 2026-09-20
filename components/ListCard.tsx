@@ -50,7 +50,8 @@ export default function ListCard({
         elevation.e1,
         {
           backgroundColor: colors.surface,
-          borderColor: isActive ? colors.primary : colors.border,
+          borderColor: colors.primary,
+          borderWidth: isActive ? 1 : 0,
           borderRadius: radius.lg,
           opacity: pressed && !isActive ? 0.72 : 1,
           padding: spacing.md,
@@ -98,7 +99,7 @@ export default function ListCard({
 
 const styles = StyleSheet.create({
   card: {
-    borderWidth: 1,
+    borderWidth: 0,
   },
   header: {
     alignItems: 'center',

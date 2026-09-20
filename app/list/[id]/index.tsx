@@ -821,7 +821,7 @@ export default function ListDetailScreen() {
           <View style={[styles.titleTextBlock, { pointerEvents: 'none' }]}>
             <Text
               numberOfLines={2}
-              style={[typography.h1, styles.title, { color: colors.text, pointerEvents: 'none' }]}
+              style={[typography.h2, styles.title, { color: colors.text, pointerEvents: 'none' }]}
             >
               {listName || paramName || 'List'}
             </Text>

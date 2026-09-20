@@ -216,8 +216,8 @@ export default function SettingsScreen() {
                   style={({ pressed }) => [
                     styles.themeOption,
                     {
-                      backgroundColor: selected ? colors.primarySoft : colors.surfaceMuted,
-                      borderColor: selected ? colors.primary : colors.border,
+                      backgroundColor: selected ? colors.secondarySoft : colors.surfaceMuted,
+                      borderColor: selected ? colors.secondary : colors.border,
                       borderRadius: radius.md,
                       opacity: pressed ? 0.85 : 1,
                     },
@@ -344,7 +344,7 @@ export default function SettingsScreen() {
                 style={[
                   styles.planBadge,
                   {
-                    backgroundColor: plan === 'premium' ? colors.primarySoft : colors.surfaceMuted,
+                    backgroundColor: plan === 'premium' ? colors.secondarySoft : colors.surfaceMuted,
                     borderRadius: radius.sm,
                   },
                 ]}
