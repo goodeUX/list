@@ -8,6 +8,7 @@ import { useTheme } from '@/contexts/ThemeContext';
 import { APP_NAME } from '@/lib/appName';
 import { buildAuthHref, parseAuthRedirect } from '@/lib/authRedirect';
 import { FREE_LIST_LIMIT } from '@/lib/listLimits';
+import { radius, space } from '@/lib/design';
 import { getPremiumPackages, isPurchasesAvailable } from '@/lib/purchases';
 
 type TierFeature = { icon: keyof typeof MaterialIcons.glyphMap; text: string };
@@ -164,7 +165,7 @@ const styles = StyleSheet.create({
   topHeader: { alignItems: 'flex-start' },
   backButton: {
     alignItems: 'center',
-    borderRadius: 22,
+    borderRadius: radius.xl,
     flexShrink: 0,
     height: 44,
     justifyContent: 'center',
@@ -177,9 +178,9 @@ const styles = StyleSheet.create({
     maxWidth: 440,
     width: '100%',
   },
-  header: { alignItems: 'center', marginBottom: 8 },
+  header: { alignItems: 'center', marginBottom: space[2] },
   title: {
-    marginBottom: 8,
+    marginBottom: space[2],
     textAlign: 'center',
   },
   subtitle: {
@@ -196,7 +197,7 @@ const styles = StyleSheet.create({
   featureRow: {
     alignItems: 'center',
     flexDirection: 'row',
-    gap: 10,
+    gap: space[3],
   },
   featureText: {
     flex: 1,

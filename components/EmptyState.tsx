@@ -60,7 +60,7 @@ export default function EmptyState({
           {
             backgroundColor: colors.primary,
             flexDirection: 'row',
-            gap: 8,
+            gap: space[2],
             marginTop: space[4],
             opacity: pressed ? 0.7 : 1,
           },

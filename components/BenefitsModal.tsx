@@ -19,6 +19,7 @@ import Animated, {
 
 import Button from '@/components/Button';
 import { useTheme } from '@/contexts/ThemeContext';
+import { space } from '@/lib/design';
 import { CONTENT_MAX_WIDTH } from '@/lib/slideTransition';
 
 const MODAL_DURATION_MS = 240;
@@ -158,7 +159,7 @@ const styles = StyleSheet.create({
     ...absoluteFill,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: 12,
+    paddingHorizontal: space[3],
     zIndex: 100,
   },
   backdrop: {
@@ -171,20 +172,20 @@ const styles = StyleSheet.create({
     zIndex: 1,
   },
   header: {
-    gap: 8,
+    gap: space[2],
   },
   benefits: {
-    gap: 14,
+    gap: space[4],
   },
   benefitRow: {
     alignItems: 'center',
     flexDirection: 'row',
-    gap: 12,
+    gap: space[3],
   },
   benefitText: {
     flex: 1,
   },
   buttonGroup: {
-    gap: 8,
+    gap: space[2],
   },
 });

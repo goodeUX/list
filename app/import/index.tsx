@@ -19,6 +19,7 @@ import { useLists } from '@/hooks/useLists';
 import { addItemToList } from '@/hooks/useListItems';
 import { absoluteFill } from '@/lib/absoluteFill';
 import { showAppAlert } from '@/lib/appAlert';
+import { radius, space } from '@/lib/design';
 import { applyEntriesToList } from '@/lib/importEntries';
 import { fetchAndParseRecipe, fetchPageTitle } from '@/lib/recipeFetch';
 import { ingredientToEntry } from '@/lib/recipeImport';
@@ -39,7 +40,7 @@ function hostOf(url: string): string {
 export default function ImportScreen() {
   const params = useLocalSearchParams<{ url?: string | string[] }>();
   const url = typeof params.url === 'string' ? params.url : undefined;
-  const { colors, radius, space, typography } = useTheme();
+  const { colors, typography } = useTheme();
   const insets = useSafeAreaInsets();
   const { user } = useAuth();
   const { lists, loading: listsLoading, createList } = useLists();
@@ -368,11 +369,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderBottomWidth: 1,
     flexDirection: 'row',
-    gap: 12,
+    gap: space[3],
   },
   backButton: {
     alignItems: 'center',
-    borderRadius: 22,
+    borderRadius: radius.xl,
     flexShrink: 0,
     height: 44,
     justifyContent: 'center',
@@ -392,7 +393,7 @@ const styles = StyleSheet.create({
   },
   centered: {
     alignItems: 'center',
-    gap: 12,
+    gap: space[3],
     justifyContent: 'center',
   },
   urlCard: {
@@ -409,7 +410,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderWidth: 1,
     flexDirection: 'row',
-    gap: 10,
+    gap: space[3],
   },
   listEmoji: { fontSize: 22, lineHeight: 26 },
   listName: {

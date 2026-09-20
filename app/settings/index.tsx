@@ -27,6 +27,7 @@ import { showAppAlert } from '@/lib/appAlert';
 import type { ThemePreference } from '@/lib/theme';
 import { buildPlanChooserHref } from '@/lib/authRedirect';
 import { buttonLabelStyle, buttonLayoutStyle } from '@/lib/buttonStyles';
+import { fontSize, radius, space } from '@/lib/design';
 import { FREE_LIST_LIMIT } from '@/lib/listLimits';
 import { restorePremiumPurchases } from '@/lib/purchases';
 
@@ -65,7 +66,7 @@ const THEME_OPTIONS: {
 ];
 
 export default function SettingsScreen() {
-  const { colors, colorScheme, radius, space, typography, preference, setPreference } =
+  const { colors, colorScheme, typography, preference, setPreference } =
     useTheme();
   const { user } = useAuth();
   const appLock = useAppLock();
@@ -301,7 +302,7 @@ export default function SettingsScreen() {
                   },
                 ]}
               >
-                <Text style={[buttonLabelStyle(16), { color: colors.onPrimary }]}>
+                <Text style={[buttonLabelStyle(fontSize.body), { color: colors.onPrimary }]}>
                   Sign in
                 </Text>
               </Pressable>
@@ -317,7 +318,7 @@ export default function SettingsScreen() {
                   },
                 ]}
               >
-                <Text style={[buttonLabelStyle(16), { color: colors.text }]}>
+                <Text style={[buttonLabelStyle(fontSize.body), { color: colors.text }]}>
                   Create account
                 </Text>
               </Pressable>
@@ -430,11 +431,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderBottomWidth: 1,
     flexDirection: 'row',
-    gap: 12,
+    gap: space[3],
   },
   backButton: {
     alignItems: 'center',
-    borderRadius: 22,
+    borderRadius: radius.xl,
     flexShrink: 0,
     height: 44,
     justifyContent: 'center',
@@ -464,7 +465,7 @@ const styles = StyleSheet.create({
   },
   section: {
     borderWidth: 1,
-    gap: 4,
+    gap: space[1],
   },
   sectionTitle: {},
   themeRow: {
@@ -475,21 +476,21 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     flex: 1,
     flexDirection: 'row',
-    gap: 6,
+    gap: space[2],
     justifyContent: 'center',
-    paddingHorizontal: 12,
-    paddingVertical: 10,
+    paddingHorizontal: space[3],
+    paddingVertical: space[3],
   },
   themeOptionText: {},
   accountActions: {},
   planRow: {
     alignItems: 'center',
     flexDirection: 'row',
-    gap: 10,
+    gap: space[3],
   },
   planBadge: {
-    paddingHorizontal: 10,
-    paddingVertical: 4,
+    paddingHorizontal: space[3],
+    paddingVertical: space[1],
   },
   planBadgeText: {},
   planDetail: {},

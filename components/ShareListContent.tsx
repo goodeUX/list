@@ -17,6 +17,7 @@ import { showAppAlert } from '@/lib/appAlert';
 import { useListCollaborators } from '@/hooks/useListCollaborators';
 import { getInviteUrl } from '@/lib/inviteUrl';
 import { shareListInvite } from '@/lib/shareListInvite';
+import { space } from '@/lib/design';
 
 type ShareListContentProps = {
   listId: string;
@@ -146,13 +147,13 @@ export default function ShareListContent({
 const styles = StyleSheet.create({
   linkBox: {
     borderWidth: 1,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
+    paddingHorizontal: space[4],
+    paddingVertical: space[3],
   },
   collaboratorRow: {
     alignItems: 'center',
     flexDirection: 'row',
-    gap: 10,
+    gap: space[3],
   },
   avatar: {
     alignItems: 'center',

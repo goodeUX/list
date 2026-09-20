@@ -11,7 +11,7 @@ import Animated, {
 
 import SubItemRow from '@/components/SubItemRow';
 import { useTheme } from '@/contexts/ThemeContext';
-import { palette } from '@/lib/design';
+import { fontFamily, fontSize, lineHeight, palette, space } from '@/lib/design';
 import { playToggleHaptic } from '@/lib/haptics';
 import { formatItemNameForDisplay } from '@/lib/itemName';
 import { subItemProgress, sortSubItems } from '@/lib/subItems';
@@ -281,7 +281,7 @@ export default function ListItemRow({
       ) : null}
     </Pressable>
       {hasSubItems ? (
-        <View style={[styles.subItems, { paddingLeft: spacing.lg + 12 }]}>
+        <View style={[styles.subItems, { paddingLeft: spacing.lg + space[3] }]}>
           {sortSubItems(item.subItems).map((subItem) => (
             <SubItemRow
               key={subItem.id}
@@ -300,7 +300,7 @@ const styles = StyleSheet.create({
   row: {
     alignItems: 'center',
     flexDirection: 'row',
-    gap: 12,
+    gap: space[3],
   },
   checkboxHitArea: {
     alignItems: 'center',
@@ -317,7 +317,7 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
-    gap: 4,
+    gap: space[1],
   },
   dragHandle: {
     alignItems: 'center',
@@ -341,35 +341,35 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
   },
   pill: {
-    paddingHorizontal: 8,
+    paddingHorizontal: space[2],
     paddingVertical: 2,
   },
   linkPill: {
     alignItems: 'center',
     flexDirection: 'row',
-    gap: 4,
+    gap: space[1],
   },
   pillText: {
-    fontFamily: 'NunitoSans_600SemiBold',
-    fontSize: 12,
-    lineHeight: 16,
+    fontFamily: fontFamily.bodySemiBold,
+    fontSize: fontSize.caption,
+    lineHeight: lineHeight.caption,
   },
   progressBadge: {
     alignItems: 'center',
     height: 20,
     justifyContent: 'center',
     minWidth: 28,
-    paddingHorizontal: 6,
+    paddingHorizontal: space[2],
   },
   progressText: {
-    fontFamily: 'NunitoSans_600SemiBold',
-    fontSize: 12,
-    lineHeight: 14,
+    fontFamily: fontFamily.bodySemiBold,
+    fontSize: fontSize.caption,
+    lineHeight: lineHeight.caption,
     textAlign: 'center',
   },
   subItems: {
     gap: 2,
-    marginTop: -6,
-    paddingBottom: 14,
+    marginTop: -space[2],
+    paddingBottom: space[4],
   },
 });

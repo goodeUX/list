@@ -18,6 +18,7 @@ import KeyboardDismissScrollView from '@/components/KeyboardDismissScrollView';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTheme } from '@/contexts/ThemeContext';
 import { shouldBypassAppLock } from '@/lib/appLock';
+import { space } from '@/lib/design';
 import {
   getJourneyDefault,
   recordAppUsed,
@@ -159,7 +160,7 @@ export default function OpeningScreen({ fontsLoaded, onComplete }: OpeningScreen
 
         <KeyboardAvoidingView
           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-          style={[styles.content, { paddingTop: insets.top + 48 }]}
+          style={[styles.content, { paddingTop: insets.top + space[12] }]}
         >
           <KeyboardDismissScrollView
             contentContainerStyle={styles.scrollContent}
@@ -228,7 +229,7 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
-    paddingHorizontal: 32,
+    paddingHorizontal: space[8],
   },
   scrollContent: {
     alignItems: 'center',
@@ -240,13 +241,13 @@ const styles = StyleSheet.create({
   },
   welcomeContainer: {
     alignItems: 'center',
-    paddingTop: 40,
+    paddingTop: space[10],
   },
   welcomeBack: {
     textAlign: 'center',
   },
   welcomeName: {
-    marginTop: 4,
+    marginTop: space[1],
     textAlign: 'center',
   },
 });

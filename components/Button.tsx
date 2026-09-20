@@ -12,6 +12,7 @@ import {
 
 import { useTheme } from '@/contexts/ThemeContext';
 import { buttonLabelStyle, buttonLayoutStyle } from '@/lib/buttonStyles';
+import { space } from '@/lib/design';
 
 const BUTTON_ICON_SIZE = 20;
 const SURFACE_BUTTON_ICON_SIZE = 24;
@@ -125,7 +126,7 @@ const styles = StyleSheet.create({
   iconRow: {
     alignItems: 'center',
     flexDirection: 'row',
-    gap: 8,
+    gap: space[2],
     justifyContent: 'center',
   },
 });

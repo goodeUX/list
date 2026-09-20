@@ -3,6 +3,7 @@ import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-nati
 
 import { useTheme } from '@/contexts/ThemeContext';
 import { buttonLayoutStyle } from '@/lib/buttonStyles';
+import { space } from '@/lib/design';
 
 type SocialAuthButtonsProps = {
   disabled: boolean;
@@ -82,7 +83,7 @@ export default function SocialAuthButtons({
 
 const styles = StyleSheet.create({
   container: {
-    gap: 12,
+    gap: space[3],
   },
   button: {
     borderWidth: 1,
@@ -92,7 +93,7 @@ const styles = StyleSheet.create({
   row: {
     alignItems: 'center',
     flexDirection: 'row',
-    gap: 10,
+    gap: space[3],
   },
   buttonLabel: {
     textAlign: 'center',

@@ -16,7 +16,7 @@ import DraggableFlatList, {
 
 import ListItemRow from '@/components/ListItemRow';
 import { useTheme } from '@/contexts/ThemeContext';
-import { palette } from '@/lib/design';
+import { palette, space } from '@/lib/design';
 import { DROP_ANIMATION_CONFIG } from '@/lib/dragAnimation';
 import { playToggleHaptic } from '@/lib/haptics';
 import type { ListItem } from '@/lib/types';
@@ -296,7 +296,7 @@ const styles = StyleSheet.create({
   sectionHeaderRow: {
     alignItems: 'center',
     flexDirection: 'row',
-    gap: 8,
+    gap: space[2],
   },
   sectionHeader: {
     letterSpacing: 0.4,
@@ -307,7 +307,7 @@ const styles = StyleSheet.create({
     height: 20,
     justifyContent: 'center',
     minWidth: 20,
-    paddingHorizontal: 6,
+    paddingHorizontal: space[2],
   },
   sectionCount: {
     textAlign: 'center',

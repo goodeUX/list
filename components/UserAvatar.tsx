@@ -1,6 +1,7 @@
 import { Image, StyleSheet, Text, View } from 'react-native';
 
 import { useTheme } from '@/contexts/ThemeContext';
+import { fontFamily } from '@/lib/design';
 
 interface Props {
   /** Display name or email; its first letter is the fallback. */
@@ -44,6 +45,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   initial: {
-    fontFamily: 'NunitoSans_700Bold',
+    fontFamily: fontFamily.bodyBold,
   },
 });

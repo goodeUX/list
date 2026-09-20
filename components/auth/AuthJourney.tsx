@@ -26,6 +26,7 @@ import {
   isAppleSignInAvailable,
   isGoogleSignInAvailable,
 } from '@/lib/socialAuth';
+import { space } from '@/lib/design';
 
 const EMAIL_PATTERN = /^\S+@\S+\.\S+$/;
 
@@ -414,17 +415,17 @@ const styles = StyleSheet.create({
   },
   header: {
     alignItems: 'center',
-    marginBottom: 24,
+    marginBottom: space[6],
   },
   title: {
-    marginBottom: 8,
+    marginBottom: space[2],
     textAlign: 'center',
   },
   subtitle: {
     textAlign: 'center',
   },
   form: {
-    gap: 16,
+    gap: space[4],
   },
   backRow: {
     alignItems: 'center',
@@ -439,7 +440,7 @@ const styles = StyleSheet.create({
   dividerRow: {
     alignItems: 'center',
     flexDirection: 'row',
-    gap: 12,
+    gap: space[3],
   },
   dividerLine: {
     flex: 1,
@@ -458,6 +459,6 @@ const styles = StyleSheet.create({
   footerText: {},
   link: {},
   skipButton: {
-    marginTop: 12,
+    marginTop: space[3],
   },
 });

@@ -15,6 +15,7 @@ import { usePlan } from '@/contexts/PlanContext';
 import { useTheme } from '@/contexts/ThemeContext';
 import { showAppAlert } from '@/lib/appAlert';
 import { parseAuthRedirect } from '@/lib/authRedirect';
+import { space } from '@/lib/design';
 import { navigateAfterSignIn } from '@/lib/postAuthNavigation';
 import {
   getPremiumPackages,
@@ -232,7 +233,7 @@ const styles = StyleSheet.create({
   },
   header: { alignItems: 'center' },
   title: {
-    marginBottom: 8,
+    marginBottom: space[2],
     textAlign: 'center',
   },
   subtitle: {
@@ -242,7 +243,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderWidth: 1,
     flexDirection: 'row',
-    gap: 10,
+    gap: space[3],
     justifyContent: 'space-between',
   },
   packageLabel: {},

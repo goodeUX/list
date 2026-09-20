@@ -13,6 +13,7 @@ import {
   type EmitterSubscription,
 } from 'react-native';
 import { absoluteFill } from '@/lib/absoluteFill';
+import { space } from '@/lib/design';
 import Animated, {
   cancelAnimation,
   Easing,
@@ -101,7 +102,7 @@ export default function ListFormModal({
   } | null>(null);
   const listNameInputRef = useRef<ElementRef<typeof ThemedTextInput>>(null);
   const lastOpenModalAtRef = useRef(0);
-  const [modalOverlayPaddingTop, setModalOverlayPaddingTop] = useState(24);
+  const [modalOverlayPaddingTop, setModalOverlayPaddingTop] = useState<number>(space[6]);
   const [modalLayerHeight, setModalLayerHeight] = useState<number | null>(null);
   const [validationError, setValidationError] = useState<string | null>(null);
   const isListNameAtLimit = listName.length >= LIST_NAME_MAX_LENGTH;
@@ -213,7 +214,7 @@ export default function ListFormModal({
     setModalLayerHeight(windowHeight);
     setModalOverlayPaddingTop(
       Math.max(
-        24,
+        space[6],
         (windowHeight - MODAL_ESTIMATED_HEIGHT) / 2 - MODAL_VERTICAL_OFFSET,
       ),
     );
@@ -486,7 +487,7 @@ const styles = StyleSheet.create({
     ...absoluteFill,
     alignItems: 'center',
     justifyContent: 'flex-start',
-    paddingBottom: 24,
+    paddingBottom: space[6],
     paddingHorizontal: MODAL_WIDTH_INSET / 2,
     zIndex: 100,
   },
@@ -509,23 +510,23 @@ const styles = StyleSheet.create({
   nameField: {
     alignItems: 'center',
     flexDirection: 'row',
-    gap: 4,
+    gap: space[1],
     minHeight: getBorderedInputHeight(),
-    paddingRight: 12,
+    paddingRight: space[3],
   },
   nameInput: {
     // No left padding: the emoji cell supplies the field's left inset.
     flex: 1,
-    paddingVertical: 14,
+    paddingVertical: space[4],
   },
   charCounter: {
     flexShrink: 0,
-    marginLeft: 8,
+    marginLeft: space[2],
   },
   buttonRow: {
     alignSelf: 'stretch',
     flexDirection: 'row',
-    gap: 8,
+    gap: space[2],
     width: '100%',
   },
   buttonRowItem: {

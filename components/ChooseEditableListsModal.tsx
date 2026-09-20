@@ -13,6 +13,7 @@ import { absoluteFill } from '@/lib/absoluteFill';
 import Button from '@/components/Button';
 import { useTheme } from '@/contexts/ThemeContext';
 import { showAppAlert } from '@/lib/appAlert';
+import { space } from '@/lib/design';
 import { FREE_LIST_LIMIT } from '@/lib/listLimits';
 import { CONTENT_MAX_WIDTH } from '@/lib/slideTransition';
 import type { AppList } from '@/lib/types';
@@ -171,7 +172,7 @@ const styles = StyleSheet.create({
     ...absoluteFill,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: 12,
+    paddingHorizontal: space[3],
     zIndex: 100,
   },
   backdrop: {
@@ -183,16 +184,16 @@ const styles = StyleSheet.create({
     width: '100%',
     zIndex: 1,
   },
-  header: { gap: 8 },
+  header: { gap: space[2] },
   listRow: {
     alignItems: 'center',
     borderWidth: 1,
     flexDirection: 'row',
-    gap: 10,
+    gap: space[3],
   },
   listEmoji: { fontSize: 22, lineHeight: 26 },
   listName: {
     flex: 1,
   },
-  buttonGroup: { gap: 8 },
+  buttonGroup: { gap: space[2] },
 });

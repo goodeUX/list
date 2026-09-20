@@ -16,6 +16,7 @@ import KeyboardDismissScrollView from '@/components/KeyboardDismissScrollView';
 import { useTheme } from '@/contexts/ThemeContext';
 import { buildAuthHref, parseAuthRedirect } from '@/lib/authRedirect';
 import type { AuthJourneyMode } from '@/lib/authLocalState';
+import { radius, space } from '@/lib/design';
 import { navigateAfterSignIn } from '@/lib/postAuthNavigation';
 import { isPurchasesAvailable } from '@/lib/purchases';
 
@@ -129,7 +130,7 @@ const styles = StyleSheet.create({
   },
   backButton: {
     alignItems: 'center',
-    borderRadius: 22,
+    borderRadius: radius.xl,
     flexShrink: 0,
     height: 44,
     justifyContent: 'center',
@@ -141,7 +142,7 @@ const styles = StyleSheet.create({
   },
   catWrap: {
     alignItems: 'center',
-    marginTop: 24,
+    marginTop: space[6],
   },
   catImage: {
     height: 160,

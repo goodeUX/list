@@ -13,7 +13,7 @@ import {
 
 import { useTheme } from '@/contexts/ThemeContext';
 import { scheduleTextInputFocus } from '@/lib/focusTextInput';
-import { space, typography } from '@/lib/design';
+import { fontFamily, fontSize, lineHeight, space, typography } from '@/lib/design';
 import type { ThemeColors } from '@/lib/theme';
 
 export const BORDERED_INPUT_BORDER_WIDTH = 1;
@@ -240,7 +240,7 @@ const styles = StyleSheet.create({
   },
   floatingLabel: {
     left: 12,
-    paddingHorizontal: 4,
+    paddingHorizontal: space[1],
     position: 'absolute',
     zIndex: 1,
   },
@@ -251,14 +251,14 @@ const styles = StyleSheet.create({
     top: BORDERED_INPUT_PADDING_VERTICAL + BORDERED_INPUT_BORDER_WIDTH,
   },
   floatingLabelText: {
-    fontFamily: 'NunitoSans_400Regular',
+    fontFamily: fontFamily.bodyRegular,
   },
   floatingLabelTextRaised: {
-    fontSize: 12,
-    lineHeight: 16,
+    fontSize: fontSize.caption,
+    lineHeight: lineHeight.caption,
   },
   floatingLabelTextResting: {
-    fontSize: 16,
+    fontSize: fontSize.body,
     lineHeight: BORDERED_INPUT_LINE_HEIGHT,
   },
 });

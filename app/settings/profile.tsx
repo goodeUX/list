@@ -21,11 +21,12 @@ import UserAvatar from '@/components/UserAvatar';
 import { getAuthErrorMessage, useAuth } from '@/contexts/AuthContext';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useChildSlideTransition } from '@/hooks/useSlideTransition';
+import { radius, space } from '@/lib/design';
 
 const AVATAR_SIZE = 96;
 
 export default function ProfileScreen() {
-  const { colors, radius, space, typography } = useTheme();
+  const { colors, typography } = useTheme();
   const { user, loading, signOut, updateAccount } = useAuth();
   const insets = useSafeAreaInsets();
   const { animatedStyle, goBack, isEnabled: slideTransitionEnabled } =
@@ -255,11 +256,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderBottomWidth: 1,
     flexDirection: 'row',
-    gap: 12,
+    gap: space[3],
   },
   backButton: {
     alignItems: 'center',
-    borderRadius: 22,
+    borderRadius: radius.xl,
     height: 44,
     justifyContent: 'center',
     width: 44,
@@ -280,12 +281,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   field: {
-    gap: 6,
+    gap: space[2],
   },
   labelRow: {
     alignItems: 'center',
     flexDirection: 'row',
-    gap: 8,
+    gap: space[2],
   },
   label: {},
   readOnlyBox: {

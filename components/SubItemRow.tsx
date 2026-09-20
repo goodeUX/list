@@ -4,6 +4,7 @@ import { Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { useTheme } from '@/contexts/ThemeContext';
 import { playToggleHaptic } from '@/lib/haptics';
+import { space } from '@/lib/design';
 import type { SubItem } from '@/lib/types';
 
 type SubItemRowProps = {
@@ -81,7 +82,7 @@ const styles = StyleSheet.create({
   row: {
     alignItems: 'center',
     flexDirection: 'row',
-    gap: 10,
+    gap: space[3],
   },
   checkbox: {
     alignItems: 'center',

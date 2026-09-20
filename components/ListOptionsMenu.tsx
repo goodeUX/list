@@ -16,14 +16,15 @@ import Animated, {
 } from 'react-native-reanimated';
 
 import { useTheme } from '@/contexts/ThemeContext';
+import { radius, space } from '@/lib/design';
 import type { ThemeColors } from '@/lib/theme';
 
 const MENU_ITEM_ICON_SIZE = 22;
-const MENU_ITEM_HORIZONTAL_PADDING = 14;
-const MENU_ITEM_GAP = 10;
+const MENU_ITEM_HORIZONTAL_PADDING = space[4];
+const MENU_ITEM_GAP = space[3];
 const MENU_MIN_WIDTH = 320;
 const BUTTON_SIZE = 44;
-const MENU_ANCHOR_GAP = 8;
+const MENU_ANCHOR_GAP = space[2];
 const ICON_ROTATION_MS = 200;
 const MENU_NATIVE_ID = 'list-options-menu';
 const TOGGLE_WIDTH = 40;
@@ -297,7 +298,7 @@ const styles = StyleSheet.create({
   button: {
     alignItems: 'center',
     alignSelf: 'flex-end',
-    borderRadius: 22,
+    borderRadius: radius.xl,
     height: BUTTON_SIZE,
     justifyContent: 'center',
     width: BUTTON_SIZE,

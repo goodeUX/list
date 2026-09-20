@@ -19,6 +19,7 @@ import Animated, {
 import Button from '@/components/Button';
 import { useTheme } from '@/contexts/ThemeContext';
 import type { AppAlertButton, AppAlertRequest } from '@/lib/appAlert';
+import { space } from '@/lib/design';
 import { CONTENT_MAX_WIDTH } from '@/lib/slideTransition';
 
 const MODAL_DURATION_MS = 220;
@@ -156,7 +157,7 @@ const styles = StyleSheet.create({
     ...absoluteFill,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: 12,
+    paddingHorizontal: space[3],
     zIndex: 200,
   },
   backdrop: {
@@ -169,9 +170,9 @@ const styles = StyleSheet.create({
     zIndex: 1,
   },
   header: {
-    gap: 8,
+    gap: space[2],
   },
   buttonGroup: {
-    gap: 8,
+    gap: space[2],
   },
 });

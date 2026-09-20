@@ -1,7 +1,7 @@
 import { Platform, Pressable, ScrollView, StyleSheet, Text } from 'react-native';
 
 import { useTheme } from '@/contexts/ThemeContext';
-import { fontFamily } from '@/lib/design';
+import { fontFamily, space } from '@/lib/design';
 import {
   SUGGESTION_ROWS_VISIBLE,
   type ItemSuggestion,
@@ -40,12 +40,12 @@ export default function AddItemSuggestions({
           borderColor: colors.border,
           borderRadius: radius.lg,
           left: spacing.lg,
-          marginTop: 6,
+          marginTop: space[2],
           maxHeight: ROW_HEIGHT * SUGGESTION_ROWS_VISIBLE,
           right: spacing.lg,
         },
       ]}
-      contentContainerStyle={{ gap: 4, padding: 6 }}
+      contentContainerStyle={{ gap: space[1], padding: space[2] }}
     >
       {suggestions.map((suggestion) => {
         const { checkedItemId, matchLength, matchStart, name } = suggestion;
@@ -76,7 +76,7 @@ export default function AddItemSuggestions({
               {
                 backgroundColor: pressed ? colors.primarySoft : colors.surfaceMuted,
                 borderRadius: radius.full,
-                paddingHorizontal: 15,
+                paddingHorizontal: space[4],
               },
             ]}
           >
@@ -105,7 +105,7 @@ const styles = StyleSheet.create({
   row: {
     alignItems: 'center',
     flexDirection: 'row',
-    gap: 8,
+    gap: space[2],
     height: ROW_HEIGHT,
   },
 });

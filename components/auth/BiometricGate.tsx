@@ -5,6 +5,7 @@ import Button from '@/components/Button';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTheme } from '@/contexts/ThemeContext';
 import { authenticateForAppLock } from '@/lib/appLock';
+import { space } from '@/lib/design';
 
 type BiometricGateProps = {
   onUnlocked: () => void;
@@ -91,21 +92,21 @@ const styles = StyleSheet.create({
   container: {
     alignItems: 'center',
     maxWidth: 400,
-    paddingTop: 40,
+    paddingTop: space[10],
     width: '100%',
   },
   welcomeBack: {
     textAlign: 'center',
   },
   welcomeName: {
-    marginTop: 4,
+    marginTop: space[1],
     textAlign: 'center',
   },
   unlockButton: {
-    marginTop: 32,
+    marginTop: space[8],
   },
   signOutButton: {
-    marginTop: 16,
+    marginTop: space[4],
     minHeight: 44,
     justifyContent: 'center',
   },

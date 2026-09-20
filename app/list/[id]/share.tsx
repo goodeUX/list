@@ -2,6 +2,7 @@ import { useLocalSearchParams } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { absoluteFill } from '@/lib/absoluteFill';
+import { radius, space } from '@/lib/design';
 import Animated from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -13,7 +14,7 @@ export default function ShareListScreen() {
   const params = useLocalSearchParams<{ id: string; name?: string }>();
   const listId = typeof params.id === 'string' ? params.id : undefined;
   const listName = typeof params.name === 'string' ? params.name : 'List';
-  const { colors, space, typography } = useTheme();
+  const { colors, typography } = useTheme();
   const insets = useSafeAreaInsets();
   const { animatedStyle, goBack, isEnabled: slideTransitionEnabled } =
     useChildSlideTransition({ ready: Boolean(listId) });
@@ -100,11 +101,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderBottomWidth: 1,
     flexDirection: 'row',
-    gap: 12,
+    gap: space[3],
   },
   backButton: {
     alignItems: 'center',
-    borderRadius: 22,
+    borderRadius: radius.xl,
     flexShrink: 0,
     height: 44,
     justifyContent: 'center',

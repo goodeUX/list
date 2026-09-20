@@ -1,5 +1,6 @@
 import { Text, View } from 'react-native';
 import { useTheme } from '@/contexts/ThemeContext';
+import { fontFamily, space } from '@/lib/design';
 
 type BadgeTone = 'primary' | 'secondary' | 'success' | 'danger' | 'neutral';
 
@@ -27,11 +28,11 @@ export default function Badge({ label, tone = 'neutral' }: { label: string; tone
         alignSelf: 'flex-start',
         backgroundColor: colors[TONE_BG[tone]],
         borderRadius: radius.full,
-        paddingHorizontal: 10,
-        paddingVertical: 3,
+        paddingHorizontal: space[3],
+        paddingVertical: space[1],
       }}
     >
-      <Text style={{ ...typography.caption, fontFamily: 'NunitoSans_600SemiBold', color: colors[TONE_FG[tone]] }}>
+      <Text style={{ ...typography.caption, fontFamily: fontFamily.bodySemiBold, color: colors[TONE_FG[tone]] }}>
         {label}
       </Text>
     </View>

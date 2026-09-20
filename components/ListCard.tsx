@@ -4,7 +4,7 @@ import { type ReactNode } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { useTheme } from '@/contexts/ThemeContext';
-import { palette } from '@/lib/design';
+import { palette, space } from '@/lib/design';
 import { useListItemCounts } from '@/hooks/useListItems';
 import type { AppList } from '@/lib/types';
 
@@ -83,7 +83,7 @@ export default function ListCard({
               styles.itemCountBadge,
               {
                 backgroundColor: palette.teal[100],
-                borderRadius: 8,
+                borderRadius: radius.sm,
               },
             ]}
           >
@@ -105,7 +105,7 @@ const styles = StyleSheet.create({
   header: {
     alignItems: 'center',
     flexDirection: 'row',
-    gap: 12,
+    gap: space[3],
   },
   emoji: {
     fontSize: 28,
@@ -114,7 +114,7 @@ const styles = StyleSheet.create({
   trailingMeta: {
     alignItems: 'center',
     flexDirection: 'row',
-    gap: 6,
+    gap: space[2],
   },
   groupIcon: {
     alignItems: 'center',

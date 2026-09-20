@@ -3,6 +3,7 @@ import { useCallback, useEffect } from 'react';
 import { BackHandler, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { useTheme } from '@/contexts/ThemeContext';
+import { space } from '@/lib/design';
 import type { ListSortMode } from '@/lib/listSort';
 
 // The button has no background, so its box is sized to the icon itself —
@@ -10,11 +11,11 @@ import type { ListSortMode } from '@/lib/listSort';
 // a comfortable touch target.
 const ICON_SIZE = 24;
 const BUTTON_SIZE = ICON_SIZE;
-const MENU_ANCHOR_GAP = 8;
+const MENU_ANCHOR_GAP = space[2];
 const MENU_MIN_WIDTH = 240;
 const MENU_ITEM_ICON_SIZE = 20;
-const MENU_ITEM_HORIZONTAL_PADDING = 14;
-const MENU_ITEM_GAP = 10;
+const MENU_ITEM_HORIZONTAL_PADDING = space[4];
+const MENU_ITEM_GAP = space[3];
 
 type SortOption = {
   mode: ListSortMode;

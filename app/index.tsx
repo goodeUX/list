@@ -38,6 +38,7 @@ import {
   hasSeenListsIntro,
   markListsIntroSeen,
 } from '@/lib/authLocalState';
+import { fontFamily, radius, space } from '@/lib/design';
 import {
   canCreateList,
   FREE_LIST_LIMIT,
@@ -67,7 +68,7 @@ const SETTINGS_BUTTON_SIZE = 44;
 const FAB_SIZE = 72;
 // Squircle corner, matching the product's other buttons. borderCurve only
 // smooths the corner on iOS; Android draws a plain rounded rect at this radius.
-const FAB_BORDER_RADIUS = 24;
+const FAB_BORDER_RADIUS = radius.xl;
 const LISTS_FADE_MS = 300;
 // Far enough that overscroll bounce alone doesn't flicker the header divider.
 const HEADER_DIVIDER_SCROLL_THRESHOLD = 2;
@@ -589,7 +590,7 @@ const styles = StyleSheet.create({
   // DraggableFlatList measures cell heights to place a drop, and container gap
   // isn't part of that measurement.
   cardCell: {
-    marginBottom: 12,
+    marginBottom: space[3],
   },
   activeCell: Platform.select({
     web: { boxShadow: '0px 4px 12px rgba(0, 0, 0, 0.18)' },
@@ -633,7 +634,7 @@ const styles = StyleSheet.create({
     },
   }),
   fabIcon: {
-    fontFamily: 'NunitoSans_700Bold',
+    fontFamily: fontFamily.bodyBold,
     fontSize: 40,
     lineHeight: 48,
     textAlign: 'center',

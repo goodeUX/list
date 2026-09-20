@@ -20,9 +20,10 @@ import { getAuthErrorMessage, useAuth } from '@/contexts/AuthContext';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useAppLock } from '@/hooks/useAppLock';
 import { useChildSlideTransition } from '@/hooks/useSlideTransition';
+import { radius, space } from '@/lib/design';
 
 export default function SecurityScreen() {
-  const { colors, space, typography } = useTheme();
+  const { colors, typography } = useTheme();
   const { user, loading, updateAccount } = useAuth();
   const appLock = useAppLock();
   const insets = useSafeAreaInsets();
@@ -289,11 +290,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderBottomWidth: 1,
     flexDirection: 'row',
-    gap: 12,
+    gap: space[3],
   },
   backButton: {
     alignItems: 'center',
-    borderRadius: 22,
+    borderRadius: radius.xl,
     height: 44,
     justifyContent: 'center',
     width: 44,
@@ -313,7 +314,7 @@ const styles = StyleSheet.create({
   appLockRow: {
     alignItems: 'center',
     flexDirection: 'row',
-    gap: 12,
+    gap: space[3],
   },
   appLockLabels: {
     flex: 1,
@@ -321,7 +322,7 @@ const styles = StyleSheet.create({
     minWidth: 0,
   },
   field: {
-    gap: 6,
+    gap: space[2],
   },
   sectionTitle: {},
   label: {},

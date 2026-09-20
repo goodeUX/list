@@ -35,6 +35,7 @@ import {
   sortSubItems,
 } from '@/lib/subItems';
 import { playToggleHaptic } from '@/lib/haptics';
+import { radius, space } from '@/lib/design';
 import type { SubItem } from '@/lib/types';
 import { useTheme } from '@/contexts/ThemeContext';
 import { showAppAlert } from '@/lib/appAlert';
@@ -51,7 +52,7 @@ export default function ItemDetailScreen() {
   const { id, itemId } = useLocalSearchParams<{ id: string; itemId: string }>();
   const listId = typeof id === 'string' ? id : undefined;
   const resolvedItemId = typeof itemId === 'string' ? itemId : undefined;
-  const { colors, radius, space, typography } = useTheme();
+  const { colors, typography } = useTheme();
   const insets = useSafeAreaInsets();
   const { items, loading, updateItem, deleteItem, setSubItems, toggleSubItem } =
     useListItems(listId);
@@ -644,11 +645,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderBottomWidth: 1,
     flexDirection: 'row',
-    gap: 12,
+    gap: space[3],
   },
   shareButton: {
     alignItems: 'center',
-    borderRadius: 22,
+    borderRadius: radius.xl,
     flexShrink: 0,
     height: 44,
     justifyContent: 'center',
@@ -662,7 +663,7 @@ const styles = StyleSheet.create({
     flexGrow: 1,
   },
   field: {
-    gap: 6,
+    gap: space[2],
   },
   label: {},
   nameInput: {},
@@ -672,16 +673,16 @@ const styles = StyleSheet.create({
   },
   error: {},
   limitError: {
-    marginTop: 6,
+    marginTop: space[2],
   },
   openLink: {
-    marginTop: 4,
+    marginTop: space[1],
   },
   subItemRow: {
     alignItems: 'center',
     flexDirection: 'row',
-    gap: 10,
-    paddingVertical: 8,
+    gap: space[3],
+    paddingVertical: space[2],
   },
   subItemCheckbox: {
     alignItems: 'center',
@@ -695,7 +696,7 @@ const styles = StyleSheet.create({
   },
   subItemInput: {
     flex: 1,
-    paddingVertical: 6,
+    paddingVertical: space[2],
   },
   subItemAction: {
     alignItems: 'center',
