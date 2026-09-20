@@ -73,7 +73,7 @@ export default function ListDetailScreen() {
   const shouldFocusAddInput = params.focusAdd === '1';
   const cachedList = listId ? getCachedLocalList(listId) : null;
   const { user } = useAuth();
-  const { colors, colorScheme, radii, spacing } = useTheme();
+  const { colors, colorScheme, radii, spacing, typography } = useTheme();
   const insets = useSafeAreaInsets();
   const [listName, setListName] = useState(paramName || cachedList?.name || '');
   const [listEmoji, setListEmoji] = useState(paramEmoji || cachedList?.emoji || '📋');
@@ -731,7 +731,7 @@ export default function ListDetailScreen() {
         source={colorScheme === 'dark' ? darkListEmptyStateImage : lightListEmptyStateImage}
         style={styles.emptyListImage}
       />
-      <Text style={[styles.emptyText, { color: colors.textSecondary }]}>
+      <Text style={[typography.body, styles.emptyText, { color: colors.textSecondary }]}>
         No items yet. Add your first one above.
       </Text>
     </View>
@@ -821,7 +821,7 @@ export default function ListDetailScreen() {
           <View style={[styles.titleTextBlock, { pointerEvents: 'none' }]}>
             <Text
               numberOfLines={2}
-              style={[styles.title, { color: colors.text, pointerEvents: 'none' }]}
+              style={[typography.h1, styles.title, { color: colors.text, pointerEvents: 'none' }]}
             >
               {listName || paramName || 'List'}
             </Text>
@@ -867,7 +867,7 @@ export default function ListDetailScreen() {
           ]}
         >
           <MaterialIcons color={colors.textSecondary} name="lock-outline" size={20} />
-          <Text style={[styles.readOnlyText, { color: colors.textSecondary }]}>
+          <Text style={[typography.label, styles.readOnlyText, { color: colors.textSecondary }]}>
             Read-only on the Free plan
           </Text>
           {isPurchasesAvailable() ? (
@@ -878,7 +878,7 @@ export default function ListDetailScreen() {
                 router.push({ pathname: '/(auth)/paywall', params: { from: 'settings' } })
               }
             >
-              <Text style={[styles.readOnlyUpgrade, { color: colors.primary }]}>
+              <Text style={[typography.label, styles.readOnlyUpgrade, { color: colors.primary }]}>
                 Upgrade
               </Text>
             </Pressable>
@@ -913,7 +913,7 @@ export default function ListDetailScreen() {
               placeholder="Add an item..."
               returnKeyType="done"
               showSoftInputOnFocus
-              style={styles.addInput}
+              style={[typography.body, styles.addInput]}
               value={newItemName}
               variant="plain"
             />
@@ -1041,11 +1041,7 @@ const styles = StyleSheet.create({
     fontSize: 28,
     lineHeight: 32,
   },
-  title: {
-    fontFamily: 'Fraunces_600SemiBold',
-    fontSize: 24,
-    lineHeight: 30,
-  },
+  title: {},
   addInputRow: {
     alignItems: 'center',
     flexDirection: 'row',
@@ -1061,8 +1057,6 @@ const styles = StyleSheet.create({
   },
   addInput: {
     flex: 1,
-    fontFamily: 'NunitoSans_400Regular',
-    fontSize: 16,
     minHeight: ADD_SUBMIT_BUTTON_SIZE - 4,
     paddingVertical: 7,
   },
@@ -1080,14 +1074,8 @@ const styles = StyleSheet.create({
   },
   readOnlyText: {
     flex: 1,
-    fontFamily: 'NunitoSans_600SemiBold',
-    fontSize: 14,
-    lineHeight: 20,
   },
-  readOnlyUpgrade: {
-    fontFamily: 'NunitoSans_600SemiBold',
-    fontSize: 14,
-  },
+  readOnlyUpgrade: {},
   listContainer: {
     flex: 1,
     minHeight: 0,
@@ -1104,9 +1092,6 @@ const styles = StyleSheet.create({
     width: 168,
   },
   emptyText: {
-    fontFamily: 'NunitoSans_400Regular',
-    fontSize: 15,
-    lineHeight: 22,
     marginTop: 16,
     textAlign: 'center',
   },
