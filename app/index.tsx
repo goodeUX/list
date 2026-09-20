@@ -490,7 +490,7 @@ export default function ListsHomeScreen() {
                 { backgroundColor: colors.primary, opacity: pressed ? 0.85 : 1 },
               ]}
             >
-              <Text style={[styles.fabIcon, { color: colors.surface }]}>+</Text>
+              <Text style={[styles.fabIcon, { color: colors.onPrimary }]}>+</Text>
             </Pressable>
           </View>
         ) : null}

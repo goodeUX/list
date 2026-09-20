@@ -301,7 +301,7 @@ export default function SettingsScreen() {
                   },
                 ]}
               >
-                <Text style={[buttonLabelStyle(16), { color: colors.surface }]}>
+                <Text style={[buttonLabelStyle(16), { color: colors.onPrimary }]}>
                   Sign in
                 </Text>
               </Pressable>

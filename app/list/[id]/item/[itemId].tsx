@@ -571,7 +571,7 @@ export default function ItemDetailScreen() {
                   ]}
                 >
                   {subItem.checked ? (
-                    <MaterialIcons color={colors.surface} name="check" size={12} />
+                    <MaterialIcons color={colors.onPrimary} name="check" size={12} />
                   ) : null}
                 </Pressable>
 

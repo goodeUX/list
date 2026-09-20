@@ -55,7 +55,7 @@ export default function SubItemRow({
           Platform.OS === 'ios' ? (
             <SymbolView name="checkmark" size={11} tintColor={colors.surface} />
           ) : (
-            <MaterialIcons color={colors.surface} name="check" size={11} />
+            <MaterialIcons color={colors.onPrimary} name="check" size={11} />
           )
         ) : null}
       </View>

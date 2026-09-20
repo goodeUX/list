@@ -179,7 +179,7 @@ export default function ListItemRow({
             Platform.OS === 'ios' ? (
               <SymbolView name="checkmark" size={14} tintColor={colors.surface} />
             ) : (
-              <MaterialIcons color={colors.surface} name="check" size={14} />
+              <MaterialIcons color={colors.onPrimary} name="check" size={14} />
             )
           ) : null}
         </View>

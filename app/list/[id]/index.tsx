@@ -939,7 +939,7 @@ export default function ListDetailScreen() {
                 },
               ]}
             >
-              <MaterialIcons color={colors.surface} name="check" size={22} />
+              <MaterialIcons color={colors.onPrimary} name="check" size={22} />
             </Pressable>
           </Pressable>
           <AddItemSuggestions
