@@ -65,7 +65,8 @@ const THEME_OPTIONS: {
 ];
 
 export default function SettingsScreen() {
-  const { colors, colorScheme, radii, spacing, preference, setPreference } = useTheme();
+  const { colors, colorScheme, radius, space, typography, preference, setPreference } =
+    useTheme();
   const { user } = useAuth();
   const appLock = useAppLock();
   // Hidden when the page would be empty: no biometrics on this device and
@@ -144,9 +145,9 @@ export default function SettingsScreen() {
           styles.header,
           {
             borderBottomColor: colors.border,
-            paddingHorizontal: spacing.lg,
-            paddingTop: spacing.md,
-            paddingBottom: spacing.md,
+            paddingHorizontal: space[6],
+            paddingTop: space[4],
+            paddingBottom: space[4],
           },
         ]}
       >
@@ -166,7 +167,7 @@ export default function SettingsScreen() {
           <MaterialIcons color={colors.primary} name="chevron-left" size={24} />
         </Pressable>
 
-        <Text style={[styles.title, { color: colors.text }]}>Settings</Text>
+        <Text style={[typography.h2, styles.title, { color: colors.text }]}>Settings</Text>
 
         {user ? (
           <Pressable
@@ -189,7 +190,7 @@ export default function SettingsScreen() {
 
       <ScrollView
         style={styles.scroll}
-        contentContainerStyle={[styles.container, { padding: spacing.lg, gap: spacing.lg }]}
+        contentContainerStyle={[styles.container, { padding: space[6], gap: space[6] }]}
       >
         <View
           style={[
@@ -197,13 +198,15 @@ export default function SettingsScreen() {
             {
               backgroundColor: colors.surface,
               borderColor: colors.border,
-              borderRadius: radii.card,
-              padding: spacing.md,
+              borderRadius: radius.lg,
+              padding: space[4],
             },
           ]}
         >
-          <Text style={[styles.sectionTitle, { color: colors.text }]}>Appearance</Text>
-          <View style={[styles.themeRow, { gap: spacing.sm, marginTop: spacing.sm }]}>
+          <Text style={[typography.h2, styles.sectionTitle, { color: colors.text }]}>
+            Appearance
+          </Text>
+          <View style={[styles.themeRow, { gap: space[2], marginTop: space[2] }]}>
             {THEME_OPTIONS.map((option) => {
               const selected = preference === option.value;
               return (
@@ -215,7 +218,7 @@ export default function SettingsScreen() {
                     {
                       backgroundColor: selected ? colors.primarySoft : colors.surfaceMuted,
                       borderColor: selected ? colors.primary : colors.border,
-                      borderRadius: radii.item,
+                      borderRadius: radius.md,
                       opacity: pressed ? 0.85 : 1,
                     },
                   ]}
@@ -227,6 +230,7 @@ export default function SettingsScreen() {
                   />
                   <Text
                     style={[
+                      typography.label,
                       styles.themeOptionText,
                       { color: selected ? colors.text : colors.textSecondary },
                     ]}
@@ -250,13 +254,15 @@ export default function SettingsScreen() {
               {
                 backgroundColor: colors.surface,
                 borderColor: colors.border,
-                borderRadius: radii.card,
+                borderRadius: radius.lg,
                 opacity: pressed ? 0.7 : 1,
-                padding: spacing.md,
+                padding: space[4],
               },
             ]}
           >
-            <Text style={[styles.sectionTitle, { color: colors.text }]}>Security</Text>
+            <Text style={[typography.h2, styles.sectionTitle, { color: colors.text }]}>
+              Security
+            </Text>
             <MaterialIcons color={colors.textSecondary} name="chevron-right" size={24} />
           </Pressable>
         ) : null}
@@ -268,14 +274,16 @@ export default function SettingsScreen() {
               {
                 backgroundColor: colors.surface,
                 borderColor: colors.border,
-                borderRadius: radii.card,
-                padding: spacing.md,
+                borderRadius: radius.lg,
+                padding: space[4],
               },
             ]}
           >
-            <Text style={[styles.sectionTitle, { color: colors.text }]}>Account</Text>
+            <Text style={[typography.h2, styles.sectionTitle, { color: colors.text }]}>
+              Account
+            </Text>
 
-            <View style={[styles.accountActions, { gap: spacing.sm, marginTop: spacing.sm }]}>
+            <View style={[styles.accountActions, { gap: space[2], marginTop: space[2] }]}>
               <Pressable
                 onPress={() =>
                   router.push({
@@ -324,28 +332,30 @@ export default function SettingsScreen() {
               {
                 backgroundColor: colors.surface,
                 borderColor: colors.border,
-                borderRadius: radii.card,
-                padding: spacing.md,
+                borderRadius: radius.lg,
+                padding: space[4],
               },
             ]}
           >
-            <Text style={[styles.sectionTitle, { color: colors.text }]}>Plan</Text>
+            <Text style={[typography.h2, styles.sectionTitle, { color: colors.text }]}>Plan</Text>
 
-            <View style={[styles.planRow, { marginTop: spacing.sm }]}>
+            <View style={[styles.planRow, { marginTop: space[2] }]}>
               <View
                 style={[
                   styles.planBadge,
                   {
                     backgroundColor: plan === 'premium' ? colors.primarySoft : colors.surfaceMuted,
-                    borderRadius: radii.checkbox,
+                    borderRadius: radius.sm,
                   },
                 ]}
               >
-                <Text style={[styles.planBadgeText, { color: colors.text }]}>
+                <Text style={[typography.label, styles.planBadgeText, { color: colors.text }]}>
                   {plan === 'premium' ? 'Premium' : 'Free'}
                 </Text>
               </View>
-              <Text style={[styles.planDetail, { color: colors.textSecondary, flex: 1 }]}>
+              <Text
+                style={[typography.bodyS, styles.planDetail, { color: colors.textSecondary, flex: 1 }]}
+              >
                 {plan === 'premium'
                   ? planSource === 'comp'
                     ? 'Complimentary — enjoy!'
@@ -358,7 +368,7 @@ export default function SettingsScreen() {
               </Text>
             </View>
 
-            <View style={{ gap: spacing.sm, marginTop: spacing.sm }}>
+            <View style={{ gap: space[2], marginTop: space[2] }}>
               {plan === 'free' && purchasesAvailable ? (
                 <Button
                   label="Upgrade to Premium"
@@ -369,7 +379,7 @@ export default function SettingsScreen() {
                 />
               ) : null}
               {plan === 'free' && !purchasesAvailable ? (
-                <Text style={[styles.planDetail, { color: colors.textSecondary }]}>
+                <Text style={[typography.bodyS, styles.planDetail, { color: colors.textSecondary }]}>
                   Upgrade from the List Kitty app on your phone to unlock
                   unlimited lists.
                 </Text>
@@ -445,11 +455,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
   },
-  title: {
-    fontFamily: 'Fraunces_600SemiBold',
-    fontSize: 24,
-    lineHeight: 30,
-  },
+  title: {},
   container: {
     flexGrow: 1,
   },
@@ -460,11 +466,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     gap: 4,
   },
-  sectionTitle: {
-    fontFamily: 'Fraunces_600SemiBold',
-    fontSize: 20,
-    lineHeight: 28,
-  },
+  sectionTitle: {},
   themeRow: {
     flexDirection: 'row',
   },
@@ -478,10 +480,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 10,
   },
-  themeOptionText: {
-    fontFamily: 'NunitoSans_600SemiBold',
-    fontSize: 14,
-  },
+  themeOptionText: {},
   accountActions: {},
   planRow: {
     alignItems: 'center',
@@ -492,15 +491,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     paddingVertical: 4,
   },
-  planBadgeText: {
-    fontFamily: 'NunitoSans_600SemiBold',
-    fontSize: 14,
-  },
-  planDetail: {
-    fontFamily: 'NunitoSans_400Regular',
-    fontSize: 13,
-    lineHeight: 18,
-  },
+  planBadgeText: {},
+  planDetail: {},
   introImageWrap: {
     alignItems: 'center',
     flexGrow: 1,
