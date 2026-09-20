@@ -27,7 +27,7 @@ export default function ListCard({
   isActive = false,
   dragHandle,
 }: ListCardProps) {
-  const { colors, radii, spacing } = useTheme();
+  const { colors, radius, spacing, typography, elevation } = useTheme();
 
   const { doneCount, totalCount } = useListItemCounts(list.id, countsRefreshKey);
   const incompleteCount = totalCount - doneCount;
@@ -47,10 +47,11 @@ export default function ListCard({
       onPress={handlePress}
       style={({ pressed }) => [
         styles.card,
+        elevation.e1,
         {
           backgroundColor: colors.surface,
           borderColor: isActive ? colors.primary : colors.border,
-          borderRadius: radii.card,
+          borderRadius: radius.lg,
           opacity: pressed && !isActive ? 0.72 : 1,
           padding: spacing.md,
         },
@@ -60,7 +61,7 @@ export default function ListCard({
         <Text style={styles.emoji}>{list.emoji}</Text>
         <Text
           numberOfLines={1}
-          style={[styles.name, { color: colors.text, flex: 1 }]}
+          style={[typography.h2, { color: colors.text, flex: 1 }]}
         >
           {list.name}
         </Text>
@@ -80,11 +81,11 @@ export default function ListCard({
               styles.itemCountBadge,
               {
                 backgroundColor: colors.surfaceMuted,
-                borderRadius: radii.checkbox,
+                borderRadius: 8,
               },
             ]}
           >
-            <Text style={[styles.itemCount, { color: colors.textSecondary }]}>
+            <Text style={[typography.bodyS, styles.itemCount, { color: colors.textSecondary }]}>
               {incompleteCount}
             </Text>
           </View>
@@ -108,11 +109,6 @@ const styles = StyleSheet.create({
     fontSize: 28,
     lineHeight: 32,
   },
-  name: {
-    fontFamily: 'NunitoSans_600SemiBold',
-    fontSize: 17,
-    lineHeight: 22,
-  },
   trailingMeta: {
     alignItems: 'center',
     flexDirection: 'row',
@@ -129,9 +125,6 @@ const styles = StyleSheet.create({
     width: 26,
   },
   itemCount: {
-    fontFamily: 'NunitoSans_400Regular',
-    fontSize: 13,
-    lineHeight: 16,
     textAlign: 'center',
   },
 });
