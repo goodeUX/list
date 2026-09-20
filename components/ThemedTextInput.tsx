@@ -39,9 +39,11 @@ export type ThemedTextInputProps = TextInputProps & {
 
 export function getThemedInputBackgroundColor(
   colors: ThemeColors,
-  focused: boolean,
+  _focused: boolean,
 ): string {
-  return focused ? colors.surfaceMuted : colors.surface;
+  // Inputs stay on the white surface in every state; focus is signalled by the
+  // border color, not a background change.
+  return colors.surface;
 }
 
 export function getThemedInputBorderColor(
