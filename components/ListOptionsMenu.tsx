@@ -57,14 +57,14 @@ function MenuToggle({ colors, value }: { colors: ThemeColors; value: boolean }) 
       pointerEvents="none"
       style={[
         styles.toggleTrack,
-        { backgroundColor: value ? colors.primarySoft : colors.border },
+        { backgroundColor: value ? colors.secondarySoft : colors.border },
       ]}
     >
       <View
         style={[
           styles.toggleThumb,
           {
-            backgroundColor: value ? colors.primary : colors.surface,
+            backgroundColor: value ? colors.secondary : colors.surface,
             transform: [{ translateX: value ? TOGGLE_THUMB_TRAVEL : 0 }],
           },
         ]}

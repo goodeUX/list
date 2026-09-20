@@ -254,10 +254,10 @@ export default function ListItemRow({
         <View
           style={[
             styles.progressBadge,
-            { backgroundColor: colors.surfaceMuted, borderRadius: radii.checkbox },
+            { backgroundColor: palette.teal[100], borderRadius: radii.checkbox },
           ]}
         >
-          <Text style={[styles.progressText, { color: colors.textSecondary }]}>
+          <Text style={[styles.progressText, { color: palette.sand[900] }]}>
             {done}/{total}
           </Text>
         </View>
