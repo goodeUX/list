@@ -19,6 +19,7 @@ import { useLists } from '@/hooks/useLists';
 import { addItemToList } from '@/hooks/useListItems';
 import { absoluteFill } from '@/lib/absoluteFill';
 import { showAppAlert } from '@/lib/appAlert';
+import { openList } from '@/lib/openList';
 import { radius, space } from '@/lib/design';
 import { applyEntriesToList } from '@/lib/importEntries';
 import { fetchAndParseRecipe, fetchPageTitle } from '@/lib/recipeFetch';
@@ -61,7 +62,7 @@ export default function ImportScreen() {
   }, []);
 
   const finishToList = useCallback((listId: string, summary: string) => {
-    router.replace({ pathname: '/list/[id]', params: { id: listId } });
+    openList({ id: listId }, { replace: true });
     showAppAlert('Import complete', summary);
   }, []);
 

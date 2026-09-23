@@ -12,6 +12,7 @@ import { useLists } from '@/hooks/useLists';
 import { fontFamily, fontSize, lineHeight, space } from '@/lib/design';
 import { shouldShowInviteAppLanding } from '@/lib/inviteLanding';
 import { joinList } from '@/lib/joinList';
+import { openList } from '@/lib/openList';
 import { canJoinList } from '@/lib/listLimits';
 import {
   clearPendingInviteListId,
@@ -76,10 +77,7 @@ export default function JoinListScreen() {
     joinList(resolvedListId, user.uid)
       .then(async () => {
         await clearPendingInviteListId();
-        router.replace({
-          pathname: '/list/[id]',
-          params: { id: resolvedListId },
-        });
+        openList({ id: resolvedListId }, { replace: true });
       })
       .catch(() => {
         setError('Could not join this list. It may not exist or you may not have access.');

@@ -1,11 +1,11 @@
 import { MaterialIcons } from '@expo/vector-icons';
-import { router } from 'expo-router';
 import { type ReactNode } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { useTheme } from '@/contexts/ThemeContext';
 import { palette, space } from '@/lib/design';
 import { useListItemCounts } from '@/hooks/useListItems';
+import { openList } from '@/lib/openList';
 import type { AppList } from '@/lib/types';
 
 type ListCardProps = {
@@ -35,10 +35,7 @@ export default function ListCard({
   const isShared = list.memberIds.length > 1;
 
   const handlePress = () => {
-    router.push({
-      pathname: '/list/[id]',
-      params: { id: list.id, name: list.name, emoji: list.emoji },
-    });
+    openList({ id: list.id, name: list.name, emoji: list.emoji });
   };
 
   return (

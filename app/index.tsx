@@ -34,6 +34,7 @@ import { usePlan } from '@/contexts/PlanContext';
 import { useTheme } from '@/contexts/ThemeContext';
 import { APP_NAME } from '@/lib/appName';
 import { buildPlanChooserHref } from '@/lib/authRedirect';
+import { openList } from '@/lib/openList';
 import {
   hasSeenListsIntro,
   markListsIntroSeen,
@@ -288,15 +289,7 @@ export default function ListsHomeScreen() {
           renewKeyboardSession();
         }
 
-        router.push({
-          pathname: '/list/[id]',
-          params: {
-            id: listId,
-            name,
-            emoji,
-            focusAdd: '1',
-          },
-        });
+        openList({ id: listId, name, emoji, focusAdd: '1' });
       } catch {
         releaseKeyboardProxy();
         setError('Could not create list. Please try again.');
