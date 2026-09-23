@@ -131,7 +131,7 @@ function ListItemRow({
           style={[
             styles.checkbox,
             {
-              backgroundColor: item.checked ? colors.success : 'transparent',
+              backgroundColor: item.checked ? colors.success : colors.surface,
               borderColor: item.checked ? colors.success : colors.border,
               borderRadius: radii.checkbox,
             },

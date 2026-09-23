@@ -595,7 +595,7 @@ export default function ItemDetailScreen() {
                   style={[
                     styles.subItemCheckbox,
                     {
-                      backgroundColor: subItem.checked ? colors.success : 'transparent',
+                      backgroundColor: subItem.checked ? colors.success : colors.surface,
                       borderColor: subItem.checked ? colors.success : colors.border,
                       borderRadius: radius.sm,
                     },

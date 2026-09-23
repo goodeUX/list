@@ -58,7 +58,7 @@ export default function SubItemRow({
         style={[
           styles.checkbox,
           {
-            backgroundColor: subItem.checked ? colors.success : 'transparent',
+            backgroundColor: subItem.checked ? colors.success : colors.surface,
             borderColor: subItem.checked ? colors.success : colors.border,
             borderRadius: radii.checkbox,
           },
