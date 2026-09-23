@@ -17,8 +17,10 @@ import { useTheme } from '@/contexts/ThemeContext';
 import { radius, space } from '@/lib/design';
 import { CONTENT_MAX_WIDTH } from '@/lib/slideTransition';
 
-const catLightImage = require('../../assets/images/splash-light.png') as ImageSourcePropType;
-const catDarkImage = require('../../assets/images/splash-dark.png') as ImageSourcePropType;
+// The native launch splash (app.json) uses PNG copies of this art, because
+// the splash build step can't read WebP.
+const catLightImage = require('../../assets/images/splash-light.webp') as ImageSourcePropType;
+const catDarkImage = require('../../assets/images/splash-dark.webp') as ImageSourcePropType;
 
 const CAT_WIDTH_SCALE = 0.8;
 
