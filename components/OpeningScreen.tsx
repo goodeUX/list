@@ -33,7 +33,12 @@ const openingLightImage =
 const openingDarkImage =
   require('../assets/images/splash-dark.png') as ImageSourcePropType;
 
-const OPENING_IMAGE_ASPECT_RATIO = 1024 / 1024;
+// Taken from the image files themselves: a stale hard-coded ratio letterboxed
+// the art under `contain`, leaving a gap between the cat and the screen bottom.
+function getImageAspectRatio(source: ImageSourcePropType): number {
+  const { width, height } = Image.resolveAssetSource(source);
+  return width / height;
+}
 const OPENING_IMAGE_WIDTH_SCALE = 0.8;
 
 type OpeningScreenProps = {
@@ -154,7 +159,13 @@ export default function OpeningScreen({ fontsLoaded, onComplete }: OpeningScreen
             accessibilityIgnoresInvertColors
             resizeMode="contain"
             source={openingImage}
-            style={[styles.openingImage, { width: layoutWidth * OPENING_IMAGE_WIDTH_SCALE }]}
+            style={[
+              styles.openingImage,
+              {
+                aspectRatio: getImageAspectRatio(openingImage),
+                width: layoutWidth * OPENING_IMAGE_WIDTH_SCALE,
+              },
+            ]}
           />
         </View>
 
@@ -223,7 +234,6 @@ const styles = StyleSheet.create({
     position: 'absolute',
   },
   openingImage: {
-    aspectRatio: OPENING_IMAGE_ASPECT_RATIO,
     height: undefined,
     width: '100%',
   },
