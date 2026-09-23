@@ -3,8 +3,6 @@ import { StyleSheet } from 'react-native';
 import { absoluteFill } from '@/lib/absoluteFill';
 import { radius, space } from '@/lib/design';
 
-export const ADD_SUBMIT_BUTTON_SIZE = 40;
-
 export const listDetailStyles = StyleSheet.create({
   screen: {
     ...absoluteFill,
@@ -54,29 +52,11 @@ export const listDetailStyles = StyleSheet.create({
     lineHeight: 32,
   },
   title: {},
-  addInputRow: {
-    alignItems: 'center',
-    flexDirection: 'row',
-    gap: space[2],
-    paddingLeft: space[4],
-    paddingVertical: space[1],
-  },
   // Lifts the suggestion panel above the item list that follows it, and no
   // higher: the menu backdrop (5) and the header's options menu (10) must
   // both still sit above the input row.
   addInputWrapper: {
     zIndex: 1,
-  },
-  addInput: {
-    flex: 1,
-    minHeight: ADD_SUBMIT_BUTTON_SIZE - 4,
-    paddingVertical: space[2],
-  },
-  addSubmitButton: {
-    alignItems: 'center',
-    height: ADD_SUBMIT_BUTTON_SIZE,
-    justifyContent: 'center',
-    width: ADD_SUBMIT_BUTTON_SIZE,
   },
   readOnlyBanner: {
     alignItems: 'center',

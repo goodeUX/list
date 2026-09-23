@@ -3,6 +3,7 @@ import { useEffect, useState, type ReactNode } from 'react';
 import { MaterialIcons } from '@expo/vector-icons';
 import { Platform, Pressable, StyleSheet, Text, View, type TextStyle } from 'react-native';
 import Animated, {
+  FadeIn,
   useAnimatedStyle,
   useSharedValue,
   withSpring,
@@ -11,9 +12,16 @@ import Animated, {
 
 import SubItemRow from '@/components/SubItemRow';
 import { useTheme } from '@/contexts/ThemeContext';
+import { useSubItemsExpanded } from '@/hooks/useSubItemsExpanded';
 import { fontFamily, fontSize, lineHeight, palette, space } from '@/lib/design';
 import { playToggleHaptic } from '@/lib/haptics';
 import { formatItemNameForDisplay } from '@/lib/itemName';
+import {
+  ITEM_CHECKBOX_HIT_SIZE,
+  ITEM_CHECKBOX_ICON_SIZE,
+  ITEM_CHECKBOX_SIZE,
+  ITEM_ROW_GAP,
+} from '@/lib/itemRowMetrics';
 import { subItemProgress, sortSubItems } from '@/lib/subItems';
 import type { ListItem } from '@/lib/types';
 
@@ -101,6 +109,24 @@ export default function ListItemRow({
   const { colors, radii, radius, spacing, typography } = useTheme();
   const { done, total } = subItemProgress(item.subItems);
   const hasSubItems = total > 0;
+  const [subItemsExpanded, toggleSubItemsExpanded] = useSubItemsExpanded(item.id);
+  // The chevron points right when collapsed and turns to point down.
+  const chevronRotation = useSharedValue(subItemsExpanded ? 90 : 0);
+  const chevronStyle = useAnimatedStyle(() => ({
+    transform: [{ rotate: `${chevronRotation.value}deg` }],
+  }));
+
+  useEffect(() => {
+    chevronRotation.value = withTiming(subItemsExpanded ? 90 : 0, { duration: 200 });
+  }, [chevronRotation, subItemsExpanded]);
+
+  // Sub-items fade in when expanded with the chevron, but not when the page
+  // opens with them already expanded.
+  const [fadeInSubItems, setFadeInSubItems] = useState(false);
+  const handleToggleSubItemsExpanded = () => {
+    setFadeInSubItems(true);
+    toggleSubItemsExpanded();
+  };
   const checkScale = useSharedValue(1);
   const textOpacity = useSharedValue(item.checked ? COMPLETED_OPACITY : 1);
   const [hovered, setHovered] = useState(false);
@@ -178,9 +204,17 @@ export default function ListItemRow({
         >
           {item.checked ? (
             Platform.OS === 'ios' ? (
-              <SymbolView name="checkmark" size={14} tintColor={colors.onPrimary} />
+              <SymbolView
+                name="checkmark"
+                size={ITEM_CHECKBOX_ICON_SIZE}
+                tintColor={colors.onPrimary}
+              />
             ) : (
-              <MaterialIcons color={colors.onPrimary} name="check" size={14} />
+              <MaterialIcons
+                color={colors.onPrimary}
+                name="check"
+                size={ITEM_CHECKBOX_ICON_SIZE}
+              />
             )
           ) : null}
         </View>
@@ -263,6 +297,25 @@ export default function ListItemRow({
         </View>
       ) : null}
 
+      {hasSubItems ? (
+        <Pressable
+          accessibilityLabel={subItemsExpanded ? 'Hide sub-items' : 'Show sub-items'}
+          accessibilityRole="button"
+          accessibilityState={{ expanded: subItemsExpanded }}
+          hitSlop={12}
+          onPress={handleToggleSubItemsExpanded}
+          style={({ pressed }) => [styles.expandButton, { opacity: pressed ? 0.6 : 1 }]}
+        >
+          <Animated.View style={chevronStyle}>
+            {Platform.OS === 'ios' ? (
+              <SymbolView name="chevron.right" size={14} tintColor={colors.textSecondary} />
+            ) : (
+              <MaterialIcons color={colors.textSecondary} name="chevron-right" size={22} />
+            )}
+          </Animated.View>
+        </Pressable>
+      ) : null}
+
       {dragHandle ? (
         <View
           style={[
@@ -280,8 +333,11 @@ export default function ListItemRow({
         </View>
       ) : null}
     </Pressable>
-      {hasSubItems ? (
-        <View style={[styles.subItems, { paddingLeft: spacing.lg + space[3] }]}>
+      {hasSubItems && subItemsExpanded ? (
+        <Animated.View
+          entering={fadeInSubItems ? FadeIn.duration(200) : undefined}
+          style={[styles.subItems, { paddingLeft: spacing.lg + space[1] }]}
+        >
           {sortSubItems(item.subItems).map((subItem) => (
             <SubItemRow
               key={subItem.id}
@@ -290,7 +346,7 @@ export default function ListItemRow({
               subItem={subItem}
             />
           ))}
-        </View>
+        </Animated.View>
       ) : null}
     </View>
   );
@@ -300,20 +356,20 @@ const styles = StyleSheet.create({
   row: {
     alignItems: 'center',
     flexDirection: 'row',
-    gap: space[3],
+    gap: ITEM_ROW_GAP,
   },
   checkboxHitArea: {
     alignItems: 'center',
     justifyContent: 'center',
-    minHeight: 44,
-    minWidth: 44,
+    minHeight: ITEM_CHECKBOX_HIT_SIZE,
+    minWidth: ITEM_CHECKBOX_HIT_SIZE,
   },
   checkbox: {
     alignItems: 'center',
     borderWidth: 1.5,
-    height: 22,
+    height: ITEM_CHECKBOX_SIZE,
     justifyContent: 'center',
-    width: 22,
+    width: ITEM_CHECKBOX_SIZE,
   },
   content: {
     flex: 1,
@@ -367,8 +423,14 @@ const styles = StyleSheet.create({
     lineHeight: lineHeight.caption,
     textAlign: 'center',
   },
+  expandButton: {
+    alignItems: 'center',
+    height: 24,
+    justifyContent: 'center',
+    width: 24,
+  },
   subItems: {
-    gap: 2,
+    gap: space[2],
     marginTop: -space[2],
     paddingBottom: space[4],
   },

@@ -1,5 +1,6 @@
 import {
   addSubItem,
+  addSubItems,
   parseSubItems,
   removeSubItem,
   renameSubItem,
@@ -26,6 +27,26 @@ describe('addSubItem', () => {
   it('ignores an empty name', () => {
     const start = [make({ id: 'a' })];
     expect(addSubItem(start, '   ', 'b')).toBe(start);
+  });
+});
+
+describe('addSubItems', () => {
+  it('adds each comma-separated entry in typed order', () => {
+    const start = [make({ id: 'a', name: 'Milk', order: 0 })];
+    let n = 0;
+    const next = addSubItems(start, ' Salt, 2 eggs ,Oil', () => `new${(n += 1)}`);
+    expect(next.map((s) => [s.id, s.name, s.order])).toEqual([
+      ['a', 'Milk', 0],
+      ['new1', 'Salt', 1],
+      ['new2', '2 eggs', 2],
+      ['new3', 'Oil', 3],
+    ]);
+  });
+
+  it('skips empty entries and returns the input when nothing is added', () => {
+    const start = [make({ id: 'a' })];
+    expect(addSubItems(start, ' , ,', () => 'x')).toBe(start);
+    expect(addSubItems(start, 'Salt,,', () => 'b').map((s) => s.name)).toEqual(['x', 'Salt']);
   });
 });
 

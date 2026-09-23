@@ -24,7 +24,8 @@ import AddItemSuggestions from '@/components/AddItemSuggestions';
 import ListOptionsMenu from '@/components/ListOptionsMenu';
 import ListFormModal from '@/components/ListFormModal';
 import ReorderableItemList from '@/components/ReorderableItemList';
-import ThemedTextInput, { getThemedInputContainerStyle } from '@/components/ThemedTextInput';
+import AddInputRow from '@/components/AddInputRow';
+import ThemedTextInput from '@/components/ThemedTextInput';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useListAccess } from '@/hooks/useListAccess';
@@ -32,7 +33,6 @@ import { useListItemHistory } from '@/hooks/useListItemHistory';
 import { isOptimisticListItem, useListItems } from '@/hooks/useListItems';
 import { useChildSlideTransition } from '@/hooks/useSlideTransition';
 import { showAppAlert } from '@/lib/appAlert';
-import { space } from '@/lib/design';
 import { getItemSuggestions, type ItemSuggestion } from '@/lib/itemSuggestions';
 import { db } from '@/lib/firebase';
 import { handleFirestoreListenerError } from '@/lib/firestoreListenerErrors';
@@ -47,7 +47,7 @@ import { deleteListById, leaveListById, setListMoveDoneToBottom, updateListDetai
 import { consumePendingAddInputFocus } from '@/lib/pendingAddInputFocus';
 import { isPurchasesAvailable } from '@/lib/purchases';
 import { SLIDE_IN_MS } from '@/lib/slideTransition';
-import { ADD_SUBMIT_BUTTON_SIZE, listDetailStyles as styles } from '@/lib/listDetailScreenStyles';
+import { listDetailStyles as styles } from '@/lib/listDetailScreenStyles';
 import type { ListItem } from '@/lib/types';
 
 const LIST_ITEMS_FADE_MS = 500;
@@ -571,28 +571,10 @@ export default function ListDetailScreen() {
     submitItemName(newItemNameRef.current);
   }, [submitItemName]);
 
-  const handleSubmitEditing = () => {
-    handleAddItem();
-  };
-
-  const handleSubmitPress = () => {
-    handleAddItem();
-  };
-
   const handleSubmitPressIn = () => {
     submitFromKeyboard.current = true;
     refocusingInput.current = true;
     setIsAddInputFocused(true);
-  };
-
-  const handleSubmitMouseDown = (event: { preventDefault: () => void }) => {
-    event.preventDefault();
-    if (!newItemNameRef.current.trim()) {
-      return;
-    }
-
-    handleSubmitPressIn();
-    handleAddItem();
   };
 
   const handleSelectSuggestion = useCallback(
@@ -622,8 +604,6 @@ export default function ListDetailScreen() {
     [isAddInputFocused, items, nameHistory, newItemName],
   );
 
-  const canSubmitNewItem = Boolean(newItemName.trim());
-  const showSubmitButton = isAddInputFocused && newItemName.length > 0;
   const lockListItems = Platform.OS !== 'web' && isAddInputFocused;
 
   const handleInputFocus = () => {
@@ -885,62 +865,21 @@ export default function ListDetailScreen() {
         </View>
       ) : (
         <View style={styles.addInputWrapper}>
-        <Pressable
-          nativeID={ADD_INPUT_ROW_NATIVE_ID}
-          onPress={focusAddInput}
-          style={[
-            styles.addInputRow,
-            getThemedInputContainerStyle(colors, isAddInputFocused),
-            {
-              borderRadius: radii.item,
-              marginHorizontal: spacing.lg,
-              marginTop: spacing.lg,
-              paddingRight: showSubmitButton
-                  ? spacing.xs
-                  : isAddInputFocused
-                    ? space[3]
-                    : space[4],
-              },
-            ]}
-          >
-            <ThemedTextInput
-              ref={addItemInputRef}
-              onBlur={handleInputBlur}
-              onChangeText={handleChangeNewItemName}
-              onFocus={handleInputFocus}
-              onSubmitEditing={handleSubmitEditing}
-              placeholder="Add an item..."
-              returnKeyType="done"
-              showSoftInputOnFocus
-              style={[typography.body, styles.addInput]}
-              value={newItemName}
-              variant="plain"
-            />
-            <Pressable
-              accessibilityLabel="Add item"
-              accessibilityRole="button"
-              accessibilityState={{ disabled: !canSubmitNewItem }}
-              disabled={Platform.OS !== 'web' && !canSubmitNewItem}
-              {...(Platform.OS === 'web'
-                ? ({ onMouseDown: handleSubmitMouseDown } as object)
-                : {
-                    onPress: handleSubmitPress,
-                    onPressIn: handleSubmitPressIn,
-                  })}
-              style={({ pressed }) => [
-                styles.addSubmitButton,
-                {
-                  backgroundColor: colors.primary,
-                  borderRadius: radii.checkbox,
-                  opacity: showSubmitButton ? (pressed && canSubmitNewItem ? 0.85 : 1) : 0,
-                  pointerEvents: showSubmitButton ? 'auto' : 'none',
-                  width: showSubmitButton ? ADD_SUBMIT_BUTTON_SIZE : 0,
-                },
-              ]}
-            >
-              <MaterialIcons color={colors.onPrimary} name="check" size={22} />
-            </Pressable>
-          </Pressable>
+          <AddInputRow
+            ref={addItemInputRef}
+            focused={isAddInputFocused}
+            nativeID={ADD_INPUT_ROW_NATIVE_ID}
+            onBlur={handleInputBlur}
+            onChangeText={handleChangeNewItemName}
+            onFocus={handleInputFocus}
+            onPressRow={focusAddInput}
+            onSubmit={handleAddItem}
+            onSubmitPressIn={handleSubmitPressIn}
+            placeholder="Add an item..."
+            style={{ marginHorizontal: spacing.lg, marginTop: spacing.lg }}
+            submitAccessibilityLabel="Add item"
+            value={newItemName}
+          />
           <AddItemSuggestions
             onPressIn={handleSubmitPressIn}
             onSelect={handleSelectSuggestion}

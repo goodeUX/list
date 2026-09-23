@@ -61,6 +61,20 @@ export function addSubItem(
   ];
 }
 
+/**
+ * Adds one sub-item per comma-separated entry, in typed order. Sub-items have
+ * no quantity, so a leading number stays part of the name.
+ */
+export function addSubItems(
+  subItems: SubItem[],
+  input: string,
+  createId: () => string = createSubItemId,
+): SubItem[] {
+  return input
+    .split(',')
+    .reduce((next, entry) => addSubItem(next, entry, createId()), subItems);
+}
+
 export function removeSubItem(subItems: SubItem[], id: string): SubItem[] {
   return resequence(subItems.filter((subItem) => subItem.id !== id));
 }

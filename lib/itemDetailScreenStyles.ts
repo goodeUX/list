@@ -2,6 +2,7 @@ import { StyleSheet } from 'react-native';
 
 import { absoluteFill } from '@/lib/absoluteFill';
 import { radius, space } from '@/lib/design';
+import { ITEM_CHECKBOX_SIZE, ITEM_CHECKBOX_TEXT_GAP } from '@/lib/itemRowMetrics';
 
 export const itemDetailStyles = StyleSheet.create({
   screen: {
@@ -52,18 +53,19 @@ export const itemDetailStyles = StyleSheet.create({
   openLink: {
     marginTop: space[1],
   },
+  // Sub-item checkbox and name spacing match an item on the list page.
   subItemRow: {
     alignItems: 'center',
     flexDirection: 'row',
-    gap: space[3],
+    gap: ITEM_CHECKBOX_TEXT_GAP,
     paddingVertical: space[2],
   },
   subItemCheckbox: {
     alignItems: 'center',
     borderWidth: 1.5,
-    height: 20,
+    height: ITEM_CHECKBOX_SIZE,
     justifyContent: 'center',
-    width: 20,
+    width: ITEM_CHECKBOX_SIZE,
   },
   subItemLabel: {
     flex: 1,

@@ -4,7 +4,11 @@ import { Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { useTheme } from '@/contexts/ThemeContext';
 import { playToggleHaptic } from '@/lib/haptics';
-import { space } from '@/lib/design';
+import {
+  ITEM_CHECKBOX_ICON_SIZE,
+  ITEM_CHECKBOX_SIZE,
+  ITEM_CHECKBOX_TEXT_GAP,
+} from '@/lib/itemRowMetrics';
 import type { SubItem } from '@/lib/types';
 
 type SubItemRowProps = {
@@ -54,9 +58,17 @@ export default function SubItemRow({
       >
         {subItem.checked ? (
           Platform.OS === 'ios' ? (
-            <SymbolView name="checkmark" size={11} tintColor={colors.onPrimary} />
+            <SymbolView
+              name="checkmark"
+              size={ITEM_CHECKBOX_ICON_SIZE}
+              tintColor={colors.onPrimary}
+            />
           ) : (
-            <MaterialIcons color={colors.onPrimary} name="check" size={11} />
+            <MaterialIcons
+              color={colors.onPrimary}
+              name="check"
+              size={ITEM_CHECKBOX_ICON_SIZE}
+            />
           )
         ) : null}
       </View>
@@ -64,7 +76,7 @@ export default function SubItemRow({
       <Text
         numberOfLines={1}
         style={[
-          typography.bodyS,
+          typography.body,
           styles.name,
           {
             color: subItem.checked ? colors.textSecondary : colors.text,
@@ -82,14 +94,14 @@ const styles = StyleSheet.create({
   row: {
     alignItems: 'center',
     flexDirection: 'row',
-    gap: space[3],
+    gap: ITEM_CHECKBOX_TEXT_GAP,
   },
   checkbox: {
     alignItems: 'center',
     borderWidth: 1.5,
-    height: 18,
+    height: ITEM_CHECKBOX_SIZE,
     justifyContent: 'center',
-    width: 18,
+    width: ITEM_CHECKBOX_SIZE,
   },
   name: {
     flex: 1,

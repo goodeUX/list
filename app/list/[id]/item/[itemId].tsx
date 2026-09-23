@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   FlatList,
+  Keyboard,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -12,34 +13,33 @@ import {
   TextInput,
   View,
 } from 'react-native';
-import Animated, {
-  KeyboardState,
-  runOnJS,
-  useAnimatedKeyboard,
-  useAnimatedReaction,
-} from 'react-native-reanimated';
+import Animated from 'react-native-reanimated';
 import DraggableFlatList, {
   type RenderItemParams,
 } from 'react-native-draggable-flatlist';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import AddInputRow from '@/components/AddInputRow';
 import ThemedTextInput from '@/components/ThemedTextInput';
 import {
-  addSubItem,
-  createSubItemId,
+  addSubItems,
   removeSubItem,
   reorderSubItems,
   sortSubItems,
   toggleSubItem,
 } from '@/lib/subItems';
-import { playToggleHaptic } from '@/lib/haptics';
+import { scheduleAddItemInputFocus } from '@/lib/focusAddItemInput';
+import { focusTextInputNow } from '@/lib/focusTextInput';
+import { playAddItemHaptic, playToggleHaptic } from '@/lib/haptics';
 import { radius, space } from '@/lib/design';
 import { itemDetailStyles as styles } from '@/lib/itemDetailScreenStyles';
+import { ITEM_CHECKBOX_ICON_SIZE } from '@/lib/itemRowMetrics';
 import type { SubItem } from '@/lib/types';
 import { useTheme } from '@/contexts/ThemeContext';
 import { showAppAlert } from '@/lib/appAlert';
 import { useChildSlideTransition } from '@/hooks/useSlideTransition';
 import { useItemAutoSave } from '@/hooks/useItemAutoSave';
+import { FIELD_KEYBOARD_GAP, useKeyboardPushScroll } from '@/hooks/useKeyboardPushScroll';
 import { useListItems } from '@/hooks/useListItems';
 import { isValidUrl, normalizeUrl } from '@/lib/urls';
 import { ITEM_NAME_LIMIT_MESSAGE, getItemNameInputUpdate } from '@/lib/itemName';
@@ -73,74 +73,30 @@ export default function ItemDetailScreen() {
   const [newSubItemName, setNewSubItemName] = useState('');
   const [editingSubId, setEditingSubId] = useState<string | null>(null);
   const [editingSubName, setEditingSubName] = useState('');
-  const [keyboardHeight, setKeyboardHeight] = useState(0);
-  const subItemsListRef = useRef<FlatList<SubItem> | null>(null);
   const addInputRef = useRef<TextInput>(null);
-  const addInputFocusedRef = useRef(false);
+  const [isAddInputFocused, setIsAddInputFocused] = useState(false);
+  const refocusingAddInputRef = useRef(false);
+  const lastAddSubmitRef = useRef<{ text: string; at: number } | null>(null);
 
   const subItems = item ? sortSubItems(item.subItems) : [];
 
-  // Scroll the add-sub-item input (the list footer) to the bottom of the
-  // scroll area. Combined with the keyboard-height bottom padding below, this
-  // lifts it above the keyboard. scrollToOffset (a large offset clamps to the
+  // The opening keyboard pushes whichever field is focused up above it.
+  const {
+    onScrollOffsetChange,
+    onViewportTouchEnd,
+    scrollRef: subItemsListRef,
+    viewportRef,
+    viewportStyle,
+  } = useKeyboardPushScroll<FlatList<SubItem>>(insets.bottom);
+
+  // Scroll the add-sub-item input (the list footer) back above the keyboard
+  // after an add grows the list. scrollToOffset (a large offset clamps to the
   // end) is used because scrollToEnd is a no-op on this wrapped list ref.
   const scrollAddInputToBottom = () => {
     requestAnimationFrame(() => {
       subItemsListRef.current?.scrollToOffset({ offset: 100000, animated: true });
     });
   };
-
-  // Read the keyboard from Reanimated (window insets), which stays reliable
-  // under Android edge-to-edge where the RN Keyboard events report height 0.
-  // Bridge its height to state so the list can pad its bottom accordingly.
-  // Without these, useAnimatedKeyboard takes over the Android window insets and
-  // makes the status/navigation bars opaque (white bars) and shifts the header.
-  // Keeping the bars translucent preserves the app's edge-to-edge layout.
-  const keyboard = useAnimatedKeyboard({
-    isNavigationBarTranslucentAndroid: true,
-    isStatusBarTranslucentAndroid: true,
-  });
-  useAnimatedReaction(
-    () => keyboard.state.value,
-    (state, previous) => {
-      if (state === previous) {
-        return;
-      }
-      if (state === KeyboardState.OPEN) {
-        runOnJS(setKeyboardHeight)(keyboard.height.value);
-      } else if (state === KeyboardState.CLOSED) {
-        runOnJS(setKeyboardHeight)(0);
-      }
-    },
-  );
-
-  // Once the keyboard height has been applied as bottom padding (this runs
-  // after that re-render), scroll the focused input above the keyboard: the
-  // edited sub-item row, or the add input at the bottom. DraggableFlatList
-  // overrides onContentSizeChange, so this effect — not that prop — drives it.
-  useEffect(() => {
-    if (keyboardHeight <= 0) {
-      return;
-    }
-    const timer = setTimeout(() => {
-      if (editingSubId) {
-        const index = subItems.findIndex((entry) => entry.id === editingSubId);
-        if (index >= 0) {
-          subItemsListRef.current?.scrollToIndex({
-            animated: true,
-            index,
-            viewPosition: 0,
-          });
-        }
-      } else if (addInputFocusedRef.current) {
-        subItemsListRef.current?.scrollToOffset({ offset: 100000, animated: true });
-      }
-    }, 50);
-    return () => clearTimeout(timer);
-    // subItems is read fresh at run time; adding it would re-run this on every
-    // keystroke.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [keyboardHeight, editingSubId]);
 
   const reportSaveError = () => {
     showAppAlert('Could not save', 'Please try again.');
@@ -231,25 +187,73 @@ export default function ItemDetailScreen() {
     ]);
   };
 
+  // The add-sub-item field mirrors the list page's add-item field: a tick
+  // appears once there's text, adding keeps the keyboard up for the next one,
+  // and dismissing the field (blur without adding) discards what was typed.
+  const refocusAddInput = () => {
+    refocusingAddInputRef.current = true;
+    setIsAddInputFocused(true);
+    scheduleAddItemInputFocus(
+      () => addInputRef.current,
+      () => {
+        setIsAddInputFocused(true);
+        setTimeout(() => {
+          refocusingAddInputRef.current = false;
+        }, 200);
+      },
+    );
+  };
+
   const handleAddSubItem = () => {
     if (!item) {
       return;
     }
+    const typed = newSubItemName;
+    const trimmed = typed.trim();
+    const now = Date.now();
+    const lastSubmit = lastAddSubmitRef.current;
+    // The tick's press and the keyboard's submit can both fire for one add.
+    if (lastSubmit && lastSubmit.text === trimmed && now - lastSubmit.at < 500) {
+      return;
+    }
     const base = withSubItemRenames(item.subItems);
-    const next = addSubItem(base, newSubItemName, createSubItemId());
+    const next = addSubItems(base, typed);
     if (next === base) {
       return;
     }
+    lastAddSubmitRef.current = { text: trimmed, at: now };
     commitSubItemRenames();
+    playAddItemHaptic();
     setNewSubItemName('');
-    // Keep the keyboard up so several can be added in a row; the list re-render
-    // after the write can drop focus, so re-focus explicitly.
-    requestAnimationFrame(() => addInputRef.current?.focus());
+    refocusAddInput();
     void setSubItems(item.id, next)
       .then(scrollAddInputToBottom)
       .catch(() => {
+        setNewSubItemName(typed);
         showAppAlert('Could not add sub-item', 'Please try again.');
       });
+  };
+
+  const handleAddInputPressIn = () => {
+    refocusingAddInputRef.current = true;
+    setIsAddInputFocused(true);
+  };
+
+  const handleAddInputFocus = () => {
+    setIsAddInputFocused(true);
+  };
+
+  const handleAddInputBlur = () => {
+    if (refocusingAddInputRef.current) {
+      return;
+    }
+    setTimeout(() => {
+      if (refocusingAddInputRef.current) {
+        return;
+      }
+      setIsAddInputFocused(false);
+      setNewSubItemName('');
+    }, 0);
   };
 
   const handleRemoveSubItem = (subId: string) => {
@@ -268,6 +272,8 @@ export default function ItemDetailScreen() {
     if (!item) {
       return;
     }
+    // A tap outside the focused field ends editing it, checkboxes included.
+    Keyboard.dismiss();
     const next = toggleSubItem(withSubItemRenames(item.subItems), subId);
     commitSubItemRenames();
     void setSubItems(item.id, next).catch(() => {
@@ -329,6 +335,14 @@ export default function ItemDetailScreen() {
       ]}
     >
       <View
+        // Tapping anywhere no button or field handles (labels, blank space,
+        // the header) takes focus out of the field being edited. The list's
+        // own keyboardShouldPersistTaps can't be relied on for this: it only
+        // acts while RN thinks the keyboard is open, which Android
+        // edge-to-edge and a back-button dismiss both defeat. A drag that
+        // scrolls instead terminates this responder without releasing it.
+        onResponderRelease={() => Keyboard.dismiss()}
+        onStartShouldSetResponder={() => TextInput.State.currentlyFocusedInput() != null}
         style={[
           styles.flex,
           {
@@ -386,31 +400,30 @@ export default function ItemDetailScreen() {
           </Pressable>
         </View>
 
+        <Animated.View
+          ref={viewportRef}
+          onTouchEnd={onViewportTouchEnd}
+          style={[styles.flex, viewportStyle]}
+        >
         <DraggableFlatList
-          // DraggableFlatList forwards its ref to a gesture-handler FlatList,
-          // whose instance still exposes RN FlatList's scrollToOffset. A
-          // callback ref bridges the two FlatList component types.
-          ref={(instance) => {
-            subItemsListRef.current = (instance ?? null) as unknown as
-              | FlatList<SubItem>
-              | null;
-          }}
+          // DraggableFlatList forwards its ref to its inner Animated FlatList,
+          // so an animated ref here lets Reanimated scroll it on the UI thread.
+          // (Its ref type names gesture-handler's FlatList, hence the cast.)
+          ref={subItemsListRef as never}
           activationDistance={12}
           containerStyle={styles.flex}
           style={styles.flex}
+          // The bottom padding matches the keyboard gap, so after an add
+          // scrolls to the end, the add input sits the same distance above
+          // the keyboard as when the keyboard first pushed it up.
           contentContainerStyle={[
             styles.content,
-            { padding: space[6], paddingBottom: space[6] + keyboardHeight },
+            { padding: space[6], paddingBottom: FIELD_KEYBOARD_GAP },
           ]}
           data={subItems}
           keyboardShouldPersistTaps="handled"
           keyExtractor={(subItem) => subItem.id}
-          onScrollToIndexFailed={({ index, averageItemLength }) => {
-            subItemsListRef.current?.scrollToOffset({
-              animated: true,
-              offset: averageItemLength * index,
-            });
-          }}
+          onScrollOffsetChange={onScrollOffsetChange}
           ListHeaderComponent={
             <View style={{ gap: space[4], marginBottom: space[2] }}>
               <View style={styles.field}>
@@ -507,20 +520,17 @@ export default function ItemDetailScreen() {
           }
           ListFooterComponent={
             <View style={{ marginTop: space[2] }}>
-              <ThemedTextInput
+              <AddInputRow
                 ref={addInputRef}
-                onBlur={() => {
-                  addInputFocusedRef.current = false;
-                }}
+                focused={isAddInputFocused}
+                onBlur={handleAddInputBlur}
                 onChangeText={setNewSubItemName}
-                onFocus={() => {
-                  addInputFocusedRef.current = true;
-                  scrollAddInputToBottom();
-                }}
-                onSubmitEditing={handleAddSubItem}
-                placeholder="Add a sub-item"
-                returnKeyType="done"
-                submitBehavior="submit"
+                onFocus={handleAddInputFocus}
+                onPressRow={() => focusTextInputNow(addInputRef.current)}
+                onSubmit={handleAddSubItem}
+                onSubmitPressIn={handleAddInputPressIn}
+                placeholder="Add a sub-item..."
+                submitAccessibilityLabel="Add sub-item"
                 value={newSubItemName}
               />
             </View>
@@ -543,10 +553,13 @@ export default function ItemDetailScreen() {
                       }
                 }
                 onPress={() => {
-                  if (!editing) {
-                    setEditingSubName(subItem.name);
-                    setEditingSubId(subItem.id);
+                  if (editing) {
+                    // A tap on the row around the field being edited.
+                    Keyboard.dismiss();
+                    return;
                   }
+                  setEditingSubName(subItem.name);
+                  setEditingSubId(subItem.id);
                 }}
                 style={[
                   styles.subItemRow,
@@ -572,7 +585,11 @@ export default function ItemDetailScreen() {
                   ]}
                 >
                   {subItem.checked ? (
-                    <MaterialIcons color={colors.onPrimary} name="check" size={12} />
+                    <MaterialIcons
+                      color={colors.onPrimary}
+                      name="check"
+                      size={ITEM_CHECKBOX_ICON_SIZE}
+                    />
                   ) : null}
                 </Pressable>
 
@@ -625,6 +642,7 @@ export default function ItemDetailScreen() {
             );
           }}
         />
+        </Animated.View>
       </KeyboardAvoidingView>
       </View>
     </Animated.View>
