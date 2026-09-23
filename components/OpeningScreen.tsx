@@ -1,20 +1,9 @@
 import { useCallback, useEffect, useState } from 'react';
-import {
-  ActivityIndicator,
-  Image,
-  KeyboardAvoidingView,
-  Platform,
-  StyleSheet,
-  Text,
-  useWindowDimensions,
-  View,
-  type ImageSourcePropType,
-} from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
 
 import AuthJourney from '@/components/auth/AuthJourney';
+import AuthScreenLayout from '@/components/auth/AuthScreenLayout';
 import BiometricGate from '@/components/auth/BiometricGate';
-import KeyboardDismissScrollView from '@/components/KeyboardDismissScrollView';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTheme } from '@/contexts/ThemeContext';
 import { shouldBypassAppLock } from '@/lib/appLock';
@@ -25,21 +14,7 @@ import {
   type AuthJourneyMode,
 } from '@/lib/authLocalState';
 import { navigateAfterSignIn } from '@/lib/postAuthNavigation';
-import { CONTENT_MAX_WIDTH } from '@/lib/slideTransition';
 import { OPENING_WELCOME_MS } from '@/lib/splash';
-
-const openingLightImage =
-  require('../assets/images/splash-light.png') as ImageSourcePropType;
-const openingDarkImage =
-  require('../assets/images/splash-dark.png') as ImageSourcePropType;
-
-// Taken from the image files themselves: a stale hard-coded ratio letterboxed
-// the art under `contain`, leaving a gap between the cat and the screen bottom.
-function getImageAspectRatio(source: ImageSourcePropType): number {
-  const { width, height } = Image.resolveAssetSource(source);
-  return width / height;
-}
-const OPENING_IMAGE_WIDTH_SCALE = 0.8;
 
 type OpeningScreenProps = {
   fontsLoaded: boolean;
@@ -64,11 +39,8 @@ function getWelcomeName(
 }
 
 export default function OpeningScreen({ fontsLoaded, onComplete }: OpeningScreenProps) {
-  const insets = useSafeAreaInsets();
-  const { width: windowWidth } = useWindowDimensions();
-  const layoutWidth = Math.min(windowWidth, CONTENT_MAX_WIDTH);
   const { user, loading } = useAuth();
-  const { colors, colorScheme, typography } = useTheme();
+  const { colors, typography } = useTheme();
   const [journeyMode, setJourneyMode] = useState<AuthJourneyMode | null>(null);
   const [lockRequired, setLockRequired] = useState<boolean | null>(null);
   const [unlocked, setUnlocked] = useState(false);
@@ -141,42 +113,9 @@ export default function OpeningScreen({ fontsLoaded, onComplete }: OpeningScreen
   const showGate = stateReady && gateActive;
   const showWelcome = stateReady && !!user && !gateActive;
   const showJourney = stateReady && !user;
-  const openingImage = colorScheme === 'dark' ? openingDarkImage : openingLightImage;
 
   return (
-    <View style={[styles.screen, { backgroundColor: colors.bg }]}>
-      <View style={[styles.frame, { width: layoutWidth }]}>
-        <View
-          style={[
-            styles.imageContainer,
-            {
-              bottom: 0,
-              width: layoutWidth,
-            },
-          ]}
-        >
-          <Image
-            accessibilityIgnoresInvertColors
-            resizeMode="contain"
-            source={openingImage}
-            style={[
-              styles.openingImage,
-              {
-                aspectRatio: getImageAspectRatio(openingImage),
-                width: layoutWidth * OPENING_IMAGE_WIDTH_SCALE,
-              },
-            ]}
-          />
-        </View>
-
-        <KeyboardAvoidingView
-          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-          style={[styles.content, { paddingTop: insets.top + space[12] }]}
-        >
-          <KeyboardDismissScrollView
-            contentContainerStyle={styles.scrollContent}
-            showsVerticalScrollIndicator={false}
-          >
+    <AuthScreenLayout>
             {showLoading ? (
               <View style={styles.loadingContainer}>
                 <ActivityIndicator color={colors.primary} size="large" />
@@ -210,41 +149,11 @@ export default function OpeningScreen({ fontsLoaded, onComplete }: OpeningScreen
                 onSwitchMode={setJourneyMode}
               />
             ) : null}
-          </KeyboardDismissScrollView>
-        </KeyboardAvoidingView>
-      </View>
-    </View>
+    </AuthScreenLayout>
   );
 }
 
 const styles = StyleSheet.create({
-  screen: {
-    alignItems: 'center',
-    flex: 1,
-    overflow: 'hidden',
-  },
-  frame: {
-    flex: 1,
-    maxWidth: '100%',
-    overflow: 'hidden',
-  },
-  imageContainer: {
-    alignItems: 'center',
-    left: 0,
-    position: 'absolute',
-  },
-  openingImage: {
-    height: undefined,
-    width: '100%',
-  },
-  content: {
-    flex: 1,
-    paddingHorizontal: space[8],
-  },
-  scrollContent: {
-    alignItems: 'center',
-    flexGrow: 1,
-  },
   loadingContainer: {
     alignItems: 'center',
     paddingTop: 80,

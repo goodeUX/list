@@ -1,36 +1,18 @@
-import { MaterialIcons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
-import {
-  Image,
-  KeyboardAvoidingView,
-  Platform,
-  Pressable,
-  StyleSheet,
-  View,
-  type ImageSourcePropType,
-} from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 
 import AuthJourney from '@/components/auth/AuthJourney';
-import KeyboardDismissScrollView from '@/components/KeyboardDismissScrollView';
+import AuthScreenLayout from '@/components/auth/AuthScreenLayout';
 import { useTheme } from '@/contexts/ThemeContext';
 import { buildAuthHref, parseAuthRedirect } from '@/lib/authRedirect';
 import type { AuthJourneyMode } from '@/lib/authLocalState';
-import { radius, space } from '@/lib/design';
 import { navigateAfterSignIn } from '@/lib/postAuthNavigation';
 import { isPurchasesAvailable } from '@/lib/purchases';
 
-const catLightImage =
-  require('../../assets/images/splash-light.png') as ImageSourcePropType;
-const catDarkImage =
-  require('../../assets/images/splash-dark.png') as ImageSourcePropType;
-
 export default function SignUpScreen() {
-  const { colors, colorScheme, spacing } = useTheme();
+  const { colors } = useTheme();
   const { redirect, plan } = useLocalSearchParams<{ redirect?: string; plan?: string }>();
   const resolvedRedirect = parseAuthRedirect(redirect);
   const wantsPremium = plan === 'premium';
-  const catImage = colorScheme === 'dark' ? catDarkImage : catLightImage;
 
   const handleGoBack = () => {
     if (router.canGoBack()) {
@@ -44,108 +26,24 @@ export default function SignUpScreen() {
     router.replace(buildAuthHref(mode === 'sign-up' ? 'sign-up' : 'sign-in', resolvedRedirect));
   };
 
+  // Laid out like the opening screen, which shows the same journey.
   return (
-    <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.bg }]}>
-      <View
-        style={[
-          styles.topHeader,
-          {
-            paddingHorizontal: spacing.lg,
-            paddingTop: spacing.md,
-            paddingBottom: spacing.sm,
-          },
-        ]}
-      >
-        <Pressable
-          accessibilityLabel="Go back"
-          accessibilityRole="button"
-          hitSlop={8}
-          onPress={handleGoBack}
-          style={({ pressed }) => [
-            styles.backButton,
-            {
-              backgroundColor: colors.surface,
-              opacity: pressed ? 0.7 : 1,
-            },
-          ]}
-        >
-          <MaterialIcons color={colors.primary} name="chevron-left" size={24} />
-        </Pressable>
-      </View>
-
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        style={styles.flex}
-      >
-        <KeyboardDismissScrollView
-          contentContainerStyle={[styles.container, { padding: spacing.lg }]}
-          showsVerticalScrollIndicator={false}
-        >
-          <View style={styles.journeyWrap}>
-            <AuthJourney
-              labelBackgroundColor={colors.bg}
-              mode="sign-up"
-              onAuthenticated={() => {
-                if (wantsPremium && isPurchasesAvailable()) {
-                  router.replace({
-                    pathname: '/(auth)/paywall',
-                    params: resolvedRedirect ? { redirect: resolvedRedirect } : {},
-                  });
-                  return;
-                }
-                return navigateAfterSignIn(resolvedRedirect);
-              }}
-              onSwitchMode={handleSwitchMode}
-            />
-          </View>
-
-          <View style={styles.catWrap}>
-            <Image
-              accessibilityIgnoresInvertColors
-              resizeMode="contain"
-              source={catImage}
-              style={styles.catImage}
-            />
-          </View>
-        </KeyboardDismissScrollView>
-      </KeyboardAvoidingView>
-    </SafeAreaView>
+    <AuthScreenLayout onBack={handleGoBack}>
+      <AuthJourney
+        labelBackgroundColor={colors.bg}
+        mode="sign-up"
+        onAuthenticated={() => {
+          if (wantsPremium && isPurchasesAvailable()) {
+            router.replace({
+              pathname: '/(auth)/paywall',
+              params: resolvedRedirect ? { redirect: resolvedRedirect } : {},
+            });
+            return;
+          }
+          return navigateAfterSignIn(resolvedRedirect);
+        }}
+        onSwitchMode={handleSwitchMode}
+      />
+    </AuthScreenLayout>
   );
 }
-
-const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-  },
-  flex: {
-    flex: 1,
-  },
-  container: {
-    alignItems: 'center',
-    flexGrow: 1,
-    justifyContent: 'center',
-  },
-  topHeader: {
-    alignItems: 'flex-start',
-  },
-  backButton: {
-    alignItems: 'center',
-    borderRadius: radius.xl,
-    flexShrink: 0,
-    height: 44,
-    justifyContent: 'center',
-    width: 44,
-  },
-  journeyWrap: {
-    alignItems: 'center',
-    width: '100%',
-  },
-  catWrap: {
-    alignItems: 'center',
-    marginTop: space[6],
-  },
-  catImage: {
-    height: 160,
-    width: 160,
-  },
-});
