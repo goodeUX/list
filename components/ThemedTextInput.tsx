@@ -1,4 +1,12 @@
-import { forwardRef, useCallback, useLayoutEffect, useRef, useState } from 'react';
+import { MaterialIcons } from '@expo/vector-icons';
+import {
+  forwardRef,
+  useCallback,
+  useLayoutEffect,
+  useRef,
+  useState,
+  type ComponentProps,
+} from 'react';
 import {
   Platform,
   StyleSheet,
@@ -30,11 +38,28 @@ export function getBorderedInputHeight(
   );
 }
 
+export type MaterialIconName = ComponentProps<typeof MaterialIcons>['name'];
+
+export type ThemedTextInputVariant = 'bordered' | 'plain' | 'empty';
+
+export const EMPTY_INPUT_ICON_SIZE = 20;
+
 export type ThemedTextInputProps = TextInputProps & {
+  /**
+   * Shown before the text in the `empty` variant. Passing one keeps the input
+   * in the same wrapper in every variant, so switching variants (e.g. to
+   * `bordered` once the field has a value) doesn't remount it and drop focus.
+   */
+  icon?: MaterialIconName;
   invalid?: boolean;
   label?: string;
   labelBackgroundColor?: string;
-  variant?: 'bordered' | 'plain';
+  /**
+   * `bordered` is the default text field. `empty` is an unfilled field shown
+   * as just an icon and placeholder, with no border or background. `plain`
+   * has no chrome, for inputs inside another container.
+   */
+  variant?: ThemedTextInputVariant;
 };
 
 export function getThemedInputBackgroundColor(
@@ -90,6 +115,7 @@ const ThemedTextInput = forwardRef<TextInput, ThemedTextInputProps>(
   function ThemedTextInput(
     {
       autoFocus = false,
+      icon,
       invalid = false,
       label,
       labelBackgroundColor,
@@ -163,6 +189,11 @@ const ThemedTextInput = forwardRef<TextInput, ThemedTextInputProps>(
       variant === 'plain' && {
         color: colors.text,
       },
+      variant === 'empty' && styles.empty,
+      variant === 'empty' && {
+        color: colors.text,
+      },
+      icon ? styles.inputBesideIcon : null,
       Platform.OS === 'web' ? ({ outlineStyle: 'none' } as unknown as TextStyle) : null,
       style,
       isDisabled && !hasFloatingLabel ? styles.disabled : null,
@@ -177,7 +208,10 @@ const ThemedTextInput = forwardRef<TextInput, ThemedTextInputProps>(
         onBlur={handleBlur}
         onFocus={handleFocus}
         placeholder={label ? undefined : placeholder}
-        placeholderTextColor={placeholderTextColor ?? colors.textMuted}
+        placeholderTextColor={
+          placeholderTextColor ??
+          (variant === 'empty' ? colors.textSecondary : colors.textMuted)
+        }
         selectionColor={colors.primarySoft}
         showSoftInputOnFocus
         style={themedStyle}
@@ -185,6 +219,17 @@ const ThemedTextInput = forwardRef<TextInput, ThemedTextInputProps>(
         {...props}
       />
     );
+
+    if (icon) {
+      return (
+        <View style={styles.iconRow}>
+          {variant === 'empty' ? (
+            <MaterialIcons color={colors.primary} name={icon} size={EMPTY_INPUT_ICON_SIZE} />
+          ) : null}
+          {input}
+        </View>
+      );
+    }
 
     if (!hasFloatingLabel) {
       return input;
@@ -231,6 +276,18 @@ const styles = StyleSheet.create({
     borderWidth: BORDERED_INPUT_BORDER_WIDTH,
     paddingHorizontal: space[4],
     paddingVertical: BORDERED_INPUT_PADDING_VERTICAL,
+  },
+  empty: {
+    paddingHorizontal: 0,
+    paddingVertical: BORDERED_INPUT_PADDING_VERTICAL,
+  },
+  iconRow: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: space[2],
+  },
+  inputBesideIcon: {
+    flex: 1,
   },
   disabled: {
     opacity: 0.6,

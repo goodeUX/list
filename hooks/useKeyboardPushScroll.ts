@@ -14,7 +14,7 @@ import {
 import { space } from '@/lib/design';
 
 // Space kept between the focused field and the top of the keyboard.
-export const FIELD_KEYBOARD_GAP = space[8];
+const FIELD_KEYBOARD_GAP = space[8];
 
 /**
  * Makes the opening keyboard push the focused field up, frame by frame,

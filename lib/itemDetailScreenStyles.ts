@@ -30,26 +30,33 @@ export const itemDetailStyles = StyleSheet.create({
     justifyContent: 'center',
     width: 44,
   },
+  // The item name, left-aligned in whatever space the header buttons leave.
+  // minWidth 0 lets it shrink so long names truncate rather than push the
+  // delete button off screen.
   headerTitle: {
     flex: 1,
-    textAlign: 'center',
+    minWidth: 0,
+    paddingHorizontal: 0,
+    paddingVertical: 0,
+    textAlign: 'left',
+  },
+  headerTitleText: {
+    textAlign: 'left',
   },
   content: {
     flexGrow: 1,
   },
-  field: {
-    gap: space[2],
+  fields: {
+    gap: space[6],
   },
-  label: {},
-  nameInput: {},
+  fieldsAboveSubItems: {
+    marginBottom: space[4],
+  },
   textArea: {
     minHeight: 100,
     textAlignVertical: 'top',
   },
   error: {},
-  limitError: {
-    marginTop: space[2],
-  },
   openLink: {
     marginTop: space[1],
   },

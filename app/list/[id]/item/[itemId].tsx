@@ -20,6 +20,7 @@ import DraggableFlatList, {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import AddInputRow from '@/components/AddInputRow';
+import ItemDetailField, { itemDetailFieldStyles } from '@/components/ItemDetailField';
 import ThemedTextInput from '@/components/ThemedTextInput';
 import {
   addSubItems,
@@ -39,7 +40,7 @@ import { useTheme } from '@/contexts/ThemeContext';
 import { showAppAlert } from '@/lib/appAlert';
 import { useChildSlideTransition } from '@/hooks/useSlideTransition';
 import { useItemAutoSave } from '@/hooks/useItemAutoSave';
-import { FIELD_KEYBOARD_GAP, useKeyboardPushScroll } from '@/hooks/useKeyboardPushScroll';
+import { useKeyboardPushScroll } from '@/hooks/useKeyboardPushScroll';
 import { useListItems } from '@/hooks/useListItems';
 import { isValidUrl, normalizeUrl } from '@/lib/urls';
 import { ITEM_NAME_LIMIT_MESSAGE, getItemNameInputUpdate } from '@/lib/itemName';
@@ -73,12 +74,15 @@ export default function ItemDetailScreen() {
   const [newSubItemName, setNewSubItemName] = useState('');
   const [editingSubId, setEditingSubId] = useState<string | null>(null);
   const [editingSubName, setEditingSubName] = useState('');
+  const [editingName, setEditingName] = useState(false);
   const addInputRef = useRef<TextInput>(null);
   const [isAddInputFocused, setIsAddInputFocused] = useState(false);
   const refocusingAddInputRef = useRef(false);
   const lastAddSubmitRef = useRef<{ text: string; at: number } | null>(null);
 
   const subItems = item ? sortSubItems(item.subItems) : [];
+  const addSubItemIsEmpty =
+    subItems.length === 0 && !isAddInputFocused && newSubItemName.length === 0;
 
   // The opening keyboard pushes whichever field is focused up above it.
   const {
@@ -89,14 +93,6 @@ export default function ItemDetailScreen() {
     viewportStyle,
   } = useKeyboardPushScroll<FlatList<SubItem>>(insets.bottom);
 
-  // Scroll the add-sub-item input (the list footer) back above the keyboard
-  // after an add grows the list. scrollToOffset (a large offset clamps to the
-  // end) is used because scrollToEnd is a no-op on this wrapped list ref.
-  const scrollAddInputToBottom = () => {
-    requestAnimationFrame(() => {
-      subItemsListRef.current?.scrollToOffset({ offset: 100000, animated: true });
-    });
-  };
 
   const reportSaveError = () => {
     showAppAlert('Could not save', 'Please try again.');
@@ -144,6 +140,7 @@ export default function ItemDetailScreen() {
   }, [isFieldDirty, item]);
 
   const handleNameBlur = () => {
+    setEditingName(false);
     if (item && savableFieldValue('name', name) === undefined) {
       // An item must keep a name; restore the last saved value.
       setName(item.name);
@@ -226,12 +223,10 @@ export default function ItemDetailScreen() {
     playAddItemHaptic();
     setNewSubItemName('');
     refocusAddInput();
-    void setSubItems(item.id, next)
-      .then(scrollAddInputToBottom)
-      .catch(() => {
-        setNewSubItemName(typed);
-        showAppAlert('Could not add sub-item', 'Please try again.');
-      });
+    void setSubItems(item.id, next).catch(() => {
+      setNewSubItemName(typed);
+      showAppAlert('Could not add sub-item', 'Please try again.');
+    });
   };
 
   const handleAddInputPressIn = () => {
@@ -380,9 +375,42 @@ export default function ItemDetailScreen() {
           >
             <MaterialIcons color={colors.primary} name="chevron-left" size={24} />
           </Pressable>
-          <Text style={[typography.h2, styles.headerTitle, { color: colors.text }]}>
-            Edit item
-          </Text>
+          {/* The item's name is the page title, edited in place. A TextInput
+              can't truncate with an ellipsis, so it's plain text until tapped. */}
+          {editingName ? (
+            <ThemedTextInput
+              accessibilityLabel="Item name"
+              autoFocus
+              invalid={nameLimitError}
+              onBlur={handleNameBlur}
+              onChangeText={(text) => {
+                const { limitReached, value } = getItemNameInputUpdate(text);
+                setNameLimitError(limitReached);
+                setName(value);
+                queueField('name', value);
+              }}
+              returnKeyType="done"
+              style={[typography.h2, styles.headerTitle, { color: colors.text }]}
+              value={name}
+              variant="plain"
+            />
+          ) : (
+            <Pressable
+              accessibilityHint="Edits the item name"
+              accessibilityLabel={name}
+              accessibilityRole="button"
+              onPress={() => setEditingName(true)}
+              style={styles.headerTitle}
+            >
+              <Text
+                ellipsizeMode="tail"
+                numberOfLines={1}
+                style={[typography.h2, styles.headerTitleText, { color: colors.text }]}
+              >
+                {name}
+              </Text>
+            </Pressable>
+          )}
           <Pressable
             accessibilityLabel="Delete item"
             accessibilityRole="button"
@@ -413,92 +441,64 @@ export default function ItemDetailScreen() {
           activationDistance={12}
           containerStyle={styles.flex}
           style={styles.flex}
-          // The bottom padding matches the keyboard gap, so after an add
-          // scrolls to the end, the add input sits the same distance above
-          // the keyboard as when the keyboard first pushed it up.
-          contentContainerStyle={[
-            styles.content,
-            { padding: space[6], paddingBottom: FIELD_KEYBOARD_GAP },
-          ]}
+          contentContainerStyle={[styles.content, { padding: space[6] }]}
           data={subItems}
           keyboardShouldPersistTaps="handled"
           keyExtractor={(subItem) => subItem.id}
           onScrollOffsetChange={onScrollOffsetChange}
           ListHeaderComponent={
-            <View style={{ gap: space[4], marginBottom: space[2] }}>
-              <View style={styles.field}>
-                <Text style={[typography.label, styles.label, { color: colors.textSecondary }]}>
-                  Name
+            <View style={[styles.fields, subItems.length > 0 ? styles.fieldsAboveSubItems : null]}>
+              {nameLimitError ? (
+                <Text style={[typography.bodyS, { color: colors.primary }]}>
+                  {ITEM_NAME_LIMIT_MESSAGE}
                 </Text>
-                <ThemedTextInput
-                  invalid={nameLimitError}
-                  onBlur={handleNameBlur}
-                  onChangeText={(text) => {
-                    const { limitReached, value } = getItemNameInputUpdate(text);
-                    setNameLimitError(limitReached);
-                    setName(value);
-                    queueField('name', value);
-                  }}
-                  style={styles.nameInput}
-                  value={name}
-                />
-                {nameLimitError ? (
-                  <Text style={[typography.bodyS, styles.limitError, { color: colors.primary }]}>
-                    {ITEM_NAME_LIMIT_MESSAGE}
-                  </Text>
-                ) : null}
-              </View>
+              ) : null}
 
-              <View style={styles.field}>
-                <Text style={[typography.label, styles.label, { color: colors.textSecondary }]}>
-                  Quantity
-                </Text>
-                <ThemedTextInput
-                  onBlur={flushSaves}
-                  onChangeText={(value) => {
-                    setQuantity(value);
-                    queueField('quantity', value);
-                  }}
-                  placeholder="e.g. 2 lbs, 1 pack"
-                  value={quantity}
-                />
-              </View>
+              <ItemDetailField
+                emptyPlaceholder="Description"
+                icon="notes"
+                label="Description"
+                multiline
+                onBlur={flushSaves}
+                onChangeText={(value) => {
+                  setDescription(value);
+                  queueField('description', value);
+                }}
+                placeholder="Notes or details"
+                style={styles.textArea}
+                value={description}
+              />
 
-              <View style={styles.field}>
-                <Text style={[typography.label, styles.label, { color: colors.textSecondary }]}>
-                  Description
-                </Text>
-                <ThemedTextInput
-                  multiline
-                  onBlur={flushSaves}
-                  onChangeText={(value) => {
-                    setDescription(value);
-                    queueField('description', value);
-                  }}
-                  placeholder="Notes or details"
-                  style={styles.textArea}
-                  value={description}
-                />
-              </View>
+              <ItemDetailField
+                emptyPlaceholder="Quantity (e.g. 2 kgs, 1 pack etc.)"
+                icon="add-circle-outline"
+                label="Quantity"
+                onBlur={flushSaves}
+                onChangeText={(value) => {
+                  setQuantity(value);
+                  queueField('quantity', value);
+                }}
+                placeholder="e.g. 2 kgs, 1 pack"
+                value={quantity}
+              />
 
-              <View style={styles.field}>
-                <Text style={[typography.label, styles.label, { color: colors.textSecondary }]}>
-                  Link
-                </Text>
-                <ThemedTextInput
-                  autoCapitalize="none"
-                  autoCorrect={false}
-                  invalid={Boolean(linkError)}
-                  keyboardType="url"
-                  onBlur={handleLinkBlur}
-                  onChangeText={(value) => {
-                    setLink(value);
-                    setLinkError(null);
-                    queueField('link', value);
-                  }}
-                  placeholder="https://..."
-                  value={link}
-                />
+              <ItemDetailField
+                autoCapitalize="none"
+                autoCorrect={false}
+                emptyPlaceholder="Link (https://...)"
+                icon="link"
+                invalid={Boolean(linkError)}
+                keyboardType="url"
+                label="Link"
+                onBlur={handleLinkBlur}
+                onChangeText={(value) => {
+                  setLink(value);
+                  setLinkError(null);
+                  queueField('link', value);
+                }}
+                placeholder="https://..."
+                value={link}
+              >
                 {linkError ? (
                   <Text style={[typography.bodyS, styles.error, { color: colors.primary }]}>
                     {linkError}
@@ -511,28 +511,33 @@ export default function ItemDetailScreen() {
                     </Text>
                   </Pressable>
                 ) : null}
-              </View>
+              </ItemDetailField>
 
-              <Text style={[typography.label, styles.label, { color: colors.textSecondary }]}>
-                Sub-items
-              </Text>
-            </View>
-          }
-          ListFooterComponent={
-            <View style={{ marginTop: space[2] }}>
-              <AddInputRow
-                ref={addInputRef}
-                focused={isAddInputFocused}
-                onBlur={handleAddInputBlur}
-                onChangeText={setNewSubItemName}
-                onFocus={handleAddInputFocus}
-                onPressRow={() => focusTextInputNow(addInputRef.current)}
-                onSubmit={handleAddSubItem}
-                onSubmitPressIn={handleAddInputPressIn}
-                placeholder="Add a sub-item..."
-                submitAccessibilityLabel="Add sub-item"
-                value={newSubItemName}
-              />
+              {/* The add field sits at the top of the sub-items. With none yet
+                  it's an empty field like the others; once there are some,
+                  it's a labelled field heading the list. */}
+              <View style={itemDetailFieldStyles.field}>
+                {addSubItemIsEmpty ? null : (
+                  <Text style={[itemDetailFieldStyles.label, { color: colors.textSecondary }]}>
+                    Sub-items
+                  </Text>
+                )}
+                <AddInputRow
+                  ref={addInputRef}
+                  focused={isAddInputFocused}
+                  icon="checklist"
+                  onBlur={handleAddInputBlur}
+                  onChangeText={setNewSubItemName}
+                  onFocus={handleAddInputFocus}
+                  onPressRow={() => focusTextInputNow(addInputRef.current)}
+                  onSubmit={handleAddSubItem}
+                  onSubmitPressIn={handleAddInputPressIn}
+                  placeholder="Add a sub-item"
+                  submitAccessibilityLabel="Add sub-item"
+                  value={newSubItemName}
+                  variant={addSubItemIsEmpty ? 'empty' : 'default'}
+                />
+              </View>
             </View>
           }
           onDragEnd={({ data }) => handleReorderSubItems(data)}
