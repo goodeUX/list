@@ -25,6 +25,7 @@ import AddItemSuggestions from '@/components/AddItemSuggestions';
 import ListOptionsMenu from '@/components/ListOptionsMenu';
 import EmojiPickerButton from '@/components/EmojiPickerButton';
 import EmojiPickerSheet, { useEmojiSheetDismissal } from '@/components/EmojiPickerSheet';
+import { goHome } from '@/lib/goHome';
 import { LIST_NAME_MAX_LENGTH, normalizeListName } from '@/lib/listName';
 import { useLastKeyboardHeight } from '@/lib/useLastKeyboardHeight';
 import ReorderableItemList from '@/components/ReorderableItemList';
@@ -287,7 +288,7 @@ export default function ListDetailScreen() {
 
   useEffect(() => {
     if (user && isLocalListId(listId)) {
-      router.replace('/');
+      goHome();
     }
   }, [listId, user]);
 

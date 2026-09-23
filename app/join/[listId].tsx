@@ -11,6 +11,7 @@ import { useTheme } from '@/contexts/ThemeContext';
 import { useLists } from '@/hooks/useLists';
 import { fontFamily, fontSize, lineHeight, space } from '@/lib/design';
 import { shouldShowInviteAppLanding } from '@/lib/inviteLanding';
+import { goHome } from '@/lib/goHome';
 import { joinList } from '@/lib/joinList';
 import { openList } from '@/lib/openList';
 import { canJoinList } from '@/lib/listLimits';
@@ -128,7 +129,7 @@ export default function JoinListScreen() {
             ) : null}
             <Button
               label="Back to my lists"
-              onPress={() => router.replace('/')}
+              onPress={goHome}
               variant="ghost"
             />
           </>
