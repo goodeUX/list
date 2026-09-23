@@ -24,7 +24,7 @@ import Animated, {
 } from 'react-native-reanimated';
 
 import EmojiPickerButton from '@/components/EmojiPickerButton';
-import EmojiPickerSheet from '@/components/EmojiPickerSheet';
+import EmojiPickerSheet, { useEmojiSheetDismissal } from '@/components/EmojiPickerSheet';
 import Button from '@/components/Button';
 import ThemedTextInput, { getBorderedInputHeight } from '@/components/ThemedTextInput';
 import { useTheme } from '@/contexts/ThemeContext';
@@ -293,6 +293,11 @@ export default function ListFormModal({
     setEmojiPickerOpen(false);
   }, [cancelPendingPickerOpen]);
 
+  const { onContentTouchStart, onToggleTouchStart } = useEmojiSheetDismissal(
+    emojiPickerOpen,
+    closeEmojiPicker,
+  );
+
   const toggleEmojiPicker = useCallback(() => {
     if (emojiPickerOpen) {
       closeEmojiPicker();
@@ -340,12 +345,14 @@ export default function ListFormModal({
     <>
       {/* Emoji and name sit in one unstyled row so they read as a single control. */}
       <Pressable onPress={handleFocusNameInput} style={styles.nameField}>
-        <EmojiPickerButton
-          disabled={submitting}
-          expanded={emojiPickerOpen}
-          onPress={toggleEmojiPicker}
-          value={listEmoji}
-        />
+        <View onTouchStart={onToggleTouchStart}>
+          <EmojiPickerButton
+            disabled={submitting}
+            expanded={emojiPickerOpen}
+            onPress={toggleEmojiPicker}
+            value={listEmoji}
+          />
+        </View>
         <ThemedTextInput
           editable={!submitting}
           invalid={isListNameAtLimit}
@@ -420,6 +427,8 @@ export default function ListFormModal({
     <View
       accessibilityElementsHidden={!visible}
       importantForAccessibility={visible ? 'yes' : 'no-hide-descendants'}
+      // Spans the screen behind the emoji sheet: a touch here closes it.
+      onTouchStart={onContentTouchStart}
       style={[
         styles.modalShell,
         { paddingTop: modalOverlayPaddingTop, pointerEvents: visible ? 'auto' : 'none' },

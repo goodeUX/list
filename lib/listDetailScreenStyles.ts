@@ -52,6 +52,11 @@ export const listDetailStyles = StyleSheet.create({
     lineHeight: 32,
   },
   title: {},
+  // Sits exactly where the title text was, so editing doesn't shift it.
+  titleInput: {
+    paddingHorizontal: 0,
+    paddingVertical: 0,
+  },
   // Lifts the suggestion panel above the item list that follows it, and no
   // higher: the menu backdrop (5) and the header's options menu (10) must
   // both still sit above the input row.

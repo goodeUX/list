@@ -7,7 +7,7 @@ import {
   Pressable,
   StyleSheet,
   Text,
-  TextInput,
+  type TextInput,
   useWindowDimensions,
   View,
   type LayoutChangeEvent,
@@ -17,6 +17,7 @@ import {
 import { absoluteFill } from '@/lib/absoluteFill';
 import Animated, {
   runOnJS,
+  useAnimatedKeyboard,
   useAnimatedStyle,
   useSharedValue,
   withTiming,
@@ -24,6 +25,7 @@ import Animated, {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 
+import ThemedTextInput from '@/components/ThemedTextInput';
 import { useTheme } from '@/contexts/ThemeContext';
 import { radius, space } from '@/lib/design';
 import {
@@ -53,6 +55,9 @@ const EMOJI_FONT_SIZE = 26;
 // sections line up against the same inset.
 const CONTENT_HORIZONTAL_PADDING = space[3];
 
+// Space kept between the first visible emoji row and the keyboard.
+const KEYBOARD_GAP = space[2];
+
 const OPEN_DURATION_MS = 220;
 const CLOSE_DURATION_MS = 180;
 // Start far enough down to be off screen before the sheet has been measured.
@@ -75,6 +80,35 @@ const CATEGORY_ICONS: Record<string, keyof typeof Ionicons.glyphMap> = {
   symbols: 'shapes-outline',
   flags: 'flag-outline',
 };
+
+/**
+ * Closes the sheet when a touch starts anywhere outside it, while still
+ * letting that touch through (so, e.g., tapping a field focuses it in one go).
+ *
+ * The sheet renders as a sibling of the screen's content, so attach
+ * `onContentTouchStart` to the container around that content: every touch not
+ * on the sheet reaches it. Attach `onToggleTouchStart` around the button that
+ * opens the sheet, so its own tap toggles rather than closing and reopening.
+ */
+export function useEmojiSheetDismissal(open: boolean, close: () => void) {
+  const toggleTouchRef = useRef(false);
+
+  const onToggleTouchStart = useCallback(() => {
+    toggleTouchRef.current = true;
+  }, []);
+
+  const onContentTouchStart = useCallback(() => {
+    if (toggleTouchRef.current) {
+      toggleTouchRef.current = false;
+      return;
+    }
+    if (open) {
+      close();
+    }
+  }, [close, open]);
+
+  return { onContentTouchStart, onToggleTouchStart };
+}
 
 type EmojiPickerSheetProps = {
   visible: boolean;
@@ -159,6 +193,25 @@ export default function EmojiPickerSheet({
   const rows = searchRows ?? layout.rows;
   const searching = searchRows !== null;
 
+  // While the search field has the keyboard up, the grid grows with the
+  // keyboard frame by frame — the same tracking that pushes fields up on the
+  // edit item page — so the search field and the first row of emojis stay
+  // just above it. The translucent flags keep useAnimatedKeyboard from
+  // turning the Android system bars opaque.
+  const keyboard = useAnimatedKeyboard({
+    isNavigationBarTranslucentAndroid: true,
+    isStatusBarTranslucentAndroid: true,
+  });
+  // The top of the grid to keep visible: a category heading and its first
+  // row (search results have no headings).
+  const revealHeight = (searching ? 0 : HEADER_HEIGHT) + cellSize + KEYBOARD_GAP;
+  const listAnimatedStyle = useAnimatedStyle(() => {
+    // The keyboard covers the tab bar first, then the bottom of the grid.
+    const covered = keyboard.height.value - tabBarHeight;
+    const growth = Math.max(0, covered - (listHeight - revealHeight));
+    return { height: listHeight + growth };
+  });
+
   const getItemLayout = useCallback(
     (_data: ArrayLike<EmojiRow> | null | undefined, index: number) => {
       if (searching) {
@@ -233,10 +286,19 @@ export default function EmojiPickerSheet({
     onClose();
   }, [onClose]);
 
+  const searchInputRef = useRef<TextInput>(null);
+
   useEffect(() => {
     if (visible) {
       setMounted(true);
+      return;
     }
+    // However the sheet was closed, don't leave its search keyboard up or a
+    // stale search for next time.
+    if (searchInputRef.current?.isFocused()) {
+      searchInputRef.current.blur();
+    }
+    setQuery('');
   }, [visible]);
 
   useEffect(() => {
@@ -348,41 +410,35 @@ export default function EmojiPickerSheet({
         <View
           style={[styles.searchRow, { borderBottomColor: colors.border }]}
         >
-          <View
-            style={[
-              styles.searchField,
-              {
-                backgroundColor: colors.surfaceMuted,
-                borderColor: colors.border,
-                borderRadius: radius.md,
-              },
-            ]}
-          >
-            <Ionicons color={colors.textSecondary} name="search" size={16} />
-            <TextInput
+          {/* The app's standard text field, with a clear button over its end. */}
+          <View style={styles.searchField}>
+            <ThemedTextInput
+              ref={searchInputRef}
               autoCapitalize="none"
               autoCorrect={false}
               onChangeText={setQuery}
               placeholder="Search"
-              placeholderTextColor={colors.textSecondary}
-              style={[typography.body, styles.searchInput, { color: colors.text }]}
+              style={styles.searchInput}
               value={query}
             />
             {query ? (
               <Pressable
                 accessibilityLabel="Clear search"
                 accessibilityRole="button"
+                hitSlop={8}
                 onPress={() => setQuery('')}
+                style={styles.searchClear}
               >
-                <Ionicons color={colors.textSecondary} name="close-circle" size={16} />
+                <Ionicons color={colors.textSecondary} name="close-circle" size={18} />
               </Pressable>
             ) : null}
           </View>
         </View>
         </View>
 
+        <Animated.View style={listAnimatedStyle}>
         {searching && rows.length === 0 ? (
-          <View style={[styles.emptyState, { height: listHeight }]}>
+          <View style={[styles.emptyState, styles.listFill]}>
             <Text style={[typography.body, styles.emptyStateText, { color: colors.textSecondary }]}>
               No emoji found
             </Text>
@@ -402,10 +458,11 @@ export default function EmojiPickerSheet({
             renderItem={renderRow}
             scrollEventThrottle={16}
             showsVerticalScrollIndicator={false}
-            style={{ height: listHeight }}
+            style={styles.listFill}
             windowSize={RENDER_WINDOW}
           />
         )}
+        </Animated.View>
 
         <View
           style={[
@@ -471,22 +528,24 @@ const styles = StyleSheet.create({
     paddingTop: space[4],
   },
   searchField: {
-    alignItems: 'center',
-    borderWidth: 1,
-    flexDirection: 'row',
-    gap: space[2],
-    paddingHorizontal: space[3],
-    paddingVertical: space[2],
+    justifyContent: 'center',
   },
   searchInput: {
-    flex: 1,
-    padding: 0,
+    // Keeps typed text clear of the clear button.
+    paddingRight: space[4] + 18 + space[2],
+  },
+  searchClear: {
+    position: 'absolute',
+    right: space[4],
   },
   sectionHeader: {
     justifyContent: 'center',
     paddingHorizontal: space[3],
   },
   sectionHeaderText: {},
+  listFill: {
+    flex: 1,
+  },
   listContent: {
     paddingHorizontal: CONTENT_HORIZONTAL_PADDING,
   },

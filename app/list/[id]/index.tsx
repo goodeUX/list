@@ -3,6 +3,7 @@ import { MaterialIcons } from '@expo/vector-icons';
 import { useCallback, useEffect, useMemo, useRef, useState, type ElementRef } from 'react';
 import {
   Image,
+  Keyboard,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -22,7 +23,10 @@ import { doc, getDocFromCache, onSnapshot } from 'firebase/firestore';
 
 import AddItemSuggestions from '@/components/AddItemSuggestions';
 import ListOptionsMenu from '@/components/ListOptionsMenu';
-import ListFormModal from '@/components/ListFormModal';
+import EmojiPickerButton from '@/components/EmojiPickerButton';
+import EmojiPickerSheet, { useEmojiSheetDismissal } from '@/components/EmojiPickerSheet';
+import { LIST_NAME_MAX_LENGTH, normalizeListName } from '@/lib/listName';
+import { useLastKeyboardHeight } from '@/lib/useLastKeyboardHeight';
 import ReorderableItemList from '@/components/ReorderableItemList';
 import AddInputRow from '@/components/AddInputRow';
 import ThemedTextInput from '@/components/ThemedTextInput';
@@ -106,9 +110,11 @@ export default function ListDetailScreen() {
   const [newItemName, setNewItemName] = useState('');
   const [isAddInputFocused, setIsAddInputFocused] = useState(false);
   const [listOptionsVisible, setListOptionsVisible] = useState(false);
-  const [renameModalVisible, setRenameModalVisible] = useState(false);
-  const [renaming, setRenaming] = useState(false);
-  const [renameError, setRenameError] = useState<string | null>(null);
+  // The header title is edited in place, and its emoji picked from the sheet.
+  const [editingTitle, setEditingTitle] = useState(false);
+  const [titleDraft, setTitleDraft] = useState('');
+  const [emojiPickerOpen, setEmojiPickerOpen] = useState(false);
+  const keyboardHeight = useLastKeyboardHeight();
   const newItemNameRef = useRef('');
   const submitFromKeyboard = useRef(false);
   const refocusingInput = useRef(false);
@@ -168,12 +174,18 @@ export default function ListDetailScreen() {
       return;
     }
 
+    if (editingTitle) {
+      // Blurring the title saves it.
+      Keyboard.dismiss();
+      return;
+    }
+
     if (!isAddInputFocused) {
       return;
     }
 
     dismissAddInput();
-  }, [dismissAddInput, isAddInputFocused, listOptionsVisible]);
+  }, [dismissAddInput, editingTitle, isAddInputFocused, listOptionsVisible]);
 
   useEffect(() => {
     if (Platform.OS !== 'web' || !isAddInputFocused) {
@@ -414,38 +426,87 @@ export default function ListDetailScreen() {
     );
   };
 
-  const handleRenameList = () => {
-    if (readOnly) {
-      showReadOnlyNotice();
-      return;
-    }
-    blurAddInput();
-    setListOptionsVisible(false);
-    setRenameError(null);
-    setRenameModalVisible(true);
-  };
+  const currentListName = listName || paramName;
+  const currentListEmoji = listEmoji || paramEmoji;
 
-  const handleSaveRename = useCallback(
+  /** Saves the list's name and emoji, showing the change straight away. */
+  const saveListDetails = useCallback(
     async (name: string, emoji: string) => {
       if (!listId) {
         return;
       }
-
-      setRenaming(true);
-      setRenameError(null);
+      const previousName = currentListName;
+      const previousEmoji = currentListEmoji;
+      setListName(name);
+      setListEmoji(emoji);
       try {
         await updateListDetails(listId, user, { name, emoji });
-        setListName(name);
-        setListEmoji(emoji);
-        setRenameModalVisible(false);
       } catch {
-        setRenameError('Could not rename list. Please try again.');
-      } finally {
-        setRenaming(false);
+        setListName(previousName);
+        setListEmoji(previousEmoji);
+        showAppAlert('Could not update list', 'Please try again.');
       }
     },
-    [listId, user],
+    [currentListEmoji, currentListName, listId, user],
   );
+
+  /** Whether a tap on the title may edit it; handles the menu and read-only lists. */
+  const canEditTitle = () => {
+    if (listOptionsVisible) {
+      setListOptionsVisible(false);
+      return false;
+    }
+    if (readOnly) {
+      showReadOnlyNotice();
+      return false;
+    }
+    return true;
+  };
+
+  const handleStartEditingTitle = () => {
+    if (!canEditTitle()) {
+      return;
+    }
+    blurAddInput();
+    setEmojiPickerOpen(false);
+    setTitleDraft(currentListName);
+    setEditingTitle(true);
+  };
+
+  const handleFinishEditingTitle = () => {
+    setEditingTitle(false);
+    const name = normalizeListName(titleDraft);
+    // A list must keep a name; an emptied title just reverts.
+    if (name && name !== currentListName) {
+      void saveListDetails(name, currentListEmoji);
+    }
+  };
+
+  const handleToggleEmojiPicker = () => {
+    if (emojiPickerOpen) {
+      setEmojiPickerOpen(false);
+      return;
+    }
+    if (!canEditTitle()) {
+      return;
+    }
+    blurAddInput();
+    Keyboard.dismiss();
+    setEmojiPickerOpen(true);
+  };
+
+  const closeEmojiPicker = useCallback(() => setEmojiPickerOpen(false), []);
+  const { onContentTouchStart, onToggleTouchStart } = useEmojiSheetDismissal(
+    emojiPickerOpen,
+    closeEmojiPicker,
+  );
+
+  const handleSelectEmoji = (emoji: string) => {
+    setEmojiPickerOpen(false);
+    if (emoji !== currentListEmoji) {
+      void saveListDetails(currentListName, emoji);
+    }
+  };
 
   const handleClearList = () => {
     if (readOnly) {
@@ -729,6 +790,8 @@ export default function ListDetailScreen() {
       ]}
     >
       <View
+        // Everything but the emoji sheet: a touch here closes the sheet.
+        onTouchStart={onContentTouchStart}
         style={[
           styles.flex,
           {
@@ -780,35 +843,52 @@ export default function ListDetailScreen() {
           <MaterialIcons color={colors.primary} name="chevron-left" size={24} />
         </Pressable>
 
-        <Pressable
-          accessibilityLabel="Rename list"
-          accessibilityRole="button"
-          onPress={() => {
-            if (listOptionsVisible) {
-              setListOptionsVisible(false);
-              return;
-            }
-
-            handleRenameList();
-          }}
-          style={({ pressed }) => [
-            styles.titleBlock,
-            { opacity: pressed ? 0.7 : 1 },
-            Platform.OS === 'web' ? ({ cursor: 'pointer' } as object) : null,
-          ]}
-        >
-          <Text style={[styles.emoji, { pointerEvents: 'none' }]}>
-            {listEmoji || paramEmoji}
-          </Text>
-          <View style={[styles.titleTextBlock, { pointerEvents: 'none' }]}>
-            <Text
-              numberOfLines={2}
-              style={[typography.h2, styles.title, { color: colors.text, pointerEvents: 'none' }]}
-            >
-              {listName || paramName || 'List'}
-            </Text>
+        {/* The emoji opens the emoji sheet; the name is edited in place. */}
+        <View style={styles.titleBlock}>
+          {/* The same button as the new list modal's, highlighted while the
+              sheet is open. */}
+          <View onTouchStart={onToggleTouchStart}>
+            <EmojiPickerButton
+              emojiSize={styles.emoji.fontSize}
+              expanded={emojiPickerOpen}
+              onPress={handleToggleEmojiPicker}
+              value={currentListEmoji}
+            />
           </View>
-        </Pressable>
+          <View style={styles.titleTextBlock}>
+            {editingTitle ? (
+              <ThemedTextInput
+                accessibilityLabel="List name"
+                autoFocus
+                maxLength={LIST_NAME_MAX_LENGTH}
+                onBlur={handleFinishEditingTitle}
+                onChangeText={setTitleDraft}
+                returnKeyType="done"
+                style={[typography.h2, styles.title, styles.titleInput, { color: colors.text }]}
+                value={titleDraft}
+                variant="plain"
+              />
+            ) : (
+              <Pressable
+                accessibilityHint="Edits the list name"
+                accessibilityLabel={currentListName || 'List'}
+                accessibilityRole="button"
+                onPress={handleStartEditingTitle}
+                style={({ pressed }) => [
+                  { opacity: pressed ? 0.7 : 1 },
+                  Platform.OS === 'web' ? ({ cursor: 'pointer' } as object) : null,
+                ]}
+              >
+                <Text
+                  numberOfLines={2}
+                  style={[typography.h2, styles.title, { color: colors.text }]}
+                >
+                  {currentListName || 'List'}
+                </Text>
+              </Pressable>
+            )}
+          </View>
+        </View>
 
         <ListOptionsMenu
           moveDoneToBottom={moveDoneToBottom}
@@ -912,22 +992,15 @@ export default function ListDetailScreen() {
       </KeyboardAvoidingView>
       </View>
 
-      {/* Sits outside the safe-area and keyboard wrappers so its backdrop covers
-          the whole screen and the dialog centres on it, matching the new list modal. */}
+      {/* Sits outside the safe-area and keyboard wrappers so it spans the
+          screen and slides up from its bottom edge. */}
       {listId ? (
-        <ListFormModal
-          error={renameError}
-          initialEmoji={listEmoji}
-          initialName={listName}
-          onClose={() => {
-            setRenameModalVisible(false);
-            setRenameError(null);
-          }}
-          onSubmit={handleSaveRename}
-          submitLabel="Save"
-          submitting={renaming}
-          title="Rename list"
-          visible={renameModalVisible}
+        <EmojiPickerSheet
+          keyboardHeight={keyboardHeight}
+          onClose={() => setEmojiPickerOpen(false)}
+          onSelect={handleSelectEmoji}
+          selected={currentListEmoji}
+          visible={emojiPickerOpen}
         />
       ) : null}
     </Animated.View>

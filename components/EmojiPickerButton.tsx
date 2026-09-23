@@ -6,16 +6,20 @@ import {
   BORDERED_INPUT_BORDER_WIDTH,
 } from '@/components/ThemedTextInput';
 
-// Square cell filling the height of the field it sits inside. It draws no border
-// or background of its own — the surrounding field supplies both so the emoji and
+// Square cell sized to the height of a field's content. It draws no border or
+// background of its own — the surrounding field supplies both so the emoji and
 // the name read as one control.
 const CELL_SIZE = getBorderedInputHeight() - BORDERED_INPUT_BORDER_WIDTH * 2;
+
+const DEFAULT_EMOJI_SIZE = 24;
 
 type EmojiPickerButtonProps = {
   value: string;
   onPress: () => void;
   expanded?: boolean;
   disabled?: boolean;
+  /** Font size of the emoji; the cell stays the same size. */
+  emojiSize?: number;
 };
 
 /**
@@ -27,6 +31,7 @@ export default function EmojiPickerButton({
   onPress,
   expanded = false,
   disabled = false,
+  emojiSize = DEFAULT_EMOJI_SIZE,
 }: EmojiPickerButtonProps) {
   const { colors, radius, elevation } = useTheme();
 
@@ -48,7 +53,7 @@ export default function EmojiPickerButton({
         },
       ]}
     >
-      <Text style={styles.emoji}>{value}</Text>
+      <Text style={{ fontSize: emojiSize, lineHeight: emojiSize + 6 }}>{value}</Text>
     </Pressable>
   );
 }
@@ -56,12 +61,8 @@ export default function EmojiPickerButton({
 const styles = StyleSheet.create({
   cell: {
     alignItems: 'center',
-    alignSelf: 'stretch',
+    height: CELL_SIZE,
     justifyContent: 'center',
     width: CELL_SIZE,
-  },
-  emoji: {
-    fontSize: 24,
-    lineHeight: 30,
   },
 });
