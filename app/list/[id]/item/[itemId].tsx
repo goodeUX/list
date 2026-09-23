@@ -28,9 +28,9 @@ import {
   addSubItem,
   createSubItemId,
   removeSubItem,
-  renameSubItem,
   reorderSubItems,
   sortSubItems,
+  toggleSubItem,
 } from '@/lib/subItems';
 import { playToggleHaptic } from '@/lib/haptics';
 import { radius, space } from '@/lib/design';
@@ -39,13 +39,18 @@ import type { SubItem } from '@/lib/types';
 import { useTheme } from '@/contexts/ThemeContext';
 import { showAppAlert } from '@/lib/appAlert';
 import { useChildSlideTransition } from '@/hooks/useSlideTransition';
+import { useItemAutoSave } from '@/hooks/useItemAutoSave';
 import { useListItems } from '@/hooks/useListItems';
 import { isValidUrl, normalizeUrl } from '@/lib/urls';
+import { ITEM_NAME_LIMIT_MESSAGE, getItemNameInputUpdate } from '@/lib/itemName';
 import {
-  ITEM_NAME_LIMIT_MESSAGE,
-  getItemNameInputUpdate,
-  normalizeItemName,
-} from '@/lib/itemName';
+  ITEM_TEXT_FIELDS,
+  draftAfterStoredChange,
+  savableFieldValue,
+  storedFieldValue,
+  type ItemTextField,
+  type StoredFieldValue,
+} from '@/lib/itemDraft';
 
 export default function ItemDetailScreen() {
   const { id, itemId } = useLocalSearchParams<{ id: string; itemId: string }>();
@@ -53,8 +58,7 @@ export default function ItemDetailScreen() {
   const resolvedItemId = typeof itemId === 'string' ? itemId : undefined;
   const { colors, typography } = useTheme();
   const insets = useSafeAreaInsets();
-  const { items, loading, updateItem, deleteItem, setSubItems, toggleSubItem } =
-    useListItems(listId);
+  const { items, loading, updateItem, deleteItem, setSubItems } = useListItems(listId);
 
   const item = items.find((entry) => entry.id === resolvedItemId);
   const { animatedStyle, goBack, isEnabled: slideTransitionEnabled } =
@@ -68,6 +72,7 @@ export default function ItemDetailScreen() {
   const [linkError, setLinkError] = useState<string | null>(null);
   const [newSubItemName, setNewSubItemName] = useState('');
   const [editingSubId, setEditingSubId] = useState<string | null>(null);
+  const [editingSubName, setEditingSubName] = useState('');
   const [keyboardHeight, setKeyboardHeight] = useState(0);
   const subItemsListRef = useRef<FlatList<SubItem> | null>(null);
   const addInputRef = useRef<TextInput>(null);
@@ -137,73 +142,65 @@ export default function ItemDetailScreen() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [keyboardHeight, editingSubId]);
 
-  useEffect(() => {
-    if (!item) {
-      return;
-    }
-
-    setName(item.name);
-    setQuantity(item.quantity ?? '');
-    setDescription(item.description ?? '');
-    setLink(item.link ?? '');
-    setLinkError(null);
-  }, [item]);
-
   const reportSaveError = () => {
     showAppAlert('Could not save', 'Please try again.');
   };
 
-  // Every field auto-saves when it loses focus — there is no Save button.
-  const commitName = () => {
+  // Every field auto-saves as you type — there is no Save button.
+  const {
+    commitSubItemRenames,
+    discard: discardPendingSaves,
+    flush: flushSaves,
+    isFieldDirty,
+    queueField,
+    queueSubItemRename,
+    withSubItemRenames,
+  } = useItemAutoSave({ item, updateItem, onError: reportSaveError });
+
+  // Copy stored values into the fields when they change — on load, or when
+  // someone else edits the item — but never over an edit still being saved.
+  const lastStoredRef = useRef(new Map<ItemTextField, StoredFieldValue>());
+  useEffect(() => {
     if (!item) {
       return;
     }
-    const trimmed = normalizeItemName(name);
-    if (!trimmed) {
+    const setters = {
+      description: setDescription,
+      link: setLink,
+      name: setName,
+      quantity: setQuantity,
+    };
+    const lastStored = lastStoredRef.current;
+    ITEM_TEXT_FIELDS.forEach((field) => {
+      const stored = storedFieldValue(item, field);
+      if (lastStored.has(field) && lastStored.get(field) === stored) {
+        return;
+      }
+      lastStored.set(field, stored);
+      if (isFieldDirty(field)) {
+        return;
+      }
+      setters[field]((draft) => draftAfterStoredChange(field, draft, stored));
+      if (field === 'link') {
+        setLinkError(null);
+      }
+    });
+  }, [isFieldDirty, item]);
+
+  const handleNameBlur = () => {
+    if (item && savableFieldValue('name', name) === undefined) {
       // An item must keep a name; restore the last saved value.
       setName(item.name);
       setNameLimitError(false);
-      return;
     }
-    if (trimmed !== item.name) {
-      void updateItem(item.id, { name: trimmed }).catch(reportSaveError);
-    }
+    flushSaves();
   };
 
-  const commitQuantity = () => {
-    if (!item) {
-      return;
-    }
-    const value = quantity.trim() || null;
-    if (value !== (item.quantity ?? null)) {
-      void updateItem(item.id, { quantity: value }).catch(reportSaveError);
-    }
-  };
-
-  const commitDescription = () => {
-    if (!item) {
-      return;
-    }
-    const value = description.trim() || null;
-    if (value !== (item.description ?? null)) {
-      void updateItem(item.id, { description: value }).catch(reportSaveError);
-    }
-  };
-
-  const commitLink = () => {
-    if (!item) {
-      return;
-    }
-    const trimmed = link.trim();
-    if (trimmed && !isValidUrl(trimmed)) {
+  const handleLinkBlur = () => {
+    if (savableFieldValue('link', link) === undefined) {
       setLinkError('Please enter a valid URL.');
-      return;
     }
-    setLinkError(null);
-    const value = trimmed ? normalizeUrl(trimmed) : null;
-    if (value !== (item.link ?? null)) {
-      void updateItem(item.id, { link: value }).catch(reportSaveError);
-    }
+    flushSaves();
   };
 
   const handleOpenLink = async () => {
@@ -220,6 +217,7 @@ export default function ItemDetailScreen() {
     }
 
     const runDelete = () => {
+      discardPendingSaves();
       void deleteItem(item.id).then(() => goBack());
     };
 
@@ -237,10 +235,12 @@ export default function ItemDetailScreen() {
     if (!item) {
       return;
     }
-    const next = addSubItem(item.subItems, newSubItemName, createSubItemId());
-    if (next === item.subItems) {
+    const base = withSubItemRenames(item.subItems);
+    const next = addSubItem(base, newSubItemName, createSubItemId());
+    if (next === base) {
       return;
     }
+    commitSubItemRenames();
     setNewSubItemName('');
     // Keep the keyboard up so several can be added in a row; the list re-render
     // after the write can drop focus, so re-focus explicitly.
@@ -252,25 +252,14 @@ export default function ItemDetailScreen() {
       });
   };
 
-  const handleRenameSubItem = (subId: string, nextName: string) => {
-    if (!item) {
-      return;
-    }
-    const next = renameSubItem(item.subItems, subId, nextName);
-    if (next === item.subItems) {
-      return;
-    }
-    void setSubItems(item.id, next).catch(() => {
-      showAppAlert('Could not rename sub-item', 'Please try again.');
-    });
-  };
-
   const handleRemoveSubItem = (subId: string) => {
     if (!item) {
       return;
     }
     setEditingSubId((current) => (current === subId ? null : current));
-    void setSubItems(item.id, removeSubItem(item.subItems, subId)).catch(() => {
+    const next = removeSubItem(withSubItemRenames(item.subItems), subId);
+    commitSubItemRenames();
+    void setSubItems(item.id, next).catch(() => {
       showAppAlert('Could not remove sub-item', 'Please try again.');
     });
   };
@@ -279,7 +268,9 @@ export default function ItemDetailScreen() {
     if (!item) {
       return;
     }
-    void toggleSubItem(item.id, subId).catch(() => {
+    const next = toggleSubItem(withSubItemRenames(item.subItems), subId);
+    commitSubItemRenames();
+    void setSubItems(item.id, next).catch(() => {
       showAppAlert('Could not update sub-item', 'Please try again.');
     });
   };
@@ -289,9 +280,10 @@ export default function ItemDetailScreen() {
       return;
     }
     const next = reorderSubItems(
-      item.subItems,
+      withSubItemRenames(item.subItems),
       ordered.map((entry) => entry.id),
     );
+    commitSubItemRenames();
     if (Platform.OS !== 'web') {
       playToggleHaptic();
     }
@@ -427,11 +419,12 @@ export default function ItemDetailScreen() {
                 </Text>
                 <ThemedTextInput
                   invalid={nameLimitError}
-                  onBlur={commitName}
+                  onBlur={handleNameBlur}
                   onChangeText={(text) => {
                     const { limitReached, value } = getItemNameInputUpdate(text);
                     setNameLimitError(limitReached);
                     setName(value);
+                    queueField('name', value);
                   }}
                   style={styles.nameInput}
                   value={name}
@@ -448,8 +441,11 @@ export default function ItemDetailScreen() {
                   Quantity
                 </Text>
                 <ThemedTextInput
-                  onBlur={commitQuantity}
-                  onChangeText={setQuantity}
+                  onBlur={flushSaves}
+                  onChangeText={(value) => {
+                    setQuantity(value);
+                    queueField('quantity', value);
+                  }}
                   placeholder="e.g. 2 lbs, 1 pack"
                   value={quantity}
                 />
@@ -461,8 +457,11 @@ export default function ItemDetailScreen() {
                 </Text>
                 <ThemedTextInput
                   multiline
-                  onBlur={commitDescription}
-                  onChangeText={setDescription}
+                  onBlur={flushSaves}
+                  onChangeText={(value) => {
+                    setDescription(value);
+                    queueField('description', value);
+                  }}
                   placeholder="Notes or details"
                   style={styles.textArea}
                   value={description}
@@ -478,10 +477,11 @@ export default function ItemDetailScreen() {
                   autoCorrect={false}
                   invalid={Boolean(linkError)}
                   keyboardType="url"
-                  onBlur={commitLink}
+                  onBlur={handleLinkBlur}
                   onChangeText={(value) => {
                     setLink(value);
                     setLinkError(null);
+                    queueField('link', value);
                   }}
                   placeholder="https://..."
                   value={link}
@@ -544,6 +544,7 @@ export default function ItemDetailScreen() {
                 }
                 onPress={() => {
                   if (!editing) {
+                    setEditingSubName(subItem.name);
                     setEditingSubId(subItem.id);
                   }
                 }}
@@ -578,17 +579,19 @@ export default function ItemDetailScreen() {
                 {editing ? (
                   <ThemedTextInput
                     autoFocus
-                    defaultValue={subItem.name}
-                    onBlur={() =>
+                    onBlur={() => {
+                      flushSaves();
                       setEditingSubId((current) =>
                         current === subItem.id ? null : current,
-                      )
-                    }
-                    onEndEditing={(event) =>
-                      handleRenameSubItem(subItem.id, event.nativeEvent.text)
-                    }
+                      );
+                    }}
+                    onChangeText={(value) => {
+                      setEditingSubName(value);
+                      queueSubItemRename(subItem.id, value);
+                    }}
                     returnKeyType="done"
                     style={styles.subItemInput}
+                    value={editingSubName}
                     variant="plain"
                   />
                 ) : (
