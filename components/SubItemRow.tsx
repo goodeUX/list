@@ -3,13 +3,21 @@ import { MaterialIcons } from '@expo/vector-icons';
 import { Platform, Pressable, StyleSheet, View } from 'react-native';
 
 import { ItemNameText } from '@/components/CompletedText';
+import SubItemConnector from '@/components/SubItemConnector';
 import { useTheme } from '@/contexts/ThemeContext';
 import { playToggleHaptic } from '@/lib/haptics';
+import { space } from '@/lib/design';
 import {
+  ITEM_CHECKBOX_HIT_SIZE,
   ITEM_CHECKBOX_ICON_SIZE,
   ITEM_CHECKBOX_SIZE,
   ITEM_CHECKBOX_TEXT_GAP,
 } from '@/lib/itemRowMetrics';
+
+const ROW_PADDING_VERTICAL = space[1];
+// The whole row toggles the sub-item; slop grows its tap target to the same
+// height as every other checkbox's.
+const ROW_HIT_SLOP = (ITEM_CHECKBOX_HIT_SIZE - (ITEM_CHECKBOX_SIZE + ROW_PADDING_VERTICAL * 2)) / 2;
 import type { SubItem } from '@/lib/types';
 
 type SubItemRowProps = {
@@ -23,7 +31,7 @@ export default function SubItemRow({
   disabled = false,
   onToggle,
 }: SubItemRowProps) {
-  const { colors, radii, spacing, typography } = useTheme();
+  const { colors, radii, typography } = useTheme();
 
   const handleToggle = () => {
     if (disabled) {
@@ -41,12 +49,11 @@ export default function SubItemRow({
       accessibilityRole="checkbox"
       accessibilityState={{ checked: subItem.checked, disabled }}
       disabled={disabled}
+      hitSlop={{ bottom: ROW_HIT_SLOP, top: ROW_HIT_SLOP }}
       onPress={handleToggle}
-      style={({ pressed }) => [
-        styles.row,
-        { paddingVertical: spacing.xs, opacity: pressed ? 0.72 : 1 },
-      ]}
+      style={({ pressed }) => [styles.row, { opacity: pressed ? 0.72 : 1 }]}
     >
+      <SubItemConnector />
       <View
         style={[
           styles.checkbox,
@@ -88,13 +95,17 @@ const styles = StyleSheet.create({
   row: {
     alignItems: 'center',
     flexDirection: 'row',
-    gap: ITEM_CHECKBOX_TEXT_GAP,
+    paddingVertical: ROW_PADDING_VERTICAL,
   },
+  // Figma: connector, 4px, checkbox; then the same checkbox-to-name space
+  // as a parent item.
   checkbox: {
     alignItems: 'center',
     borderWidth: 1.5,
     height: ITEM_CHECKBOX_SIZE,
     justifyContent: 'center',
+    marginLeft: space[1],
+    marginRight: ITEM_CHECKBOX_TEXT_GAP,
     width: ITEM_CHECKBOX_SIZE,
   },
   name: {

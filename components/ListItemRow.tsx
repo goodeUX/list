@@ -18,6 +18,7 @@ import { fontFamily, fontSize, lineHeight, palette, space } from '@/lib/design';
 import { playToggleHaptic } from '@/lib/haptics';
 import { formatItemNameForDisplay } from '@/lib/itemName';
 import {
+  ITEM_CHECKBOX_HIT_OVERLAP,
   ITEM_CHECKBOX_HIT_SIZE,
   ITEM_CHECKBOX_ICON_SIZE,
   ITEM_CHECKBOX_SIZE,
@@ -270,7 +271,12 @@ function ListItemRow({
       {hasSubItems && subItemsExpanded ? (
         <Animated.View
           entering={fadeInSubItems ? FadeIn.duration(200) : undefined}
-          style={[styles.subItems, { paddingLeft: spacing.lg + space[1] }]}
+          // Puts each sub-item's connector in the parent's checkbox column,
+          // its line through the middle of the parent's checkbox.
+          style={[
+            styles.subItems,
+            { paddingLeft: (ITEM_CHECKBOX_HIT_SIZE - ITEM_CHECKBOX_SIZE) / 2 },
+          ]}
         >
           {sortSubItems(item.subItems).map((subItem) => (
             <SubItemRow
@@ -319,11 +325,16 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: ITEM_ROW_GAP,
   },
+  // A 48px target that reaches over the start of the name, so the visible
+  // checkbox-to-name space is ITEM_CHECKBOX_TEXT_GAP; zIndex keeps the
+  // overlap tappable.
   checkboxHitArea: {
     alignItems: 'center',
     justifyContent: 'center',
+    marginRight: ITEM_CHECKBOX_HIT_OVERLAP,
     minHeight: ITEM_CHECKBOX_HIT_SIZE,
     minWidth: ITEM_CHECKBOX_HIT_SIZE,
+    zIndex: 1,
   },
   checkbox: {
     alignItems: 'center',

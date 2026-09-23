@@ -67,12 +67,15 @@ export const itemDetailStyles = StyleSheet.create({
     gap: ITEM_CHECKBOX_TEXT_GAP,
     paddingVertical: space[2],
   },
+  // Its hitSlop reaches over the start of the name; zIndex keeps that
+  // overlap tapping the checkbox rather than the row.
   subItemCheckbox: {
     alignItems: 'center',
     borderWidth: 1.5,
     height: ITEM_CHECKBOX_SIZE,
     justifyContent: 'center',
     width: ITEM_CHECKBOX_SIZE,
+    zIndex: 1,
   },
   subItemLabel: {
     flex: 1,

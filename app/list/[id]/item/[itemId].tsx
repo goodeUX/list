@@ -35,7 +35,7 @@ import { focusTextInputNow } from '@/lib/focusTextInput';
 import { playAddItemHaptic, playToggleHaptic } from '@/lib/haptics';
 import { radius, space } from '@/lib/design';
 import { itemDetailStyles as styles } from '@/lib/itemDetailScreenStyles';
-import { ITEM_CHECKBOX_ICON_SIZE } from '@/lib/itemRowMetrics';
+import { ITEM_CHECKBOX_HIT_SLOP, ITEM_CHECKBOX_ICON_SIZE } from '@/lib/itemRowMetrics';
 import type { SubItem } from '@/lib/types';
 import { useTheme } from '@/contexts/ThemeContext';
 import { showAppAlert } from '@/lib/appAlert';
@@ -590,7 +590,7 @@ export default function ItemDetailScreen() {
                   accessibilityLabel={subItem.checked ? 'Mark incomplete' : 'Mark complete'}
                   accessibilityRole="checkbox"
                   accessibilityState={{ checked: subItem.checked }}
-                  hitSlop={8}
+                  hitSlop={ITEM_CHECKBOX_HIT_SLOP}
                   onPress={() => handleToggleSubItem(subItem.id)}
                   style={[
                     styles.subItemCheckbox,
