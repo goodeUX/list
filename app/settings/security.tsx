@@ -13,9 +13,9 @@ import { absoluteFill } from '@/lib/absoluteFill';
 import Animated from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import AppSwitch from '@/components/AppSwitch';
+import ToggleSwitch from '@/components/ToggleSwitch';
 import Button from '@/components/Button';
-import ThemedTextInput from '@/components/ThemedTextInput';
+import ThemedTextInput, { inputLabelStyle } from '@/components/ThemedTextInput';
 import { getAuthErrorMessage, useAuth } from '@/contexts/AuthContext';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useAppLock } from '@/hooks/useAppLock';
@@ -163,14 +163,14 @@ export default function SecurityScreen() {
             {appLock.capability === 'ready' ? (
               <View style={styles.appLockRow}>
                 <View style={styles.appLockLabels}>
-                  <Text style={[typography.h2, styles.sectionTitle, { color: colors.text }]}>
+                  <Text style={[typography.title, styles.sectionTitle, { color: colors.text }]}>
                     Fingerprint / Face ID
                   </Text>
                   <Text style={[typography.bodyS, styles.helper, { color: colors.textSecondary }]}>
                     Require fingerprint / Face ID to open List Kitty
                   </Text>
                 </View>
-                <AppSwitch
+                <ToggleSwitch
                   accessibilityLabel="App lock"
                   disabled={appLock.loading || appLockBusy}
                   onValueChange={(next) => void handleAppLockToggle(next)}
@@ -194,7 +194,7 @@ export default function SecurityScreen() {
                     appLock.capability === 'unsupported' ? 0 : space[4],
                 }}
               >
-                <Text style={[typography.h2, styles.sectionTitle, { color: colors.text }]}>
+                <Text style={[typography.title, styles.sectionTitle, { color: colors.text }]}>
                   Change password
                 </Text>
                 <Text style={[typography.bodyS, styles.helper, { color: colors.textSecondary }]}>
@@ -202,7 +202,7 @@ export default function SecurityScreen() {
                 </Text>
 
                 <View style={styles.field}>
-                  <Text style={[typography.label, styles.label, { color: colors.textSecondary }]}>
+                  <Text style={[inputLabelStyle, { color: colors.textSecondary }]}>
                     Current password
                   </Text>
                   <ThemedTextInput
@@ -217,7 +217,7 @@ export default function SecurityScreen() {
                 </View>
 
                 <View style={styles.field}>
-                  <Text style={[typography.label, styles.label, { color: colors.textSecondary }]}>
+                  <Text style={[inputLabelStyle, { color: colors.textSecondary }]}>
                     New password
                   </Text>
                   <ThemedTextInput
@@ -232,7 +232,7 @@ export default function SecurityScreen() {
                 </View>
 
                 <View style={styles.field}>
-                  <Text style={[typography.label, styles.label, { color: colors.textSecondary }]}>
+                  <Text style={[inputLabelStyle, { color: colors.textSecondary }]}>
                     Confirm new password
                   </Text>
                   <ThemedTextInput
@@ -325,7 +325,6 @@ const styles = StyleSheet.create({
     gap: space[2],
   },
   sectionTitle: {},
-  label: {},
   helper: {},
   error: {},
   bottomBar: {

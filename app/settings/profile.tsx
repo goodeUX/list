@@ -16,7 +16,7 @@ import Animated from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import Button from '@/components/Button';
-import ThemedTextInput from '@/components/ThemedTextInput';
+import ThemedTextInput, { inputLabelStyle } from '@/components/ThemedTextInput';
 import UserAvatar from '@/components/UserAvatar';
 import { getAuthErrorMessage, useAuth } from '@/contexts/AuthContext';
 import { useTheme } from '@/contexts/ThemeContext';
@@ -192,7 +192,7 @@ export default function ProfileScreen() {
 
             <View style={styles.field}>
               <View style={styles.labelRow}>
-                <Text style={[typography.label, styles.label, { color: colors.textSecondary }]}>
+                <Text style={[inputLabelStyle, { color: colors.textSecondary }]}>
                   Display name
                 </Text>
                 {saving ? <ActivityIndicator color={colors.textSecondary} size="small" /> : null}
@@ -208,7 +208,7 @@ export default function ProfileScreen() {
             </View>
 
             <View style={styles.field}>
-              <Text style={[typography.label, styles.label, { color: colors.textSecondary }]}>
+              <Text style={[inputLabelStyle, { color: colors.textSecondary }]}>
                 Email
               </Text>
               <View
@@ -288,7 +288,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: space[2],
   },
-  label: {},
   readOnlyBox: {
     borderWidth: 1,
   },

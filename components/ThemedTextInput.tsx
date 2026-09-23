@@ -44,6 +44,13 @@ export type ThemedTextInputVariant = 'bordered' | 'plain' | 'empty';
 
 export const EMPTY_INPUT_ICON_SIZE = 20;
 
+/** The label above a text field (Figma Body/Label), wherever one is used. */
+export const inputLabelStyle = {
+  fontFamily: fontFamily.bodyRegular,
+  fontSize: fontSize.caption,
+  lineHeight: fontSize.caption,
+} as const satisfies TextStyle;
+
 export type ThemedTextInputProps = TextInputProps & {
   /**
    * Shown before the text in the `empty` variant. Passing one keeps the input

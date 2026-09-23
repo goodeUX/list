@@ -191,7 +191,7 @@ export default function SettingsScreen() {
 
       <ScrollView
         style={styles.scroll}
-        contentContainerStyle={[styles.container, { padding: space[6], gap: space[6] }]}
+        contentContainerStyle={[styles.container, { padding: space[6], gap: space[4] }]}
       >
         <View
           style={[
@@ -204,7 +204,7 @@ export default function SettingsScreen() {
             },
           ]}
         >
-          <Text style={[typography.h2, styles.sectionTitle, { color: colors.text }]}>
+          <Text style={[typography.title, styles.sectionTitle, { color: colors.text }]}>
             Appearance
           </Text>
           <View style={[styles.themeRow, { gap: space[2], marginTop: space[2] }]}>
@@ -261,7 +261,7 @@ export default function SettingsScreen() {
               },
             ]}
           >
-            <Text style={[typography.h2, styles.sectionTitle, { color: colors.text }]}>
+            <Text style={[typography.title, styles.sectionTitle, { color: colors.text }]}>
               Security
             </Text>
             <MaterialIcons color={colors.textSecondary} name="chevron-right" size={24} />
@@ -280,7 +280,7 @@ export default function SettingsScreen() {
               },
             ]}
           >
-            <Text style={[typography.h2, styles.sectionTitle, { color: colors.text }]}>
+            <Text style={[typography.title, styles.sectionTitle, { color: colors.text }]}>
               Account
             </Text>
 
@@ -338,7 +338,7 @@ export default function SettingsScreen() {
               },
             ]}
           >
-            <Text style={[typography.h2, styles.sectionTitle, { color: colors.text }]}>Plan</Text>
+            <Text style={[typography.title, styles.sectionTitle, { color: colors.text }]}>Plan</Text>
 
             <View style={[styles.planRow, { marginTop: space[2] }]}>
               <View

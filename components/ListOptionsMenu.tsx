@@ -15,9 +15,9 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 
+import { ToggleTrack } from '@/components/ToggleSwitch';
 import { useTheme } from '@/contexts/ThemeContext';
 import { radius, space } from '@/lib/design';
-import type { ThemeColors } from '@/lib/theme';
 
 const MENU_ITEM_ICON_SIZE = 22;
 const MENU_ITEM_HORIZONTAL_PADDING = space[4];
@@ -27,10 +27,6 @@ const BUTTON_SIZE = 44;
 const MENU_ANCHOR_GAP = space[2];
 const ICON_ROTATION_MS = 200;
 const MENU_NATIVE_ID = 'list-options-menu';
-const TOGGLE_WIDTH = 40;
-const TOGGLE_HEIGHT = 24;
-const TOGGLE_THUMB_SIZE = 20;
-const TOGGLE_THUMB_TRAVEL = TOGGLE_WIDTH - TOGGLE_THUMB_SIZE - 4;
 
 const menuItemTextStyle = {
   flexShrink: 0,
@@ -50,28 +46,6 @@ type ListOptionsMenuProps = {
   onDeleteList: () => void;
   onOpen?: () => void;
 };
-
-function MenuToggle({ colors, value }: { colors: ThemeColors; value: boolean }) {
-  return (
-    <View
-      pointerEvents="none"
-      style={[
-        styles.toggleTrack,
-        { backgroundColor: value ? colors.secondarySoft : colors.border },
-      ]}
-    >
-      <View
-        style={[
-          styles.toggleThumb,
-          {
-            backgroundColor: value ? colors.secondary : colors.surface,
-            transform: [{ translateX: value ? TOGGLE_THUMB_TRAVEL : 0 }],
-          },
-        ]}
-      />
-    </View>
-  );
-}
 
 export default function ListOptionsMenu({
   visible,
@@ -197,7 +171,7 @@ export default function ListOptionsMenu({
                 >
                   Move 'done' to bottom
                 </Text>
-                <MenuToggle colors={colors} value={moveDoneToBottom} />
+                <ToggleTrack value={moveDoneToBottom} />
               </Pressable>
 
               <Pressable
@@ -322,17 +296,5 @@ const styles = StyleSheet.create({
   },
   menuItemLabel: {
     flex: 1,
-  },
-  toggleTrack: {
-    borderRadius: TOGGLE_HEIGHT / 2,
-    height: TOGGLE_HEIGHT,
-    justifyContent: 'center',
-    padding: 2,
-    width: TOGGLE_WIDTH,
-  },
-  toggleThumb: {
-    borderRadius: TOGGLE_THUMB_SIZE / 2,
-    height: TOGGLE_THUMB_SIZE,
-    width: TOGGLE_THUMB_SIZE,
   },
 });

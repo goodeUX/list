@@ -9,11 +9,12 @@ import {
 } from 'react-native';
 
 import ThemedTextInput, {
+  inputLabelStyle,
   type MaterialIconName,
   type ThemedTextInputProps,
 } from '@/components/ThemedTextInput';
 import { useTheme } from '@/contexts/ThemeContext';
-import { fontFamily, fontSize, space } from '@/lib/design';
+import { space } from '@/lib/design';
 
 type Props = Omit<ThemedTextInputProps, 'icon' | 'label' | 'style' | 'variant'> & {
   /** Content under the input, such as an error or a link. */
@@ -74,11 +75,7 @@ export const itemDetailFieldStyles = StyleSheet.create({
   field: {
     gap: space[2],
   },
-  label: {
-    fontFamily: fontFamily.bodyRegular,
-    fontSize: fontSize.caption,
-    lineHeight: fontSize.caption,
-  },
+  label: inputLabelStyle,
 });
 
 const styles = itemDetailFieldStyles;
