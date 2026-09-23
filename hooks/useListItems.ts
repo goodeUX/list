@@ -29,7 +29,7 @@ import { clearListItemsById } from '@/lib/listMutations';
 import {
   groupItemsWithDoneAtBottom,
   nextItemOrder,
-  orderItemsAfterToggle,
+  orderAfterToggle,
   withSequentialOrder,
 } from '@/lib/listItemOrdering';
 import {
@@ -71,6 +71,30 @@ export function docToListItem(id: string, data: Record<string, unknown>): ListIt
     createdAt: toDate(data.createdAt),
     updatedAt: toDate(data.updatedAt),
   };
+}
+
+type ItemUpdates = Partial<
+  Pick<ListItem, 'name' | 'quantity' | 'description' | 'link' | 'checked' | 'order' | 'subItems'>
+>;
+
+function applyItemUpdates(item: ListItem, updates: ItemUpdates): ListItem {
+  const next = { ...item, ...updates };
+  if (updates.name !== undefined) {
+    next.name = normalizeItemName(updates.name);
+  }
+  return next;
+}
+
+/**
+ * Resolves after the current task, so an optimistic setItems can render and
+ * paint before a write runs. Firestore processes a local write (and emits
+ * its snapshot) in microtasks, which would otherwise run first and hold the
+ * optimistic update off screen until all of that work is done.
+ */
+function afterPaint(): Promise<void> {
+  return new Promise((resolve) => {
+    setTimeout(resolve, 0);
+  });
 }
 
 const OPTIMISTIC_ITEM_ID_PREFIX = 'optimistic:';
@@ -315,6 +339,22 @@ export function useListItems(
     listId && !usesCloudListData(user, listId) ? getCachedLocalItems(listId) : [];
   const [items, setItems] = useState<ListItem[]>(cachedItems);
   const [loading, setLoading] = useState(cachedItems.length === 0);
+  // The latest items for callbacks, so they needn't change identity with every
+  // update (list rows are memoized and hold on to their callbacks).
+  const itemsRef = useRef(items);
+  itemsRef.current = items;
+
+  /** Shows an item change immediately; the write that persists it follows. */
+  const applyOptimisticUpdate = useCallback((id: string, updates: ItemUpdates) => {
+    const next = itemsRef.current.map((entry) =>
+      entry.id === id ? applyItemUpdates(entry, updates) : entry,
+    );
+    if (updates.order !== undefined) {
+      next.sort((a, b) => a.order - b.order);
+    }
+    itemsRef.current = next;
+    setItems(next);
+  }, []);
 
   const applyServerItems = useCallback((serverItems: ListItem[]) => {
     optimisticItemsRef.current = optimisticItemsRef.current.filter(
@@ -499,60 +539,105 @@ export function useListItems(
     [listId, user],
   );
 
-  const toggleItem = useCallback(
-    async (id: string) => {
+  /**
+   * Flips an item's checked state (and optionally moves it), showing it
+   * immediately and writing a single item.
+   */
+  const writeCheckedFlip = useCallback(
+    async (item: ListItem, order: number | undefined) => {
       if (!listId) {
         return;
       }
 
-      const item = items.find((entry) => entry.id === id);
+      const updates: ItemUpdates = { checked: !item.checked };
+      if (order !== undefined) {
+        updates.order = order;
+      }
+
+      applyOptimisticUpdate(item.id, updates);
+      await afterPaint();
+
+      try {
+        if (!usesCloudListData(user, listId)) {
+          await toggleLocalItem(listId, item.id);
+          if (updates.order !== undefined) {
+            await updateLocalItem(listId, item.id, { order: updates.order });
+          }
+          return;
+        }
+
+        const batch = writeBatch(db);
+        batch.update(doc(db, 'lists', listId, 'items', item.id), {
+          ...updates,
+          updatedAt: serverTimestamp(),
+        });
+        batch.update(doc(db, 'lists', listId), {
+          updatedAt: serverTimestamp(),
+        });
+        await batch.commit();
+      } catch (error) {
+        applyOptimisticUpdate(item.id, { checked: item.checked, order: item.order });
+        throw error;
+      }
+    },
+    [applyOptimisticUpdate, listId, user],
+  );
+
+  const toggleItem = useCallback(
+    async (id: string) => {
+      const currentItems = itemsRef.current;
+      const item = currentItems.find((entry) => entry.id === id);
       if (!item) {
         return;
       }
 
-      if (moveDoneToBottom) {
-        const nextOrdered = withSequentialOrder(orderItemsAfterToggle(items, id));
-        const previousItems = items;
-        setItems(nextOrdered);
-
-        try {
-          await applyItemLayout(nextOrdered);
-        } catch (error) {
-          setItems(previousItems);
-          throw error;
-        }
-        return;
-      }
-
-      if (!usesCloudListData(user, listId)) {
-        await toggleLocalItem(listId, id);
-        return;
-      }
-
-      await updateDoc(doc(db, 'lists', listId, 'items', id), {
-        checked: !item.checked,
-        updatedAt: serverTimestamp(),
-      });
+      // With done items grouped at the bottom, the toggled item moves to the
+      // end of its new group. Only its own order changes, so this is a
+      // single write however long the list is.
+      await writeCheckedFlip(
+        item,
+        moveDoneToBottom ? orderAfterToggle(currentItems, id) : undefined,
+      );
     },
-    [applyItemLayout, items, listId, moveDoneToBottom, user],
+    [moveDoneToBottom, writeCheckedFlip],
+  );
+
+  /**
+   * Brings a done item back as a to-do at the top of the list — where adding
+   * it anew would put it — e.g. when it's picked from the add suggestions.
+   */
+  const restoreItem = useCallback(
+    async (id: string) => {
+      const currentItems = itemsRef.current;
+      const item = currentItems.find((entry) => entry.id === id);
+      if (!item?.checked) {
+        return;
+      }
+
+      await writeCheckedFlip(item, nextItemOrder(getPersistedItems(currentItems)));
+    },
+    [writeCheckedFlip],
   );
 
   const updateItem = useCallback(
-    async (
-      id: string,
-      updates: Partial<
-        Pick<
-          ListItem,
-          'name' | 'quantity' | 'description' | 'link' | 'checked' | 'order' | 'subItems'
-        >
-      >,
-    ) => {
+    async (id: string, updates: ItemUpdates) => {
       if (!listId) {
         return;
       }
 
+      const previous = itemsRef.current.find((entry) => entry.id === id);
+      applyOptimisticUpdate(id, updates);
+      await afterPaint();
+
       if (!usesCloudListData(user, listId)) {
-        await updateLocalItem(listId, id, updates);
+        try {
+          await updateLocalItem(listId, id, updates);
+        } catch (error) {
+          if (previous) {
+            applyOptimisticUpdate(id, previous);
+          }
+          throw error;
+        }
         return;
       }
 
@@ -582,9 +667,10 @@ export function useListItems(
         payload.subItems = updates.subItems;
       }
 
+      // A rejected write is rolled back by Firestore's own snapshot.
       await updateDoc(doc(db, 'lists', listId, 'items', id), payload);
     },
-    [listId, user],
+    [applyOptimisticUpdate, listId, user],
   );
 
   const addOrMergeItems = useCallback(
@@ -648,7 +734,7 @@ export function useListItems(
 
   const toggleSubItem = useCallback(
     async (itemId: string, subId: string) => {
-      const item = items.find((entry) => entry.id === itemId);
+      const item = itemsRef.current.find((entry) => entry.id === itemId);
       if (!item) {
         return;
       }
@@ -657,7 +743,7 @@ export function useListItems(
         subItems: toggleSubItemInList(item.subItems, subId),
       });
     },
-    [items, updateItem],
+    [updateItem],
   );
 
   const deleteItem = useCallback(
@@ -759,6 +845,7 @@ export function useListItems(
     addItem,
     addOrMergeItems,
     toggleItem,
+    restoreItem,
     updateItem,
     deleteItem,
     setSubItems,

@@ -20,6 +20,7 @@ import DraggableFlatList, {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import AddInputRow from '@/components/AddInputRow';
+import { ItemNameText } from '@/components/CompletedText';
 import ItemDetailField, { itemDetailFieldStyles } from '@/components/ItemDetailField';
 import ThemedTextInput from '@/components/ThemedTextInput';
 import {
@@ -76,6 +77,7 @@ export default function ItemDetailScreen() {
   const [editingSubName, setEditingSubName] = useState('');
   const [editingName, setEditingName] = useState(false);
   const addInputRef = useRef<TextInput>(null);
+  const firstSubItemRowRef = useRef<View>(null);
   const [isAddInputFocused, setIsAddInputFocused] = useState(false);
   const refocusingAddInputRef = useRef(false);
   const lastAddSubmitRef = useRef<{ text: string; at: number } | null>(null);
@@ -91,7 +93,12 @@ export default function ItemDetailScreen() {
     scrollRef: subItemsListRef,
     viewportRef,
     viewportStyle,
-  } = useKeyboardPushScroll<FlatList<SubItem>>(insets.bottom);
+  } = useKeyboardPushScroll<FlatList<SubItem>>(insets.bottom, {
+    // New sub-items go to the top of the list, just under the add field, so
+    // keep the first one in view above the keyboard too.
+    getRevealTarget: (field) =>
+      field === addInputRef.current ? firstSubItemRowRef.current : null,
+  });
 
 
   const reportSaveError = () => {
@@ -255,6 +262,10 @@ export default function ItemDetailScreen() {
     if (!item) {
       return;
     }
+    // The delete button sits in the row being edited, so its field has focus.
+    // Removing a focused field makes Android hand focus to the first input on
+    // the page (the description), so let go of focus before it's removed.
+    Keyboard.dismiss();
     setEditingSubId((current) => (current === subId ? null : current));
     const next = removeSubItem(withSubItemRenames(item.subItems), subId);
     commitSubItemRenames();
@@ -546,6 +557,7 @@ export default function ItemDetailScreen() {
 
             return (
               <Pressable
+                ref={subItem.id === subItems[0]?.id ? firstSubItemRowRef : undefined}
                 delayLongPress={250}
                 onLongPress={
                   editing
@@ -617,19 +629,15 @@ export default function ItemDetailScreen() {
                     variant="plain"
                   />
                 ) : (
-                  <Text
-                    numberOfLines={1}
-                    style={[
-                      typography.body,
-                      styles.subItemLabel,
-                      {
-                        color: subItem.checked ? colors.textSecondary : colors.text,
-                        textDecorationLine: subItem.checked ? 'line-through' : 'none',
-                      },
-                    ]}
-                  >
-                    {subItem.name}
-                  </Text>
+                  <View style={styles.subItemLabel}>
+                    <ItemNameText
+                      checked={subItem.checked}
+                      numberOfLines={1}
+                      style={typography.body}
+                    >
+                      {subItem.name}
+                    </ItemNameText>
+                  </View>
                 )}
 
                 {editing ? (

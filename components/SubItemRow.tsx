@@ -1,7 +1,8 @@
 import { SymbolView } from 'expo-symbols';
 import { MaterialIcons } from '@expo/vector-icons';
-import { Platform, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Platform, Pressable, StyleSheet, View } from 'react-native';
 
+import { ItemNameText } from '@/components/CompletedText';
 import { useTheme } from '@/contexts/ThemeContext';
 import { playToggleHaptic } from '@/lib/haptics';
 import {
@@ -73,19 +74,12 @@ export default function SubItemRow({
         ) : null}
       </View>
 
-      <Text
-        numberOfLines={1}
-        style={[
-          typography.body,
-          styles.name,
-          {
-            color: subItem.checked ? colors.textSecondary : colors.text,
-            textDecorationLine: subItem.checked ? 'line-through' : 'none',
-          },
-        ]}
-      >
-        {subItem.name}
-      </Text>
+      {/* Styled like a completed item's name when checked. */}
+      <View style={styles.name}>
+        <ItemNameText checked={subItem.checked} numberOfLines={1} style={typography.body}>
+          {subItem.name}
+        </ItemNameText>
+      </View>
     </Pressable>
   );
 }

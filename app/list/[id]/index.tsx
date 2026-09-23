@@ -86,6 +86,7 @@ export default function ListDetailScreen() {
     addItem,
     addOrMergeItems,
     toggleItem,
+    restoreItem,
     clearAllItems,
     reorderItems,
     applyItemLayout,
@@ -587,15 +588,17 @@ export default function ListDetailScreen() {
       }
 
       // The name is already on the list, just done — bring it back rather than
-      // adding a second copy of it.
+      // adding a second copy of it, at the top like a newly added item.
       playToggleHaptic();
       newItemNameRef.current = '';
       setNewItemName('');
       refocusAddInput();
-      void toggleItem(checkedItemId);
+      void restoreItem(checkedItemId).catch(() => {
+        showAppAlert('Could not add item', 'Please try again.');
+      });
       void recordName(name);
     },
-    [recordName, refocusAddInput, submitItemName, toggleItem],
+    [recordName, refocusAddInput, restoreItem, submitItemName],
   );
 
   const suggestions = useMemo(

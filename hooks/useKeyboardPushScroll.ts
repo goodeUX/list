@@ -16,6 +16,17 @@ import { space } from '@/lib/design';
 // Space kept between the focused field and the top of the keyboard.
 const FIELD_KEYBOARD_GAP = space[8];
 
+type Measurable = Pick<View, 'measureInWindow'>;
+
+type Options = {
+  /**
+   * Content that should stay visible with a given focused field — e.g. the
+   * first row below it. The push keeps whichever of the field and this
+   * target ends lower above the keyboard.
+   */
+  getRevealTarget?: (field: Measurable) => Measurable | null | undefined;
+};
+
 /**
  * Makes the opening keyboard push the focused field up, frame by frame,
  * instead of the list jumping once the keyboard has finished animating.
@@ -29,7 +40,12 @@ const FIELD_KEYBOARD_GAP = space[8];
  * `bottomInset` is the screen padding already below the viewport (the safe
  * area), which the keyboard covers before it reaches the viewport.
  */
-export function useKeyboardPushScroll<T extends Component>(bottomInset: number) {
+export function useKeyboardPushScroll<T extends Component>(
+  bottomInset: number,
+  { getRevealTarget }: Options = {},
+) {
+  const getRevealTargetRef = useRef(getRevealTarget);
+  getRevealTargetRef.current = getRevealTarget;
   // Without the translucent flags, useAnimatedKeyboard takes over the Android
   // window insets and makes the system bars opaque (white bars) and shifts the
   // header. Reanimated's keyboard (window insets) also stays reliable under
@@ -42,7 +58,8 @@ export function useKeyboardPushScroll<T extends Component>(bottomInset: number) 
   const viewportRef = useRef<View>(null);
   const scrollOffset = useSharedValue(0);
   const startOffset = useSharedValue(0);
-  // Window y of the focused field's bottom edge, or -1 when there's none.
+  // Window y of the bottom edge to keep above the keyboard (the focused field,
+  // or its reveal target if lower), or -1 when there's nothing to keep.
   const fieldBottom = useSharedValue(-1);
   const viewportBottom = useSharedValue(0);
 
@@ -54,25 +71,21 @@ export function useKeyboardPushScroll<T extends Component>(bottomInset: number) 
       return;
     }
     const offset = scrollOffset.value;
-    let measuredViewportBottom: number | null = null;
-    let measuredFieldBottom: number | null = null;
-    const apply = () => {
-      if (measuredViewportBottom === null || measuredFieldBottom === null) {
-        return;
-      }
-      startOffset.value = offset;
-      viewportBottom.value = measuredViewportBottom;
-      fieldBottom.value = measuredFieldBottom;
-    };
+    const bottomOf = (view: Measurable) =>
+      new Promise<number>((resolve) => {
+        view.measureInWindow((_x, y, _width, height) => resolve(y + height));
+      });
+    const revealTarget = getRevealTargetRef.current?.(field);
     // The viewport's own box doesn't change as its padding grows, so this
     // measures its full height even if the keyboard has started to open.
-    viewport.measureInWindow((_x, y, _width, height) => {
-      measuredViewportBottom = y + height;
-      apply();
-    });
-    field.measureInWindow((_x, y, _width, height) => {
-      measuredFieldBottom = y + height;
-      apply();
+    void Promise.all([
+      bottomOf(viewport),
+      bottomOf(field),
+      revealTarget ? bottomOf(revealTarget) : Promise.resolve(-1),
+    ]).then(([measuredViewportBottom, measuredFieldBottom, measuredTargetBottom]) => {
+      startOffset.value = offset;
+      viewportBottom.value = measuredViewportBottom;
+      fieldBottom.value = Math.max(measuredFieldBottom, measuredTargetBottom);
     });
   }, [fieldBottom, scrollOffset, startOffset, viewportBottom]);
 

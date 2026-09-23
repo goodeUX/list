@@ -1,7 +1,7 @@
 import { SymbolView } from 'expo-symbols';
-import { useEffect, useState, type ReactNode } from 'react';
+import { memo, useEffect, useState, type ReactNode } from 'react';
 import { MaterialIcons } from '@expo/vector-icons';
-import { Platform, Pressable, StyleSheet, Text, View, type TextStyle } from 'react-native';
+import { Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 import Animated, {
   FadeIn,
   useAnimatedStyle,
@@ -10,6 +10,7 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 
+import { CompletedText, useCompletedTextStyle } from '@/components/CompletedText';
 import SubItemRow from '@/components/SubItemRow';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useSubItemsExpanded } from '@/hooks/useSubItemsExpanded';
@@ -22,68 +23,10 @@ import {
   ITEM_CHECKBOX_SIZE,
   ITEM_ROW_GAP,
 } from '@/lib/itemRowMetrics';
-import { subItemProgress, sortSubItems } from '@/lib/subItems';
+import { subItemProgress, subItemsEqual, sortSubItems } from '@/lib/subItems';
 import type { ListItem } from '@/lib/types';
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
-
-const COMPLETED_OPACITY = 0.6;
-const STRIKETHROUGH_HEIGHT = 2;
-
-function getCompletedDecoration(checked: boolean) {
-  if (!checked) {
-    return null;
-  }
-
-  if (Platform.OS === 'web') {
-    return {
-      textDecorationLine: 'line-through' as const,
-      textDecorationThickness: STRIKETHROUGH_HEIGHT,
-    };
-  }
-
-  return null;
-}
-
-type CompletedTextProps = {
-  animatedStyle: object;
-  checked: boolean;
-  children: string;
-  color: string;
-  numberOfLines?: number;
-  style: TextStyle;
-};
-
-function CompletedText({
-  animatedStyle,
-  checked,
-  children,
-  color,
-  numberOfLines,
-  style,
-}: CompletedTextProps) {
-  const completedDecoration = getCompletedDecoration(checked);
-
-  return (
-    <View style={styles.completedTextWrap}>
-      <Animated.Text
-        numberOfLines={numberOfLines}
-        style={[style, { color }, completedDecoration, animatedStyle]}
-      >
-        {children}
-      </Animated.Text>
-      {checked && Platform.OS !== 'web' ? (
-        <Animated.View
-          style={[
-            styles.strikethroughLine,
-            { backgroundColor: color, pointerEvents: 'none' },
-            animatedStyle,
-          ]}
-        />
-      ) : null}
-    </View>
-  );
-}
 
 type ListItemRowProps = {
   disabled?: boolean;
@@ -96,7 +39,7 @@ type ListItemRowProps = {
   onToggleSubItem?: (subId: string) => void;
 };
 
-export default function ListItemRow({
+function ListItemRow({
   disabled = false,
   item,
   onToggle,
@@ -128,22 +71,13 @@ export default function ListItemRow({
     toggleSubItemsExpanded();
   };
   const checkScale = useSharedValue(1);
-  const textOpacity = useSharedValue(item.checked ? COMPLETED_OPACITY : 1);
   const [hovered, setHovered] = useState(false);
 
   const checkboxStyle = useAnimatedStyle(() => ({
     transform: [{ scale: checkScale.value }],
   }));
 
-  const completedTextStyle = useAnimatedStyle(() => ({
-    opacity: textOpacity.value,
-  }));
-
-  useEffect(() => {
-    textOpacity.value = withTiming(item.checked ? COMPLETED_OPACITY : 1, {
-      duration: 200,
-    });
-  }, [item.checked, textOpacity]);
+  const completedTextStyle = useCompletedTextStyle(item.checked);
 
   const handleToggle = () => {
     if (disabled) {
@@ -352,6 +286,33 @@ export default function ListItemRow({
   );
 }
 
+/**
+ * Rows re-render only when what they show changes, not on every list update
+ * — with long lists, re-rendering every row made each toggle visibly slow.
+ * Callback props are deliberately not compared: callers must pass callbacks
+ * whose behaviour doesn't depend on the render they came from (they act on
+ * the item's ID through stable handlers).
+ */
+function areRowPropsEqual(prev: ListItemRowProps, next: ListItemRowProps): boolean {
+  const a = prev.item;
+  const b = next.item;
+  return (
+    prev.disabled === next.disabled &&
+    prev.isActive === next.isActive &&
+    Boolean(prev.dragHandle) === Boolean(next.dragHandle) &&
+    Boolean(prev.onLongPress) === Boolean(next.onLongPress) &&
+    (a === b ||
+      (a.id === b.id &&
+        a.name === b.name &&
+        a.checked === b.checked &&
+        a.quantity === b.quantity &&
+        a.link === b.link &&
+        subItemsEqual(a.subItems, b.subItems)))
+  );
+}
+
+export default memo(ListItemRow, areRowPropsEqual);
+
 const styles = StyleSheet.create({
   row: {
     alignItems: 'center',
@@ -379,18 +340,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     flexShrink: 0,
     justifyContent: 'center',
-  },
-  completedTextWrap: {
-    alignSelf: 'flex-start',
-    maxWidth: '100%',
-  },
-  strikethroughLine: {
-    height: STRIKETHROUGH_HEIGHT,
-    left: 0,
-    marginTop: -STRIKETHROUGH_HEIGHT / 2,
-    position: 'absolute',
-    right: 0,
-    top: '50%',
   },
   meta: {
     flexDirection: 'row',

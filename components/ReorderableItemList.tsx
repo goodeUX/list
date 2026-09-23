@@ -1,5 +1,5 @@
 import { MaterialIcons } from '@expo/vector-icons';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useMemo, useRef, useState } from 'react';
 import {
   Platform,
   Pressable,
@@ -23,23 +23,70 @@ import type { ListItem } from '@/lib/types';
 
 const DIVIDER_KEY = 'reorderable-done-divider';
 
-type ItemRow = { kind: 'item'; key: string; item: ListItem };
-type DividerRow = { kind: 'divider'; key: typeof DIVIDER_KEY };
+// Each row carries everything its cell renders (including whether a
+// separator follows it, and the divider's count), so renderItem needn't
+// depend on the whole row array. With a stable renderItem and unchanged row
+// objects, the list's memoized cells skip re-rendering.
+type ItemRow = { kind: 'item'; key: string; item: ListItem; showSeparator: boolean };
+type DividerRow = { kind: 'divider'; key: typeof DIVIDER_KEY; doneCount: number };
 type Row = ItemRow | DividerRow;
 
+function withSeparators(rows: Row[]): Row[] {
+  return rows.map((row, index) => {
+    if (row.kind !== 'item') {
+      return row;
+    }
+    const showSeparator = rows[index + 1]?.kind === 'item';
+    return row.showSeparator === showSeparator ? row : { ...row, showSeparator };
+  });
+}
+
 function buildRows(items: ListItem[], moveDoneToBottom: boolean): Row[] {
+  const toRow = (item: ListItem): Row => ({
+    kind: 'item',
+    key: item.id,
+    item,
+    showSeparator: false,
+  });
+
   if (!moveDoneToBottom || items.length === 0) {
-    return items.map((item) => ({ kind: 'item', key: item.id, item }));
+    return withSeparators(items.map(toRow));
   }
 
-  const todos: Row[] = items
-    .filter((item) => !item.checked)
-    .map((item) => ({ kind: 'item', key: item.id, item }));
-  const dones: Row[] = items
-    .filter((item) => item.checked)
-    .map((item) => ({ kind: 'item', key: item.id, item }));
+  const todos = items.filter((item) => !item.checked).map(toRow);
+  const dones = items.filter((item) => item.checked).map(toRow);
 
-  return [...todos, { kind: 'divider', key: DIVIDER_KEY }, ...dones];
+  return withSeparators([
+    ...todos,
+    { kind: 'divider', key: DIVIDER_KEY, doneCount: dones.length },
+    ...dones,
+  ]);
+}
+
+/** Updates the separators and Done count after rows move (e.g. on a drop). */
+function withDerivedFields(rows: Row[]): Row[] {
+  const dividerIndex = rows.findIndex((row) => row.kind === 'divider');
+  const doneCount = dividerIndex < 0 ? 0 : rows.length - dividerIndex - 1;
+  return withSeparators(rows).map((row) =>
+    row.kind === 'divider' && row.doneCount !== doneCount ? { ...row, doneCount } : row,
+  );
+}
+
+/** Reuses the previous row object wherever a row's content is unchanged. */
+function reuseRows(next: Row[], previous: Map<string, Row>): Row[] {
+  return next.map((row) => {
+    const prev = previous.get(row.key);
+    if (!prev || prev.kind !== row.kind) {
+      return row;
+    }
+    if (row.kind === 'item' && prev.kind === 'item') {
+      return prev.item === row.item && prev.showSeparator === row.showSeparator ? prev : row;
+    }
+    if (row.kind === 'divider' && prev.kind === 'divider') {
+      return prev.doneCount === row.doneCount ? prev : row;
+    }
+    return row;
+  });
 }
 
 type ReorderableItemListProps = {
@@ -70,19 +117,29 @@ export default function ReorderableItemList({
   ListEmptyComponent,
 }: ReorderableItemListProps) {
   const { colors, radii, spacing, typography, elevation } = useTheme();
-  const [rows, setRows] = useState<Row[]>(() => buildRows(items, moveDoneToBottom));
-
-  useEffect(() => {
-    setRows(buildRows(items, moveDoneToBottom));
+  // Rows are derived during render rather than copied into state by an
+  // effect, which cost a second full-list render on every change. A drag's
+  // optimistic result is kept until `items` changes (e.g. its write's
+  // snapshot arrives).
+  const previousRowsRef = useRef(new Map<string, Row>());
+  const builtRows = useMemo(() => {
+    const next = reuseRows(buildRows(items, moveDoneToBottom), previousRowsRef.current);
+    previousRowsRef.current = new Map(next.map((row) => [row.key, row]));
+    return next;
   }, [items, moveDoneToBottom]);
+  const [dragRows, setDragRows] = useState<{ from: Row[]; rows: Row[] } | null>(null);
+  const rows = dragRows && dragRows.from === builtRows ? dragRows.rows : builtRows;
+  const setRows = useCallback(
+    (next: Row[]) => setDragRows({ from: builtRows, rows: withDerivedFields(next) }),
+    [builtRows],
+  );
 
   const dividerIndex = rows.findIndex((row) => row.kind === 'divider');
   const todoCount = dividerIndex < 0 ? rows.length : dividerIndex;
-  const doneCount = dividerIndex < 0 ? 0 : rows.length - dividerIndex - 1;
 
   const handleDragEnd = useCallback(
     ({ data }: DragEndParams<Row>) => {
-      const revert = () => setRows(buildRows(items, moveDoneToBottom));
+      const revert = () => setDragRows(null);
 
       // Defer the persist to a later task so React can commit + paint the
       // optimistic reorder FIRST. Running the Firestore write in the same tick
@@ -123,11 +180,11 @@ export default function ReorderableItemList({
       setRows(nextRows);
       deferPersist(() => Promise.resolve(onReorderWithChecked(nextItems)));
     },
-    [items, moveDoneToBottom, onReorder, onReorderWithChecked],
+    [moveDoneToBottom, onReorder, onReorderWithChecked, setRows],
   );
 
   const renderItem = useCallback(
-    ({ item: row, drag, isActive, getIndex }: RenderItemParams<Row>) => {
+    ({ item: row, drag, isActive }: RenderItemParams<Row>) => {
       if (row.kind === 'divider') {
         return (
           <View
@@ -144,16 +201,13 @@ export default function ReorderableItemList({
               ]}
             >
               <Text style={[typography.caption, styles.sectionCount, { color: palette.sand[900] }]}>
-                {doneCount}
+                {row.doneCount}
               </Text>
             </View>
           </View>
         );
       }
 
-      const index = getIndex() ?? 0;
-      const nextRow = rows[index + 1];
-      const showSeparator = nextRow?.kind === 'item';
       const dragEnabled = !disabled && isItemDraggable(row.item);
 
       const startDrag = () => {
@@ -199,7 +253,7 @@ export default function ReorderableItemList({
             onToggle={() => onToggleItem(row.item.id)}
             onToggleSubItem={(subId) => onToggleSubItem(row.item.id, subId)}
           />
-          {showSeparator ? (
+          {row.showSeparator ? (
             <View style={[styles.itemSeparator, { backgroundColor: colors.border }]} />
           ) : null}
         </View>
@@ -211,14 +265,12 @@ export default function ReorderableItemList({
       colors.surfaceRaised,
       colors.textSecondary,
       disabled,
-      doneCount,
       elevation.e2,
       isItemDraggable,
       onPressItem,
       onToggleItem,
       onToggleSubItem,
       radii.checkbox,
-      rows,
       spacing.md,
       spacing.sm,
       typography.caption,

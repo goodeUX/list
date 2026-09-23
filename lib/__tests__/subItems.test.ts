@@ -31,22 +31,26 @@ describe('addSubItem', () => {
 });
 
 describe('addSubItems', () => {
-  it('adds each comma-separated entry in typed order', () => {
-    const start = [make({ id: 'a', name: 'Milk', order: 0 })];
+  it('adds each comma-separated entry at the top, in typed order', () => {
+    const start = [
+      make({ id: 'a', name: 'Milk', order: 0 }),
+      make({ id: 'b', name: 'Bread', order: 1 }),
+    ];
     let n = 0;
     const next = addSubItems(start, ' Salt, 2 eggs ,Oil', () => `new${(n += 1)}`);
     expect(next.map((s) => [s.id, s.name, s.order])).toEqual([
-      ['a', 'Milk', 0],
-      ['new1', 'Salt', 1],
-      ['new2', '2 eggs', 2],
-      ['new3', 'Oil', 3],
+      ['new1', 'Salt', 0],
+      ['new2', '2 eggs', 1],
+      ['new3', 'Oil', 2],
+      ['a', 'Milk', 3],
+      ['b', 'Bread', 4],
     ]);
   });
 
   it('skips empty entries and returns the input when nothing is added', () => {
     const start = [make({ id: 'a' })];
     expect(addSubItems(start, ' , ,', () => 'x')).toBe(start);
-    expect(addSubItems(start, 'Salt,,', () => 'b').map((s) => s.name)).toEqual(['x', 'Salt']);
+    expect(addSubItems(start, 'Salt,,', () => 'b').map((s) => s.name)).toEqual(['Salt', 'x']);
   });
 });
 

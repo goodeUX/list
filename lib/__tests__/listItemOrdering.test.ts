@@ -1,4 +1,10 @@
-import { nextItemOrder, withSequentialOrder } from '@/lib/listItemOrdering';
+import {
+  groupItemsWithDoneAtBottom,
+  nextItemOrder,
+  orderAfterToggle,
+  orderItemsAfterToggle,
+  withSequentialOrder,
+} from '@/lib/listItemOrdering';
 import type { ListItem } from '@/lib/types';
 
 function makeItem(id: string, order: number): ListItem {
@@ -69,5 +75,72 @@ describe('withSequentialOrder', () => {
 
     expect(result[0]).toBe(items[0]);
     expect(result[1]).toBe(items[1]);
+  });
+});
+
+describe('orderAfterToggle', () => {
+  function withChecked(id: string, order: number, checked: boolean): ListItem {
+    return { ...makeItem(id, order), checked };
+  }
+
+  function groupedIds(items: ListItem[], toggledId: string, newOrder: number): string[] {
+    const next = items.map((item) =>
+      item.id === toggledId ? { ...item, checked: !item.checked, order: newOrder } : item,
+    );
+    return groupItemsWithDoneAtBottom(next).map((item) => item.id);
+  }
+
+  it('moves a newly done item to the end of the done items, changing only its order', () => {
+    const items = [
+      withChecked('a', 0, false),
+      withChecked('b', 1, false),
+      withChecked('c', 2, true),
+      withChecked('d', 3, true),
+    ];
+    const order = orderAfterToggle(items, 'a');
+
+    expect(groupedIds(items, 'a', order)).toEqual(
+      orderItemsAfterToggle(items, 'a').map((item) => item.id),
+    );
+    expect(order).toBe(4);
+  });
+
+  it('moves an undone item to the end of the to-dos, before the done items', () => {
+    const items = [
+      withChecked('a', 0, false),
+      withChecked('b', 1, false),
+      withChecked('c', 2, true),
+      withChecked('d', 3, true),
+    ];
+    const order = orderAfterToggle(items, 'd');
+
+    expect(groupedIds(items, 'd', order)).toEqual(
+      orderItemsAfterToggle(items, 'd').map((item) => item.id),
+    );
+    expect(order).toBeGreaterThan(1);
+    expect(order).toBeLessThan(2);
+  });
+
+  it('handles lists with no to-dos or no done items', () => {
+    const allDone = [withChecked('a', 0, true), withChecked('b', 1, true)];
+    expect(orderAfterToggle(allDone, 'b')).toBeLessThan(0);
+
+    const noneDone = [withChecked('a', 0, false), withChecked('b', 1, false)];
+    expect(orderAfterToggle(noneDone, 'a')).toBe(2);
+  });
+
+  it('keeps the toggled item last in its group even when orders are out of step', () => {
+    // A done item sorted before a to-do by order (not grouped by order).
+    const items = [
+      withChecked('a', 5, false),
+      withChecked('b', 1, true),
+      withChecked('c', 2, false),
+    ];
+    const order = orderAfterToggle(items, 'b');
+    const next = items.map((item) =>
+      item.id === 'b' ? { ...item, checked: false, order } : item,
+    );
+    const todos = next.filter((item) => !item.checked).sort((x, y) => x.order - y.order);
+    expect(todos.map((item) => item.id)).toEqual(['c', 'a', 'b']);
   });
 });
